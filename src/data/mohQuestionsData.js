@@ -23,7 +23,7 @@ export const MOH_QUESTIONS = [
     question:
       "What portions of virus gene will be inserted into the plasmids? Gene fragment or whole gene? It'll be great if you can provide us a specific percentage or amount. What is the biological agent involved?",
     defaultAnswer:
-      'The plasmids involved are standard expression vectors (pcDNA 3.1 and pOPINE) and do not ' +
+      'The plasmids involved are standard expression vectors (pcDNA 3.1, pOPINE, and pAAV) and do not ' +
       'contain any infectious viral genes. The engineered bank vole PRNP coding sequence (~0.77 kb) ' +
       'is cloned into the multiple cloning site (MCS) using EcoRI and XbaI (for pcDNA 3.1) or ' +
       'optimized sites for pOPINE. While pOPINE contains non-infectious flanking regions for ' +
@@ -44,10 +44,21 @@ export const MOH_QUESTIONS = [
     label: 'Q4',
     question: 'What are the plasmids involved?',
     defaultAnswer:
-      'The system involves two main non-viral vectors:\n' +
-      'pcDNA 3.1: A mammalian expression vector for cellular transfection.\n' +
-      'pOPINE: A dual-purpose vector containing a T7 promoter for bacterial expression and a p10 ' +
-      'promoter for insect cell studies, including a 6xHis tag for protein purification.\n' +
+      'The system involves 3 main type of non-viral plasmid vectors:\n' +
+      'pcDNA3.1: A mammalian expression plasmid used for transient expression in cultured cells.\n' +
+      'pOPINE: A dual-purpose expression plasmid containing a T7 promoter for bacterial expression ' +
+      'and a promoter suitable for insect cell expression, and including a 6xHis tag for recombinant ' +
+      'protein purification.\n' +
+      'pTIGRE: A donor plasmid designed for targeted genomic insertion by homologous recombination. ' +
+      'It contains the DNA sequence of interest flanked by homology arms corresponding to the TIGRE ' +
+      'genomic locus, allowing site-specific integration in transgenic cell engineering workflows. ' +
+      'It is used only as a molecular cloning and genome-targeting tool and does not contain elements ' +
+      'enabling the generation of infectious agents.\n' +
+      'The system involves 1 main type of non-pathogenic DNA delivery plasmid:\n' +
+      'pAAV: A recombinant AAV transfer plasmid used as a DNA backbone for gene delivery studies. ' +
+      'It carries the expression cassette of interest between AAV inverted terminal repeats (ITRs), ' +
+      'but does not contain the viral genes required for replication, packaging, or production of ' +
+      'viral particles. Therefore, by itself it cannot generate infectious biological agents.\n' +
       'These vectors are used strictly as molecular tools and cannot generate infectious biological agents.',
   },
   {
