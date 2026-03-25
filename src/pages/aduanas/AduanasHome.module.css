@@ -1,0 +1,27 @@
+.placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2.5rem;
+  max-width: 560px;
+}
+
+.icon {
+  font-size: 2rem;
+}
+
+.placeholder h2 {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.placeholder p {
+  font-size: 0.875rem;
+  color: var(--muted-light);
+  line-height: 1.65;
+}
