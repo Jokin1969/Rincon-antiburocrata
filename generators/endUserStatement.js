@@ -121,7 +121,7 @@ const INSTITUTIONS = {
     name:    'Consorcio CIBER – Instituto Carlos III',
     address: 'Monforte de Lemos, 3-5, pab. 11. Madrid 28029',
     phone:   '+34 946 572 525',
-    website: 'www.cicbiogune.es/jcastilla',
+    website: 'https://www.cicbiogune.es/people/jcastilla',
     email:   'jcastilla@cicbiogune.es',
   },
 }
