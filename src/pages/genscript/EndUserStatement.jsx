@@ -27,7 +27,7 @@ const DEFAULTS = {
 
 export default function EndUserStatement() {
   const [form, setForm] = useState(DEFAULTS)
-  const [loading, setLoading] = useState(false)
+  const [loadingFmt, setLoadingFmt] = useState(null) // 'docx' | 'pdf' | null
   const [error, setError] = useState(null)
   const [showAdvanced, setShowAdvanced] = useState(false)
 
@@ -36,13 +36,12 @@ export default function EndUserStatement() {
     setError(null)
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault()
-    setLoading(true)
+  async function handleDownload(format) {
+    setLoadingFmt(format)
     setError(null)
 
     try {
-      const res = await fetch('/api/genscript/end-user-statement', {
+      const res = await fetch(`/api/genscript/end-user-statement?format=${format}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
@@ -58,17 +57,18 @@ export default function EndUserStatement() {
       const a = document.createElement('a')
       a.href = url
       const code = form.projectCode.trim() || form.model.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40)
-      a.download = `EndUserStatement_${code}_${form.date}.docx`
+      a.download = `EndUserStatement_${code}_${form.date}.${format}`
       a.click()
       URL.revokeObjectURL(url)
     } catch (err) {
       setError(err.message)
     } finally {
-      setLoading(false)
+      setLoadingFmt(null)
     }
   }
 
   const isValid = form.projectCode.trim() && form.model.trim() && form.quantity.trim() && form.endUse.trim() && form.date
+  const busy = loadingFmt !== null
 
   return (
     <div>
@@ -79,7 +79,7 @@ export default function EndUserStatement() {
         subtitle="Rellena los campos que cambian por pedido. El resto del documento (datos CIC bioGUNE, GenScript, textos legales y firma de Jokin) se inserta automáticamente."
       />
 
-      <form onSubmit={handleSubmit} className={styles.form}>
+      <form onSubmit={e => e.preventDefault()} className={styles.form}>
 
         {/* ── Variable fields ─────────────────────────────────────── */}
         <div className={styles.fields}>
@@ -216,14 +216,23 @@ export default function EndUserStatement() {
 
         <div className={styles.actions}>
           <button
-            type="submit"
+            type="button"
             className="btn btn-primary"
-            disabled={!isValid || loading}
+            disabled={!isValid || busy}
+            onClick={() => handleDownload('docx')}
           >
-            {loading ? 'Generando…' : '⬇ Descargar .docx'}
+            {loadingFmt === 'docx' ? 'Generando…' : '⬇ .docx'}
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            disabled={!isValid || busy}
+            onClick={() => handleDownload('pdf')}
+          >
+            {loadingFmt === 'pdf' ? 'Generando…' : '⬇ PDF'}
           </button>
           <span className={styles.meta}>
-            Logo CIC bioGUNE · Firma Jokin · Texto legal · Datos GenScript — todo incluido
+            Logo · Firma · Texto legal · Datos GenScript — todo incluido
           </span>
         </div>
 

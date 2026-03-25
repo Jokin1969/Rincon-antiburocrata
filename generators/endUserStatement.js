@@ -194,7 +194,7 @@ export async function generateEndUserStatement(data) {
         dataRow('Company Name:', 'CIC bioGUNE'),
         dataRow('Company Address:', 'Parque tecnológico de Bizkaia, edificio 801A. Derio 48160 (Bizkaia)'),
         dataRow('Telephone Number:', '+34946 572 525'),
-        dataRow('Website:', 'www.cicbiogune.es'),
+        dataRow('Website:', 'https://www.cicbiogune.es/people/jcastilla'),
         dataRow('Email Address:', 'jcastilla@cicbiogune.es'),
       ],
     }),

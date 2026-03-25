@@ -17,7 +17,7 @@ const DOCS = [
     description: 'Cuestionario del Ministerio de Salud de Singapur requerido para ciertos tipos de síntesis.',
     icon: '🏛',
     href: '/genscript/moh-questions',
-    status: 'wip',
+    status: 'ready',
   },
 ]
 
