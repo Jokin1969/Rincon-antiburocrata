@@ -118,6 +118,10 @@ export async function generateEndUserStatement(data) {
     hsCode = '29349910',
   } = data
 
+  const modelCount = model.split(',').filter(s => s.trim()).length
+  const unit = modelCount > 1 ? 'vials' : 'vial'
+  const quantityDisplay = /vials?$/i.test(quantity.trim()) ? quantity : `${quantity} ${unit}`
+
   // Format date: "25 March 2026"
   const formattedDate = new Date(date + 'T12:00:00').toLocaleDateString('en-GB', {
     day: 'numeric',
@@ -223,7 +227,7 @@ export async function generateEndUserStatement(data) {
         dataRow('HS Code:', hsCode),
         dataRow('Brand:', 'GenScript'),
         dataRow('Model:', model),
-        dataRow('Quantity:', quantity),
+        dataRow('Quantity:', quantityDisplay),
       ],
     }),
 
