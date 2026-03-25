@@ -5,6 +5,35 @@
   gap: 2rem;
 }
 
+/* ── Institution selector ──────────────────────────────────────────────────── */
+.instSelector {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  width: fit-content;
+}
+
+.instBtn {
+  background: var(--surface);
+  border: none;
+  border-right: 1px solid var(--border);
+  color: var(--muted-light);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.55rem 1.1rem;
+  transition: background 0.15s, color 0.15s;
+}
+.instBtn:last-child { border-right: none; }
+.instBtn:hover { background: var(--surface-hover); color: var(--text); }
+
+.instBtnActive {
+  background: var(--accent);
+  color: #fff;
+}
+.instBtnActive:hover { background: #ea6c0e; }
+
 .fields {
   display: flex;
   flex-direction: column;

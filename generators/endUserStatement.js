@@ -105,6 +105,27 @@ function dataRow(label, value, bold = false) {
   })
 }
 
+// ── Institution data ──────────────────────────────────────────────────────────
+
+const INSTITUTIONS = {
+  cicbiogune: {
+    logo:    'logo-cicbiogune.png',
+    name:    'CIC bioGUNE',
+    address: 'Parque tecnológico de Bizkaia, edificio 801A. Derio 48160 (Bizkaia)',
+    phone:   '+34946 572 525',
+    website: 'https://www.cicbiogune.es/people/jcastilla',
+    email:   'jcastilla@cicbiogune.es',
+  },
+  ciber: {
+    logo:    'logo-ciber.png',
+    name:    'Consorcio CIBER – Instituto Carlos III',
+    address: 'Monforte de Lemos, 3-5, pab. 11. Madrid 28029',
+    phone:   '+34 946 572 525',
+    website: 'www.cicbiogune.es/jcastilla',
+    email:   'jcastilla@cicbiogune.es',
+  },
+}
+
 // ── Main generator ────────────────────────────────────────────────────────────
 
 export async function generateEndUserStatement(data) {
@@ -113,10 +134,13 @@ export async function generateEndUserStatement(data) {
     quantity,
     endUse,
     date,
+    institution = 'cicbiogune',
     productDescription = 'Purified Plasmid DNA Samples',
     strategicCode = '1C353',
     hsCode = '29349910',
   } = data
+
+  const inst = INSTITUTIONS[institution] ?? INSTITUTIONS.cicbiogune
 
   const modelCount = model.split(',').filter(s => s.trim()).length
   const unit = modelCount > 1 ? 'vials' : 'vial'
@@ -132,7 +156,7 @@ export async function generateEndUserStatement(data) {
   // Load assets (graceful fallback if files missing)
   let logoBuffer = null
   let sigBuffer = null
-  const logoPath = join(ASSETS, 'logo-cicbiogune.png')
+  const logoPath = join(ASSETS, inst.logo)
   const sigPath  = join(ASSETS, 'firma-jokin.png')
   if (existsSync(logoPath)) logoBuffer = readFileSync(logoPath)
   if (existsSync(sigPath))  sigBuffer  = readFileSync(sigPath)
@@ -148,7 +172,7 @@ export async function generateEndUserStatement(data) {
     new Paragraph({
       children: logoBuffer
         ? [new ImageRun({ data: logoBuffer, transformation: { width: 155, height: 56 }, type: 'png' })]
-        : [t('CIC bioGUNE', { bold: true, size: 24 })],
+        : [t(inst.name, { bold: true, size: 24 })],
       spacing: { before: 0, after: 160 },
     }),
 
@@ -168,7 +192,7 @@ export async function generateEndUserStatement(data) {
     }),
 
     emptyLine(),
-    p('We, CIC bioGUNE'),
+    p(`We, ${inst.name}`),
     emptyLine(),
 
     // ── Consignee details ─────────────────────────────────────────────────
@@ -191,11 +215,11 @@ export async function generateEndUserStatement(data) {
       width: { size: 100, type: WidthType.PERCENTAGE },
       rows: [
         sectionHeaderRow('End-user details'),
-        dataRow('Company Name:', 'CIC bioGUNE'),
-        dataRow('Company Address:', 'Parque tecnológico de Bizkaia, edificio 801A. Derio 48160 (Bizkaia)'),
-        dataRow('Telephone Number:', '+34946 572 525'),
-        dataRow('Website:', 'https://www.cicbiogune.es/people/jcastilla'),
-        dataRow('Email Address:', 'jcastilla@cicbiogune.es'),
+        dataRow('Company Name:', inst.name),
+        dataRow('Company Address:', inst.address),
+        dataRow('Telephone Number:', inst.phone),
+        dataRow('Website:', inst.website),
+        dataRow('Email Address:', inst.email),
       ],
     }),
 

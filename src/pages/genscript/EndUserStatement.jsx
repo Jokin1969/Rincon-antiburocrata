@@ -14,7 +14,13 @@ const DEFAULT_END_USE =
   'to study protein interactions and inhibition mechanisms; it is not intended to generate any ' +
   'infectious agent, is not derived from infectious material, and poses no pathogenic risk.'
 
+const INSTITUTIONS = {
+  cicbiogune: { label: 'CIC bioGUNE',                     short: 'CIC bioGUNE' },
+  ciber:      { label: 'Pedido desde el CIBER',            short: 'CIBER' },
+}
+
 const DEFAULTS = {
+  institution: 'cicbiogune',
   projectCode: '',
   model: '',
   quantity: '',
@@ -80,6 +86,20 @@ export default function EndUserStatement() {
       />
 
       <form onSubmit={e => e.preventDefault()} className={styles.form}>
+
+        {/* ── Institution selector ─────────────────────────────────── */}
+        <div className={styles.instSelector}>
+          {Object.entries(INSTITUTIONS).map(([key, { label }]) => (
+            <button
+              key={key}
+              type="button"
+              className={`${styles.instBtn} ${form.institution === key ? styles.instBtnActive : ''}`}
+              onClick={() => setForm(prev => ({ ...prev, institution: key }))}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
 
         {/* ── Variable fields ─────────────────────────────────────── */}
         <div className={styles.fields}>
