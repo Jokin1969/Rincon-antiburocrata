@@ -15,6 +15,7 @@ const DEFAULT_END_USE =
   'infectious agent, is not derived from infectious material, and poses no pathogenic risk.'
 
 const DEFAULTS = {
+  projectCode: '',
   model: '',
   quantity: '',
   endUse: DEFAULT_END_USE,
@@ -56,8 +57,8 @@ export default function EndUserStatement() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      const safeModel = form.model.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40)
-      a.download = `EndUserStatement_${safeModel}_${form.date}.docx`
+      const code = form.projectCode.trim() || form.model.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40)
+      a.download = `EndUserStatement_${code}_${form.date}.docx`
       a.click()
       URL.revokeObjectURL(url)
     } catch (err) {
@@ -67,7 +68,7 @@ export default function EndUserStatement() {
     }
   }
 
-  const isValid = form.model.trim() && form.quantity.trim() && form.endUse.trim() && form.date
+  const isValid = form.projectCode.trim() && form.model.trim() && form.quantity.trim() && form.endUse.trim() && form.date
 
   return (
     <div>
@@ -82,6 +83,23 @@ export default function EndUserStatement() {
 
         {/* ── Variable fields ─────────────────────────────────────── */}
         <div className={styles.fields}>
+
+          <div className="form-group" style={{ maxWidth: '260px' }}>
+            <label htmlFor="projectCode">Código de proyecto</label>
+            <input
+              id="projectCode"
+              name="projectCode"
+              type="text"
+              value={form.projectCode}
+              onChange={handleChange}
+              placeholder="Ej. PRJ-2026-042"
+              autoComplete="off"
+              required
+            />
+            <span className={styles.hint}>
+              Solo para el nombre del archivo — no aparece en el documento
+            </span>
+          </div>
 
           <div className={styles.row}>
             <div className="form-group">
