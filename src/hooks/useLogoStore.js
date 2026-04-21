@@ -25,12 +25,15 @@ function tx(db, mode, fn) {
     const t = db.transaction(STORE, mode)
     const store = t.objectStore(STORE)
     const req = fn(store)
-    if (req) {
+    if (mode === 'readonly') {
+      // resolve with the request result once the read completes
       req.onsuccess = e => resolve(e.target.result)
-      req.onerror = e => reject(e.target.error)
+      req.onerror  = e => reject(e.target.error)
     } else {
+      // wait for full transaction commit before resolving
+      if (req) req.onerror = e => reject(e.target.error)
       t.oncomplete = () => resolve()
-      t.onerror = e => reject(e.target.error)
+      t.onerror    = e => reject(e.target.error)
     }
   })
 }

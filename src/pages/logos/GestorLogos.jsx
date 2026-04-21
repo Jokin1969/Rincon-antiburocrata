@@ -204,14 +204,84 @@ function DetailPanel({ logo, onClose, onSave, onDelete }) {
   const [bg, setBg] = useState('transparent')
   const [mono, setMono] = useState(false)
   const [lockAR, setLockAR] = useState(true)
-  const [dlW, setDlW] = useState('')
-  const [dlH, setDlH] = useState('')
+  const [dlW, setDlW] = useState(logo.width  ? String(logo.width)  : '')
+  const [dlH, setDlH] = useState(logo.height ? String(logo.height) : '')
+
+  // Live preview state and refs
+  const [previewSrc, setPreviewSrc] = useState(null)
+  const imgRef      = useRef(null)   // original HTMLImageElement
+  const origUrlRef  = useRef(null)   // blob URL for the raw file
+  const canvasUrlRef = useRef(null)  // blob URL for canvas-rendered version
 
   const isSvg = logo.mimeType === 'image/svg+xml'
-  const previewUrl = useRef(blobUrl(logo.data, logo.mimeType))
-  useEffect(() => () => URL.revokeObjectURL(previewUrl.current), [])
-
   const ar = logo.width && logo.height ? logo.width / logo.height : null
+
+  // Load original image once; initial preview = original blob URL
+  useEffect(() => {
+    const blob = new Blob([logo.data], { type: logo.mimeType })
+    const url  = URL.createObjectURL(blob)
+    origUrlRef.current = url
+    setPreviewSrc(url)
+
+    const img = new Image()
+    img.onload = () => { imgRef.current = img }
+    img.src = url
+
+    return () => {
+      URL.revokeObjectURL(url)
+      origUrlRef.current = null
+      if (canvasUrlRef.current) {
+        URL.revokeObjectURL(canvasUrlRef.current)
+        canvasUrlRef.current = null
+      }
+    }
+  }, [logo])
+
+  // Re-render preview when mono or bg changes
+  useEffect(() => {
+    if (!imgRef.current) return
+
+    if (!mono && bg === 'transparent') {
+      // Revert to original blob URL
+      if (canvasUrlRef.current) {
+        URL.revokeObjectURL(canvasUrlRef.current)
+        canvasUrlRef.current = null
+      }
+      setPreviewSrc(origUrlRef.current)
+      return
+    }
+
+    const img = imgRef.current
+    const w   = img.naturalWidth  || 256
+    const h   = img.naturalHeight || 256
+    const canvas = document.createElement('canvas')
+    canvas.width  = w
+    canvas.height = h
+    const ctx = canvas.getContext('2d')
+
+    if (bg === 'white') {
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, w, h)
+    }
+    ctx.drawImage(img, 0, 0)
+
+    if (mono) {
+      const data = ctx.getImageData(0, 0, w, h)
+      const d = data.data
+      for (let i = 0; i < d.length; i += 4) {
+        const g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]
+        d[i] = d[i + 1] = d[i + 2] = g
+      }
+      ctx.putImageData(data, 0, 0)
+    }
+
+    canvas.toBlob(outBlob => {
+      if (!outBlob) return
+      if (canvasUrlRef.current) URL.revokeObjectURL(canvasUrlRef.current)
+      canvasUrlRef.current = URL.createObjectURL(outBlob)
+      setPreviewSrc(canvasUrlRef.current)
+    })
+  }, [mono, bg])
 
   function onWChange(v) {
     setDlW(v)
@@ -230,7 +300,6 @@ function DetailPanel({ logo, onClose, onSave, onDelete }) {
     setSaving(true)
     await onSave({ ...logo, name: name.trim(), version: version.trim(), categories: cats })
     setSaving(false)
-    onClose()
   }
 
   function handleDownload() {
@@ -256,9 +325,9 @@ function DetailPanel({ logo, onClose, onSave, onDelete }) {
         </div>
         <div className={styles.panelBody}>
 
-          {/* Preview */}
+          {/* Live preview */}
           <div className={styles.preview}>
-            <img src={previewUrl.current} alt={logo.name} />
+            {previewSrc && <img src={previewSrc} alt={logo.name} />}
           </div>
 
           {/* Meta */}
@@ -316,7 +385,7 @@ function DetailPanel({ logo, onClose, onSave, onDelete }) {
 
           {/* Download options */}
           <div>
-            <div className={styles.optLabel}>Descargar como</div>
+            <div className={styles.optLabel}>Opciones de descarga</div>
             <div className={styles.downloadGrid}>
               <div>
                 <div className={styles.optLabel}>Formato</div>
@@ -423,6 +492,13 @@ function DetailPanel({ logo, onClose, onSave, onDelete }) {
             onClick={handleDownload}
           >
             ⬇ Descargar
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={onClose}
+          >
+            Cancelar
           </button>
           <button
             type="button"
