@@ -11,22 +11,28 @@ const TEMPLATES = {
 }
 
 const DEFAULTS = {
-  template:   null,
-  signerName: 'Joaquín Castilla',
-  sigType:    'manuscrita',
-  text:       '',
-  date:       TODAY,
+  template:    null,
+  signerName:  'Joaquín Castilla',
+  sigType:     'manuscrita',
+  date:        TODAY,
+  lineSpacing: 1.5,
+  lang:        'en',
+  text:        '',
 }
 
 export default function AdaptarCarta() {
-  const [step, setStep]           = useState(1)
-  const [form, setForm]           = useState(DEFAULTS)
+  const [step, setStep]             = useState(1)
+  const [form, setForm]             = useState(DEFAULTS)
   const [loadingFmt, setLoadingFmt] = useState(null)
-  const [error, setError]         = useState(null)
+  const [error, setError]           = useState(null)
 
   function handleChange(e) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
     setError(null)
+  }
+
+  function set(key, value) {
+    setForm(prev => ({ ...prev, [key]: value }))
   }
 
   async function handleDownload(format) {
@@ -63,7 +69,7 @@ export default function AdaptarCarta() {
   const isValid    = canProceed && form.text.trim()
   const busy       = loadingFmt !== null
 
-  // ── STEP 1: template + signer config ─────────────────────────────────────
+  // ── STEP 1: template + signer config + options ───────────────────────────
 
   if (step === 1) {
     return (
@@ -89,7 +95,7 @@ export default function AdaptarCarta() {
                   key={key}
                   type="button"
                   className={`${styles.templateBtn} ${form.template === key ? styles.templateBtnActive : ''}`}
-                  onClick={() => setForm(prev => ({ ...prev, template: key }))}
+                  onClick={() => set('template', key)}
                 >
                   <span className={styles.templateIcon}>{icon}</span>
                   <span className={styles.templateLabel}>{label}</span>
@@ -122,14 +128,14 @@ export default function AdaptarCarta() {
                   <button
                     type="button"
                     className={`${styles.sigTypeBtn} ${form.sigType === 'manuscrita' ? styles.sigTypeBtnActive : ''}`}
-                    onClick={() => setForm(prev => ({ ...prev, sigType: 'manuscrita' }))}
+                    onClick={() => set('sigType', 'manuscrita')}
                   >
                     ✒️ Manuscrita
                   </button>
                   <button
                     type="button"
                     className={`${styles.sigTypeBtn} ${form.sigType === 'digital' ? styles.sigTypeBtnActive : ''}`}
-                    onClick={() => setForm(prev => ({ ...prev, sigType: 'digital' }))}
+                    onClick={() => set('sigType', 'digital')}
                   >
                     💻 Digital
                   </button>
@@ -151,6 +157,62 @@ export default function AdaptarCarta() {
                   onChange={handleChange}
                 />
               </div>
+            </div>
+          </section>
+
+          {/* Document options: line spacing + language */}
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>
+              <span className={styles.stepBadge}>3</span>
+              Opciones del documento
+            </h2>
+            <div className={styles.optionsRow}>
+
+              <div className="form-group">
+                <label>Interlineado</label>
+                <div className={styles.sigTypeSelector}>
+                  <button
+                    type="button"
+                    className={`${styles.sigTypeBtn} ${form.lineSpacing === 1.5 ? styles.sigTypeBtnActive : ''}`}
+                    onClick={() => set('lineSpacing', 1.5)}
+                  >
+                    1,5
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.sigTypeBtn} ${form.lineSpacing === 1 ? styles.sigTypeBtnActive : ''}`}
+                    onClick={() => set('lineSpacing', 1)}
+                  >
+                    1
+                  </button>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Idioma del documento</label>
+                <div className={styles.sigTypeSelector}>
+                  <button
+                    type="button"
+                    className={`${styles.sigTypeBtn} ${styles.flagBtn} ${form.lang === 'en' ? styles.sigTypeBtnActive : ''}`}
+                    onClick={() => set('lang', 'en')}
+                  >
+                    🇬🇧 English
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.sigTypeBtn} ${styles.flagBtn} ${form.lang === 'es' ? styles.sigTypeBtnActive : ''}`}
+                    onClick={() => set('lang', 'es')}
+                  >
+                    🇪🇸 Castellano
+                  </button>
+                </div>
+                <span className={styles.sigHint}>
+                  {form.lang === 'en'
+                    ? 'Fecha en inglés; título FEEP en inglés'
+                    : 'Fecha en castellano; título FEEP en castellano'}
+                </span>
+              </div>
+
             </div>
           </section>
 
@@ -189,6 +251,8 @@ export default function AdaptarCarta() {
           <span>Firmante: <strong>{form.signerName}</strong></span>
           <span>Firma: <strong>{form.sigType === 'manuscrita' ? 'Manuscrita' : 'Digital'}</strong></span>
           <span>Fecha: <strong>{form.date}</strong></span>
+          <span>Interlineado: <strong>{form.lineSpacing}</strong></span>
+          <span>Idioma: <strong>{form.lang === 'en' ? '🇬🇧 EN' : '🇪🇸 ES'}</strong></span>
           <button
             type="button"
             className={styles.editBtn}
@@ -201,7 +265,7 @@ export default function AdaptarCarta() {
         {/* Text area */}
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>
-            <span className={styles.stepBadge}>3</span>
+            <span className={styles.stepBadge}>4</span>
             Texto de la carta
           </h2>
           <div className="form-group">

@@ -36,6 +36,11 @@ const MONTHS_ES = [
   'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
 ]
 
+const MONTHS_EN = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+]
+
 const TEMPLATES = {
   cicbiogune: {
     logo:     'logo-cicbiogune.png',
@@ -90,9 +95,11 @@ function findAsset(...paths) {
   return null
 }
 
-function formatDateEs(dateStr) {
+function formatDate(dateStr, lang = 'en') {
   const d = new Date(dateStr + 'T12:00:00')
-  return `${d.getDate()} de ${MONTHS_ES[d.getMonth()]} de ${d.getFullYear()}`
+  return lang === 'es'
+    ? `${d.getDate()} de ${MONTHS_ES[d.getMonth()]} de ${d.getFullYear()}`
+    : `${d.getDate()} ${MONTHS_EN[d.getMonth()]} ${d.getFullYear()}`
 }
 
 function t(text, opts = {}) {
@@ -162,14 +169,21 @@ function headerTable(logoBuffer, tmpl) {
 export async function generateAdaptarCarta(data) {
   const {
     template,
-    signerName = 'Joaquín Castilla',
-    sigType    = 'manuscrita',
-    text       = '',
+    signerName   = 'Joaquín Castilla',
+    sigType      = 'manuscrita',
+    text         = '',
     date,
+    lineSpacing  = 1.5,
+    lang         = 'en',
   } = data
 
   const tmpl          = TEMPLATES[template] ?? TEMPLATES.cicbiogune
-  const formattedDate = formatDateEs(date)
+  const formattedDate = formatDate(date, lang)
+
+  // FEEP org title differs by language
+  const orgTitle = (template === 'feep' && lang === 'en')
+    ? 'President of the Spanish Foundation for Prion Diseases'
+    : tmpl.orgTitle
 
   const logoBuffer = findAsset(
     join(ASSETS, 'logos', tmpl.logo),
@@ -184,10 +198,15 @@ export async function generateAdaptarCarta(data) {
     : null
 
   // Parse body text: each newline → paragraph, blank lines → spacers
+  const lineValue = lineSpacing === 1 ? 240 : 360  // 240 = single, 360 = 1.5×
   const bodyParagraphs = text.split('\n').map(line => {
     const trimmed = line.trim()
     if (!trimmed) return spacer()
-    return p(trimmed, { alignment: AlignmentType.JUSTIFIED })
+    return new Paragraph({
+      children:  [t(trimmed)],
+      alignment: AlignmentType.JUSTIFIED,
+      spacing:   { before: 0, after: 200, line: lineValue, lineRule: 'auto' },
+    })
   })
 
   const signatureBlock = sigBuffer
@@ -225,7 +244,7 @@ export async function generateAdaptarCarta(data) {
     p('IKERBasque Research Professor', { after: 40 }),
 
     // ── Organization-specific title ───────────────────────────────────────────
-    p(tmpl.orgTitle, { after: 0 }),
+    p(orgTitle, { after: 0 }),
   ]
 
   const footer = new Footer({

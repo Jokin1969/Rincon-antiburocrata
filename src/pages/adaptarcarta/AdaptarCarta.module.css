@@ -94,6 +94,19 @@
   line-height: 1.35;
 }
 
+/* ── Document options row ────────────────────────────────────────────────── */
+
+.optionsRow {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.optionsRow .form-group {
+  flex: 0 0 auto;
+}
+
 /* ── Signer config ───────────────────────────────────────────────────────── */
 
 .signerGrid {
@@ -146,6 +159,11 @@
 
 .sigTypeBtnActive:hover {
   background: #ea6c0e;
+}
+
+.flagBtn {
+  font-size: 1rem;
+  letter-spacing: 0.03em;
 }
 
 .sigHint {
