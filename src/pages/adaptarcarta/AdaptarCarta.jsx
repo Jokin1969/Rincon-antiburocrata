@@ -16,7 +16,7 @@ const DEFAULTS = {
   sigType:     'manuscrita',
   date:        TODAY,
   lineSpacing: 1.5,
-  lang:        'en',
+  lang:        'es',
   text:        '',
 }
 
