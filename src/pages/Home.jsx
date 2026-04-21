@@ -19,6 +19,14 @@ const MODULES = [
     status: 'ready',
   },
   {
+    id: 'logos',
+    name: 'Gestor de logos',
+    description: 'Almacena y organiza los logos de todas las instituciones. Descarga en PNG, WebP, JPG o SVG con tamaño, fondo y color personalizados.',
+    icon: '🖼',
+    href: '/logos',
+    status: 'ready',
+  },
+  {
     id: 'aduanas',
     name: 'Aduanas',
     description: 'Documentación para envíos y recepciones internacionales de material biológico.',

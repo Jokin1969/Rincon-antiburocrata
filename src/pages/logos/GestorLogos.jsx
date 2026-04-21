@@ -1,0 +1,622 @@
+import { useState, useRef, useEffect, useCallback } from 'react'
+import PageHeader from '../../components/PageHeader'
+import { useLogoStore } from '../../hooks/useLogoStore'
+import { MIME_EXT, formatBytes, getImageInfo, fileToArrayBuffer, downloadLogo } from '../../utils/imageUtils'
+import styles from './GestorLogos.module.css'
+
+const PREDEFINED_NAMES = [
+  'ATLAS molecular pharma',
+  'CIC bioGUNE',
+  'FEEP',
+  'Universidad de Deusto',
+  'POCTEFA (Neurocoop)',
+  'CIBER',
+  'CIBERINFEC',
+  'IKERBasque',
+  'AEI',
+  'Gobierno vasco',
+  'Ministerio de Ciencia Innovación y Universidades',
+  'CIMA',
+  'Fundación Tatiana',
+  'CReSA (IRTA)',
+]
+
+const CATEGORIES = [
+  { id: 'institucional', label: 'Institucional' },
+  { id: 'proyecto',      label: 'Proyecto' },
+  { id: 'fundacion',     label: 'Fundación' },
+  { id: 'organismo',     label: 'Organismo' },
+  { id: 'universidad',   label: 'Universidad' },
+  { id: 'empresa',       label: 'Empresa' },
+]
+
+const ACCEPTED_MIME = Object.keys(MIME_EXT)
+
+function blobUrl(data, mime) {
+  return URL.createObjectURL(new Blob([data], { type: mime }))
+}
+
+// ── Upload panel ─────────────────────────────────────────────────────────────
+
+function UploadPanel({ onSave, onClose, existingNames }) {
+  const [file, setFile] = useState(null)
+  const [preview, setPreview] = useState(null)
+  const [name, setName] = useState('')
+  const [version, setVersion] = useState('1.0')
+  const [cats, setCats] = useState([])
+  const [dragging, setDragging] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const fileRef = useRef()
+
+  useEffect(() => {
+    return () => { if (preview) URL.revokeObjectURL(preview) }
+  }, [preview])
+
+  async function applyFile(f) {
+    if (!f || !ACCEPTED_MIME.includes(f.type)) return
+    if (preview) URL.revokeObjectURL(preview)
+    setPreview(URL.createObjectURL(f))
+    setFile(f)
+    if (!name) {
+      const stem = f.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ')
+      const match = PREDEFINED_NAMES.find(n =>
+        n.toLowerCase().includes(stem.toLowerCase()) ||
+        stem.toLowerCase().includes(n.toLowerCase().split(' ')[0])
+      )
+      setName(match || stem)
+    }
+  }
+
+  function onDrop(e) {
+    e.preventDefault()
+    setDragging(false)
+    const f = e.dataTransfer.files[0]
+    if (f) applyFile(f)
+  }
+
+  async function handleSave() {
+    if (!file || !name.trim()) return
+    setSaving(true)
+    const [buf, info] = await Promise.all([fileToArrayBuffer(file), getImageInfo(file)])
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    await onSave({
+      id,
+      name: name.trim(),
+      version: version.trim() || '1',
+      categories: cats,
+      mimeType: file.type,
+      width: info.width,
+      height: info.height,
+      fileSize: file.size,
+      data: buf,
+      uploadedAt: Date.now(),
+    })
+    setSaving(false)
+    onClose()
+  }
+
+  function toggleCat(id) {
+    setCats(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id])
+  }
+
+  return (
+    <div className={styles.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className={styles.panel}>
+        <div className={styles.panelHeader}>
+          <span className={styles.panelTitle}>Subir logo</span>
+          <button className={styles.closeBtn} onClick={onClose}>✕</button>
+        </div>
+        <div className={styles.panelBody}>
+          {/* Drop / click zone */}
+          <div
+            className={`${styles.uploadCard} ${dragging ? styles.uploadCardDragging : ''}`}
+            onClick={() => fileRef.current.click()}
+            onDragOver={e => { e.preventDefault(); setDragging(true) }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={onDrop}
+          >
+            {preview
+              ? <div className={styles.uploadThumb}><img src={preview} alt="preview" /></div>
+              : <>
+                  <span className={styles.uploadIcon}>📁</span>
+                  <span>Haz clic, arrastra o pega (Ctrl+V)</span>
+                  <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>PNG · WebP · JPG · SVG · GIF</span>
+                </>
+            }
+            <input
+              ref={fileRef}
+              type="file"
+              accept={ACCEPTED_MIME.join(',')}
+              style={{ display: 'none' }}
+              onChange={e => applyFile(e.target.files[0])}
+            />
+          </div>
+
+          {/* Metadata */}
+          <div className={styles.editRow}>
+            <label>Nombre</label>
+            <input
+              list="predefined-names"
+              className={styles.editInput}
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="Nombre del logo / institución"
+            />
+            <datalist id="predefined-names">
+              {PREDEFINED_NAMES.map(n => <option key={n} value={n} />)}
+            </datalist>
+          </div>
+
+          <div className={styles.editRow}>
+            <label>Versión</label>
+            <input
+              className={styles.editInput}
+              value={version}
+              onChange={e => setVersion(e.target.value)}
+              placeholder="1.0"
+              style={{ maxWidth: 120 }}
+            />
+          </div>
+
+          <div className={styles.editRow}>
+            <label>Categorías</label>
+            <div className={styles.catCheckboxes}>
+              {CATEGORIES.map(c => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className={`${styles.chip} ${cats.includes(c.id) ? styles.chipActive : ''}`}
+                  onClick={() => toggleCat(c.id)}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.panelActions}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={!file || !name.trim() || saving}
+            onClick={handleSave}
+          >
+            {saving ? 'Guardando…' : '💾 Guardar'}
+          </button>
+          <button type="button" className="btn btn-ghost" onClick={onClose}>Cancelar</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Detail / download panel ───────────────────────────────────────────────────
+
+function DetailPanel({ logo, onClose, onSave, onDelete }) {
+  const [name, setName] = useState(logo.name)
+  const [version, setVersion] = useState(logo.version)
+  const [cats, setCats] = useState(logo.categories || [])
+  const [saving, setSaving] = useState(false)
+
+  // Download opts
+  const [fmt, setFmt] = useState('png')
+  const [bg, setBg] = useState('transparent')
+  const [mono, setMono] = useState(false)
+  const [lockAR, setLockAR] = useState(true)
+  const [dlW, setDlW] = useState('')
+  const [dlH, setDlH] = useState('')
+
+  const isSvg = logo.mimeType === 'image/svg+xml'
+  const previewUrl = useRef(blobUrl(logo.data, logo.mimeType))
+  useEffect(() => () => URL.revokeObjectURL(previewUrl.current), [])
+
+  const ar = logo.width && logo.height ? logo.width / logo.height : null
+
+  function onWChange(v) {
+    setDlW(v)
+    if (lockAR && ar && v) setDlH(String(Math.round(Number(v) / ar)))
+  }
+  function onHChange(v) {
+    setDlH(v)
+    if (lockAR && ar && v) setDlW(String(Math.round(Number(v) * ar)))
+  }
+
+  function toggleCat(id) {
+    setCats(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id])
+  }
+
+  async function handleSave() {
+    setSaving(true)
+    await onSave({ ...logo, name: name.trim(), version: version.trim(), categories: cats })
+    setSaving(false)
+    onClose()
+  }
+
+  function handleDownload() {
+    downloadLogo(logo, {
+      format: fmt,
+      width:  dlW ? parseInt(dlW) : null,
+      height: dlH ? parseInt(dlH) : null,
+      mono,
+      background: bg,
+    })
+  }
+
+  const fmtOptions = isSvg
+    ? ['svg', 'png', 'webp', 'jpg']
+    : ['png', 'webp', 'jpg']
+
+  return (
+    <div className={styles.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className={styles.panel}>
+        <div className={styles.panelHeader}>
+          <span className={styles.panelTitle}>{logo.name}</span>
+          <button className={styles.closeBtn} onClick={onClose}>✕</button>
+        </div>
+        <div className={styles.panelBody}>
+
+          {/* Preview */}
+          <div className={styles.preview}>
+            <img src={previewUrl.current} alt={logo.name} />
+          </div>
+
+          {/* Meta */}
+          <div className={styles.metaList}>
+            <span className={styles.metaKey}>Formato</span>
+            <span className={styles.metaVal}>{MIME_EXT[logo.mimeType]?.toUpperCase() ?? logo.mimeType}</span>
+            {logo.width && <>
+              <span className={styles.metaKey}>Dimensiones</span>
+              <span className={styles.metaVal}>{logo.width} × {logo.height} px</span>
+            </>}
+            <span className={styles.metaKey}>Tamaño</span>
+            <span className={styles.metaVal}>{formatBytes(logo.fileSize)}</span>
+            <span className={styles.metaKey}>Versión</span>
+            <span className={styles.metaVal}>{logo.version}</span>
+            <span className={styles.metaKey}>Subido</span>
+            <span className={styles.metaVal}>{new Date(logo.uploadedAt).toLocaleDateString('es-ES')}</span>
+          </div>
+
+          {/* Edit metadata */}
+          <div className={styles.editRow}>
+            <label>Nombre</label>
+            <input
+              list="predefined-names"
+              className={styles.editInput}
+              value={name}
+              onChange={e => setName(e.target.value)}
+            />
+          </div>
+
+          <div className={styles.editRow}>
+            <label>Versión</label>
+            <input
+              className={styles.editInput}
+              value={version}
+              onChange={e => setVersion(e.target.value)}
+              style={{ maxWidth: 120 }}
+            />
+          </div>
+
+          <div className={styles.editRow}>
+            <label>Categorías</label>
+            <div className={styles.catCheckboxes}>
+              {CATEGORIES.map(c => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className={`${styles.chip} ${cats.includes(c.id) ? styles.chipActive : ''}`}
+                  onClick={() => toggleCat(c.id)}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Download options */}
+          <div>
+            <div className={styles.optLabel}>Descargar como</div>
+            <div className={styles.downloadGrid}>
+              <div>
+                <div className={styles.optLabel}>Formato</div>
+                <div className={styles.segmented}>
+                  {fmtOptions.map(f => (
+                    <button
+                      key={f}
+                      type="button"
+                      className={`${styles.segBtn} ${fmt === f ? styles.segBtnActive : ''}`}
+                      onClick={() => setFmt(f)}
+                    >
+                      {f.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className={styles.optLabel}>Fondo</div>
+                <div className={styles.segmented}>
+                  <button
+                    type="button"
+                    className={`${styles.segBtn} ${bg === 'transparent' ? styles.segBtnActive : ''}`}
+                    onClick={() => setBg('transparent')}
+                  >
+                    Transp.
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.segBtn} ${bg === 'white' ? styles.segBtnActive : ''}`}
+                    onClick={() => setBg('white')}
+                  >
+                    Blanco
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <div className={styles.optLabel}>Color</div>
+                <div className={styles.segmented}>
+                  <button
+                    type="button"
+                    className={`${styles.segBtn} ${!mono ? styles.segBtnActive : ''}`}
+                    onClick={() => setMono(false)}
+                  >
+                    Original
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.segBtn} ${mono ? styles.segBtnActive : ''}`}
+                    onClick={() => setMono(true)}
+                  >
+                    Mono
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <div className={styles.optLabel}>Tamaño (px)</div>
+                <div className={styles.sizeRow}>
+                  <input
+                    className={styles.sizeInput}
+                    type="number"
+                    min="1"
+                    placeholder="W"
+                    value={dlW}
+                    onChange={e => onWChange(e.target.value)}
+                  />
+                  <span className={styles.sizeSep}>×</span>
+                  <input
+                    className={styles.sizeInput}
+                    type="number"
+                    min="1"
+                    placeholder="H"
+                    value={dlH}
+                    onChange={e => onHChange(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    title="Bloquear proporción"
+                    className={`${styles.lockBtn} ${lockAR ? styles.lockBtnActive : ''}`}
+                    onClick={() => setLockAR(p => !p)}
+                  >
+                    {lockAR ? '🔒' : '🔓'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.panelActions}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={saving}
+            onClick={handleSave}
+          >
+            {saving ? 'Guardando…' : '💾 Guardar cambios'}
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={handleDownload}
+          >
+            ⬇ Descargar
+          </button>
+          <button
+            type="button"
+            className={styles.dangerBtn}
+            onClick={() => { if (window.confirm(`¿Eliminar "${logo.name}"?`)) { onDelete(logo.id); onClose() } }}
+          >
+            🗑 Eliminar
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Logo card ─────────────────────────────────────────────────────────────────
+
+function LogoCard({ logo, onClick }) {
+  const url = useRef(blobUrl(logo.data, logo.mimeType))
+  useEffect(() => () => URL.revokeObjectURL(url.current), [])
+
+  const ext = MIME_EXT[logo.mimeType]?.toUpperCase() ?? '?'
+  const dims = logo.width ? `${logo.width}×${logo.height}` : null
+
+  return (
+    <div className={styles.card} onClick={onClick}>
+      <div className={styles.thumb}>
+        <img src={url.current} alt={logo.name} />
+        <span className={styles.versionBadge}>v{logo.version}</span>
+      </div>
+      <div className={styles.cardBody}>
+        <span className={styles.cardName}>{logo.name}</span>
+        <span className={styles.cardMeta}>
+          {ext}{dims ? ` · ${dims}` : ''} · {formatBytes(logo.fileSize)}
+        </span>
+        {logo.categories?.length > 0 && (
+          <div className={styles.cardCats}>
+            {logo.categories.map(c => (
+              <span key={c} className={styles.catTag}>
+                {CATEGORIES.find(x => x.id === c)?.label ?? c}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
+
+export default function GestorLogos() {
+  const { logos, loading, saveLogo, deleteLogo } = useLogoStore()
+  const [search, setSearch] = useState('')
+  const [catFilter, setCatFilter] = useState(null)
+  const [showUpload, setShowUpload] = useState(false)
+  const [selected, setSelected] = useState(null)
+  const [dragging, setDragging] = useState(false)
+  const dropRef = useRef()
+  const fileRef = useRef()
+
+  // Global paste listener
+  useEffect(() => {
+    function onPaste(e) {
+      const file = [...(e.clipboardData?.files ?? [])].find(f => ACCEPTED_MIME.includes(f.type))
+      if (file) { setShowUpload(true); /* paste handled inside UploadPanel */ }
+    }
+    document.addEventListener('paste', onPaste)
+    return () => document.removeEventListener('paste', onPaste)
+  }, [])
+
+  function onDragOver(e) {
+    e.preventDefault()
+    setDragging(true)
+  }
+  function onDragLeave() { setDragging(false) }
+  function onDrop(e) {
+    e.preventDefault()
+    setDragging(false)
+    const f = e.dataTransfer.files[0]
+    if (f && ACCEPTED_MIME.includes(f.type)) setShowUpload(true)
+  }
+
+  const filtered = logos.filter(l => {
+    const matchSearch = !search || l.name.toLowerCase().includes(search.toLowerCase())
+    const matchCat = !catFilter || (l.categories ?? []).includes(catFilter)
+    return matchSearch && matchCat
+  })
+
+  return (
+    <div
+      ref={dropRef}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+    >
+      <PageHeader
+        back="/"
+        backLabel="Módulos"
+        title="Gestor de logos"
+        subtitle="Almacena, organiza y descarga los logos de las instituciones con formato y tamaño personalizados."
+      />
+
+      <div className={styles.page}>
+        {/* Toolbar */}
+        <div className={styles.toolbar}>
+          <input
+            className={styles.searchBox}
+            type="search"
+            placeholder="Buscar logos…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => setShowUpload(true)}
+          >
+            ＋ Subir logo
+          </button>
+        </div>
+
+        {/* Category chips */}
+        <div className={styles.chips}>
+          <button
+            type="button"
+            className={`${styles.chip} ${!catFilter ? styles.chipActive : ''}`}
+            onClick={() => setCatFilter(null)}
+          >
+            Todos
+          </button>
+          {CATEGORIES.map(c => (
+            <button
+              key={c.id}
+              type="button"
+              className={`${styles.chip} ${catFilter === c.id ? styles.chipActive : ''}`}
+              onClick={() => setCatFilter(prev => prev === c.id ? null : c.id)}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Grid */}
+        <div className={styles.grid}>
+          {/* Upload drop card */}
+          <div
+            className={`${styles.uploadCard} ${dragging ? styles.uploadCardDragging : ''}`}
+            onClick={() => setShowUpload(true)}
+          >
+            <span className={styles.uploadIcon}>＋</span>
+            <span>Subir logo</span>
+            <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>o arrastra aquí</span>
+          </div>
+
+          {loading && (
+            <p className={styles.empty} style={{ gridColumn: 'span 4' }}>Cargando…</p>
+          )}
+
+          {!loading && filtered.length === 0 && logos.length > 0 && (
+            <p className={styles.empty}>No hay resultados para esa búsqueda.</p>
+          )}
+
+          {!loading && logos.length === 0 && (
+            <p className={styles.empty}>
+              Aún no hay logos. Sube el primero haciendo clic en la tarjeta de la izquierda o arrastrando un archivo.
+            </p>
+          )}
+
+          {filtered.map(logo => (
+            <LogoCard
+              key={logo.id}
+              logo={logo}
+              onClick={() => setSelected(logo)}
+            />
+          ))}
+        </div>
+      </div>
+
+      {showUpload && (
+        <UploadPanel
+          onSave={saveLogo}
+          onClose={() => setShowUpload(false)}
+          existingNames={logos.map(l => l.name)}
+        />
+      )}
+
+      {selected && (
+        <DetailPanel
+          logo={selected}
+          onClose={() => setSelected(null)}
+          onSave={async entry => { await saveLogo(entry); setSelected(null) }}
+          onDelete={deleteLogo}
+        />
+      )}
+    </div>
+  )
+}

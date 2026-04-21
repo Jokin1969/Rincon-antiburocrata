@@ -5,6 +5,7 @@ const NAV_ITEMS = [
   { href: '/',              label: 'Inicio',        icon: '🏠', end: true  },
   { href: '/genscript',     label: 'GenScript',     icon: '🧬', end: false },
   { href: '/adaptar-carta', label: 'Adaptar carta', icon: '📝', end: false },
+  { href: '/logos',          label: 'Logos',          icon: '🖼', end: false },
   { href: '/aduanas',       label: 'Aduanas',       icon: '📦', end: false, wip: true },
 ]
 

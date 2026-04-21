@@ -6,6 +6,7 @@ import EndUserStatement from './pages/genscript/EndUserStatement'
 import MOHQuestions from './pages/genscript/MOHQuestions'
 import AduanasHome from './pages/aduanas/AduanasHome'
 import AdaptarCarta from './pages/adaptarcarta/AdaptarCarta'
+import GestorLogos from './pages/logos/GestorLogos'
 import NotFound from './pages/NotFound'
 
 export default function App() {
@@ -17,6 +18,7 @@ export default function App() {
         <Route path="/genscript/end-user-statement" element={<EndUserStatement />} />
         <Route path="/genscript/moh-questions" element={<MOHQuestions />} />
         <Route path="/adaptar-carta" element={<AdaptarCarta />} />
+        <Route path="/logos" element={<GestorLogos />} />
         <Route path="/aduanas" element={<AduanasHome />} />
         <Route path="*" element={<NotFound />} />
       </Route>
