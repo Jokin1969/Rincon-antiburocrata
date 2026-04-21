@@ -3,6 +3,7 @@ import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import { generateEndUserStatement } from './generators/endUserStatement.js'
 import { generateMohQuestions } from './generators/mohQuestions.js'
+import { generateAdaptarCarta } from './generators/adaptarCarta.js'
 import { docxToPdf } from './utils/pdf.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -69,6 +70,28 @@ app.post('/api/genscript/moh-questions', async (req, res) => {
     sendDocument(res, docxBuffer, `MOH_questions_${code}`, format)
   } catch (err) {
     console.error('MOH Questions error:', err)
+    res.status(500).json({ error: 'Error al generar el documento.' })
+  }
+})
+
+// ── Adaptar carta ─────────────────────────────────────────────────────────────
+app.post('/api/adaptar-carta', async (req, res) => {
+  const { template, text } = req.body
+
+  if (!template || !text?.trim()) {
+    return res.status(400).json({ error: 'Campos obligatorios: template, text' })
+  }
+
+  const format = req.query.format === 'pdf' ? 'pdf' : 'docx'
+
+  try {
+    const docxBuffer = await generateAdaptarCarta(req.body)
+    const labels     = { cicbiogune: 'CIC_bioGUNE', atlas: 'ATLAS', feep: 'FEEP' }
+    const label      = labels[template] || template
+    const safeDate   = (req.body.date || '').replace(/[^0-9-]/g, '') || 'sin_fecha'
+    sendDocument(res, docxBuffer, `Carta_${label}_${safeDate}`, format)
+  } catch (err) {
+    console.error('Adaptar carta error:', err)
     res.status(500).json({ error: 'Error al generar el documento.' })
   }
 })

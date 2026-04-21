@@ -11,6 +11,14 @@ const MODULES = [
     status: 'ready',
   },
   {
+    id: 'adaptar-carta',
+    name: 'Adaptar carta',
+    description: 'Adapta un texto al modelo de carta oficial de CIC bioGUNE, ATLAS molecular pharma o FEEP. Descarga en .docx o .pdf con firma incluida.',
+    icon: '📝',
+    href: '/adaptar-carta',
+    status: 'ready',
+  },
+  {
     id: 'aduanas',
     name: 'Aduanas',
     description: 'Documentación para envíos y recepciones internacionales de material biológico.',
