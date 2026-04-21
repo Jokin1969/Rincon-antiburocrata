@@ -1,5 +1,12 @@
-import { Link } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 import styles from './Header.module.css'
+
+const NAV_ITEMS = [
+  { href: '/',              label: 'Inicio',        icon: '🏠', end: true  },
+  { href: '/genscript',     label: 'GenScript',     icon: '🧬', end: false },
+  { href: '/adaptar-carta', label: 'Adaptar carta', icon: '📝', end: false },
+  { href: '/aduanas',       label: 'Aduanas',       icon: '📦', end: false, wip: true },
+]
 
 export default function Header() {
   return (
@@ -15,6 +22,26 @@ export default function Header() {
           Grupo de Enfermedades Priónicas · CIC bioGUNE
         </p>
       </div>
+
+      <nav className={styles.nav}>
+        <div className={styles.navInner}>
+          {NAV_ITEMS.map(({ href, label, icon, end, wip }) => (
+            <NavLink
+              key={href}
+              to={href}
+              end={end}
+              className={({ isActive }) =>
+                [styles.navLink, isActive && styles.navLinkActive, wip && styles.navLinkWip]
+                  .filter(Boolean).join(' ')
+              }
+            >
+              <span className={styles.navIcon}>{icon}</span>
+              <span className={styles.navLabel}>{label}</span>
+              {wip && <span className={styles.wipDot} />}
+            </NavLink>
+          ))}
+        </div>
+      </nav>
     </header>
   )
 }

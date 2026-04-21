@@ -33,8 +33,8 @@ export default function Home() {
     <div>
       <div className={styles.intro}>
         <p className={styles.tagline}>
-          Trámites burocráticos en menos de dos minutos.{' '}
-          <span className="accent">Sin conocimiento previo. Sin errores.</span>
+          ¡Acelera los trámites burocráticos!{' '}
+          <span className="accent">Sin errores.</span>
         </p>
       </div>
 

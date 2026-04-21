@@ -1,6 +1,6 @@
 .header {
   border-bottom: 1px solid var(--border);
-  padding: 2.5rem 2rem 2rem;
+  padding: 2.5rem 2rem 0;
   position: relative;
 }
 
@@ -55,8 +55,75 @@
   letter-spacing: 0.02em;
 }
 
+/* ── Nav bar ─────────────────────────────────────────────────────────────── */
+
+.nav {
+  margin-top: 1.5rem;
+}
+
+.navInner {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  gap: 0.15rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.navInner::-webkit-scrollbar {
+  display: none;
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted-light);
+  text-decoration: none;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+
+.navLink:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.navLinkActive {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.navIcon {
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.navLinkWip {
+  opacity: 0.65;
+}
+
+.wipDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #facc15;
+  flex-shrink: 0;
+}
+
 @media (max-width: 640px) {
   .header {
-    padding: 2rem 1.25rem 1.5rem;
+    padding: 2rem 1.25rem 0;
+  }
+
+  .navLink {
+    padding: 0.55rem 0.75rem;
+    font-size: 0.78rem;
   }
 }

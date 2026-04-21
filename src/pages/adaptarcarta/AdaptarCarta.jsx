@@ -272,17 +272,29 @@ export default function AdaptarCarta() {
             <label htmlFor="text">
               Pega aquí el cuerpo de la carta (sin firma)
             </label>
-            <textarea
-              id="text"
-              name="text"
-              className={styles.textArea}
-              rows={20}
-              placeholder={
-                'Estimado/a…\n\nEn el presente escrito les comunico…\n\nA la espera de sus noticias, les saludo atentamente.'
-              }
-              value={form.text}
-              onChange={handleChange}
-            />
+            <div className={styles.textAreaWrapper}>
+              <textarea
+                id="text"
+                name="text"
+                className={styles.textArea}
+                rows={20}
+                placeholder={
+                  'Estimado/a…\n\nEn el presente escrito les comunico…\n\nA la espera de sus noticias, les saludo atentamente.'
+                }
+                value={form.text}
+                onChange={handleChange}
+              />
+              {form.text && (
+                <button
+                  type="button"
+                  className={styles.clearBtn}
+                  onClick={() => setForm(prev => ({ ...prev, text: '' }))}
+                  title="Limpiar texto"
+                >
+                  ✕ Limpiar
+                </button>
+              )}
+            </div>
           </div>
         </section>
 

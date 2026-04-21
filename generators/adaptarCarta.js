@@ -59,7 +59,7 @@ const TEMPLATES = {
     ],
   },
   atlas: {
-    logo:     'logo-atlas.png',
+    logo:     'atlas.png',
     logoW:    165,
     logoH:    52,
     city:     'Derio',
@@ -73,7 +73,7 @@ const TEMPLATES = {
     ],
   },
   feep: {
-    logo:     'logo-feep.png',
+    logo:     'feep.png',
     logoW:    72,
     logoH:    72,
     city:     'Bilbao',

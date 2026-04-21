@@ -213,6 +213,31 @@
 
 /* ── Textarea ────────────────────────────────────────────────────────────── */
 
+.textAreaWrapper {
+  position: relative;
+}
+
+.clearBtn {
+  position: absolute;
+  bottom: 0.55rem;
+  right: 0.55rem;
+  background: var(--surface-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.28rem 0.65rem;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  line-height: 1;
+}
+
+.clearBtn:hover {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+}
+
 .textArea {
   width: 100%;
   background: var(--surface);
