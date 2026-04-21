@@ -1,12 +1,18 @@
 import {
   AlignmentType,
+  BorderStyle,
   Document,
   Footer,
   ImageRun,
   Packer,
   PageNumber,
   Paragraph,
+  Table,
+  TableCell,
+  TableRow,
   TextRun,
+  VerticalAlign,
+  WidthType,
   convertInchesToTwip,
 } from 'docx'
 import { readFileSync, existsSync } from 'fs'
@@ -20,6 +26,10 @@ const ASSETS = join(__dirname, '..', 'public', 'assets')
 const FONT    = 'Calibri'
 const SIZE    = 22  // 11 pt
 const SIZE_SM = 18  //  9 pt
+const SIZE_XS = 16  //  8 pt
+
+const NO_BORDER  = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' }
+const NO_BORDERS = { top: NO_BORDER, bottom: NO_BORDER, left: NO_BORDER, right: NO_BORDER }
 
 const MONTHS_ES = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
@@ -29,24 +39,44 @@ const MONTHS_ES = [
 const TEMPLATES = {
   cicbiogune: {
     logo:     'logo-cicbiogune.png',
-    logoW:    155,
-    logoH:    56,
+    logoW:    200,
+    logoH:    80,
     city:     'Derio',
     orgTitle: 'CIC bioGUNE',
+    // Contact info shown to the right of the logo in the letterhead
+    contactInfo: [
+      { text: 'CIC bioGUNE', bold: true },
+      { text: 'Parque tecnológico de Bizkaia, edificio 801A' },
+      { text: '48160 Derio (Bizkaia), Spain' },
+      { text: 'Tel. +34 946 572 525' },
+      { text: 'jcastilla@cicbiogune.es' },
+      { text: 'www.cicbiogune.es' },
+    ],
   },
   atlas: {
     logo:     'logo-atlas.png',
-    logoW:    155,
-    logoH:    56,
-    city:     'Bilbao',
+    logoW:    165,
+    logoH:    52,
+    city:     'Derio',
     orgTitle: 'ATLAS molecular pharma',
+    contactInfo: [
+      { text: 'ATLAS molecular pharma, S.L.', bold: true },
+      { text: 'Parque tecnológico de Bizkaia, edificio 801A' },
+      { text: '48160 Derio (Bizkaia), Spain' },
+      { text: 'jcastilla@atlasmolecularpharma.com' },
+      { text: 'www.atlasmolecularpharma.com' },
+    ],
   },
   feep: {
     logo:     'logo-feep.png',
-    logoW:    155,
-    logoH:    56,
+    logoW:    72,
+    logoH:    72,
     city:     'Bilbao',
     orgTitle: 'Presidente de la Fundación Española de Enfermedades Priónicas',
+    contactInfo: [
+      { text: 'Fundación Española de Enfermedades Priónicas', bold: true },
+      { text: 'www.feep.es' },
+    ],
   },
 }
 
@@ -68,6 +98,10 @@ function t(text, opts = {}) {
   return new TextRun({ text, font: FONT, size: SIZE, ...opts })
 }
 
+function tSm(text, opts = {}) {
+  return new TextRun({ text, font: FONT, size: SIZE_XS, ...opts })
+}
+
 function p(children, { alignment, before = 0, after = 200 } = {}) {
   if (typeof children === 'string') children = [t(children)]
   return new Paragraph({ children, alignment, spacing: { before, after } })
@@ -75,6 +109,51 @@ function p(children, { alignment, before = 0, after = 200 } = {}) {
 
 function spacer() {
   return new Paragraph({ children: [t('')], spacing: { before: 0, after: 0 } })
+}
+
+// Header table: logo (left) | contact info (right)
+function headerTable(logoBuffer, tmpl) {
+  const logoCell = new TableCell({
+    children: [
+      new Paragraph({
+        children: logoBuffer
+          ? [new ImageRun({ data: logoBuffer, transformation: { width: tmpl.logoW, height: tmpl.logoH }, type: 'png' })]
+          : [t(tmpl.orgTitle, { bold: true, size: 28 })],
+        spacing: { before: 0, after: 0 },
+      }),
+    ],
+    borders:       NO_BORDERS,
+    verticalAlign: VerticalAlign.TOP,
+    width:         { size: 58, type: WidthType.PERCENTAGE },
+    margins:       { top: 0, bottom: 0, left: 0, right: 200 },
+  })
+
+  const infoCell = new TableCell({
+    children: tmpl.contactInfo.map(({ text, bold = false }) =>
+      new Paragraph({
+        children: [tSm(text, { bold })],
+        alignment: AlignmentType.RIGHT,
+        spacing:   { before: 0, after: 50 },
+      })
+    ),
+    borders:       NO_BORDERS,
+    verticalAlign: VerticalAlign.TOP,
+    width:         { size: 42, type: WidthType.PERCENTAGE },
+    margins:       { top: 0, bottom: 0, left: 0, right: 0 },
+  })
+
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows:  [new TableRow({ children: [logoCell, infoCell] })],
+    borders: {
+      top:     NO_BORDER,
+      bottom:  NO_BORDER,
+      left:    NO_BORDER,
+      right:   NO_BORDER,
+      insideH: NO_BORDER,
+      insideV: NO_BORDER,
+    },
+  })
 }
 
 // ── Main generator ────────────────────────────────────────────────────────────
@@ -88,7 +167,7 @@ export async function generateAdaptarCarta(data) {
     date,
   } = data
 
-  const tmpl         = TEMPLATES[template] ?? TEMPLATES.cicbiogune
+  const tmpl          = TEMPLATES[template] ?? TEMPLATES.cicbiogune
   const formattedDate = formatDateEs(date)
 
   const logoBuffer = findAsset(
@@ -117,16 +196,14 @@ export async function generateAdaptarCarta(data) {
           spacing: { before: 60, after: 80 },
         }),
       ]
-    : [spacer(), spacer(), spacer()]  // empty space for digital/no signature
+    : [spacer(), spacer(), spacer()]
 
   const children = [
-    // ── Logo ──────────────────────────────────────────────────────────────────
-    new Paragraph({
-      children: logoBuffer
-        ? [new ImageRun({ data: logoBuffer, transformation: { width: tmpl.logoW, height: tmpl.logoH }, type: 'png' })]
-        : [t(tmpl.orgTitle, { bold: true, size: 28 })],
-      spacing: { before: 0, after: 320 },
-    }),
+    // ── Header: logo + contact info ───────────────────────────────────────────
+    headerTable(logoBuffer, tmpl),
+
+    // ── Space after header ────────────────────────────────────────────────────
+    spacer(),
 
     // ── Date (right-aligned) ─────────────────────────────────────────────────
     p(`${tmpl.city}, ${formattedDate}`, { alignment: AlignmentType.RIGHT, after: 480 }),
