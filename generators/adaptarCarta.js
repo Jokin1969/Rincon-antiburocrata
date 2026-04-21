@@ -63,8 +63,8 @@ const TEMPLATES = {
       { text: 'ATLAS molecular pharma, S.L.', bold: true },
       { text: 'Parque tecnológico de Bizkaia, edificio 801A' },
       { text: '48160 Derio (Bizkaia), Spain' },
-      { text: 'jcastilla@atlasmolecularpharma.com' },
-      { text: 'www.atlasmolecularpharma.com' },
+      { text: 'jcastilla@cicbiogune.es' },
+      { text: 'www.atlasmolecularpharma.es' },
     ],
   },
   feep: {
@@ -75,7 +75,8 @@ const TEMPLATES = {
     orgTitle: 'Presidente de la Fundación Española de Enfermedades Priónicas',
     contactInfo: [
       { text: 'Fundación Española de Enfermedades Priónicas', bold: true },
-      { text: 'www.feep.es' },
+      { text: 'info@fundacionprionicas.org' },
+      { text: 'www.fundacionprionicas.org' },
     ],
   },
 }
