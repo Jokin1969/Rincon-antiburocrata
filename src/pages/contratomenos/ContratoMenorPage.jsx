@@ -31,19 +31,28 @@ export default function ContratoMenorPage() {
   const [certExclusividad, setCertExclusividad] = useState(false)
   const [certFile, setCertFile] = useState(null)
   const [iaFile, setIaFile] = useState(null)
-  const [iaSent, setIaSent] = useState(false)
+  const [iaLoading, setIaLoading] = useState(false)
+  const [iaResult, setIaResult] = useState(null)
+  const [iaError, setIaError] = useState(null)
 
   const { records, saveRecord, deleteRecord } = useContratoStore()
 
-  function handleMailtoIA() {
-    const subject = encodeURIComponent('Pregunta para OpenAI')
-    const body = encodeURIComponent(
-      "Por favor, me podrías generar un texto para 'Objeto del contrato' y para " +
-      "'Justificación de la necesidad'?. Por favor, para ello, utiliza el documento adjunto. Gracias."
-    )
-    window.open(`mailto:ia@joaquincastilla.com?subject=${subject}&body=${body}`)
-    setIaSent(true)
-    setTimeout(() => setIaSent(false), 8000)
+  async function handleIaGenerar() {
+    setIaLoading(true)
+    setIaResult(null)
+    setIaError(null)
+    try {
+      const body = new FormData()
+      if (iaFile) body.append('file', iaFile)
+      const res = await fetch('/api/ia/contrato', { method: 'POST', body })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
+      setIaResult(data)
+    } catch (err) {
+      setIaError(err.message)
+    } finally {
+      setIaLoading(false)
+    }
   }
 
   function handleChange(e) {
@@ -433,33 +442,58 @@ export default function ContratoMenorPage() {
           </div>
         </div>
 
-        {/* ── Consultar a IA ──────────────────────────────────────────────── */}
+        {/* ── Asistente IA ─────────────────────────────────────────────────── */}
         <div className={styles.iaRow}>
-          <span className={styles.iaRowLabel}>Solicitar redacción a IA</span>
+          <span className={styles.iaRowLabel}>✦ Generar textos con IA</span>
           <div className={styles.iaRowControls}>
             <label className={styles.iaFileLabel}>
               <input
                 type="file"
+                accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.txt"
                 className={styles.iaFileInput}
-                onChange={e => { setIaFile(e.target.files[0] || null); setIaSent(false) }}
+                onChange={e => { setIaFile(e.target.files[0] || null); setIaResult(null); setIaError(null) }}
               />
               <span className={styles.iaFileBtn}>
-                {iaFile ? `📎 ${iaFile.name}` : '📎 Adjuntar documento…'}
+                {iaFile ? `📎 ${iaFile.name}` : '📎 Documento de referencia (opcional)'}
               </span>
             </label>
             <button
               type="button"
               className={styles.iaBtn}
-              onClick={handleMailtoIA}
+              onClick={handleIaGenerar}
+              disabled={iaLoading}
             >
-              ✉ Consultar a IA
+              {iaLoading ? 'Consultando…' : '✦ Generar con GPT-4o'}
             </button>
           </div>
-          {iaSent && (
-            <p className={styles.iaNota}>
-              Cliente de correo abierto.
-              {iaFile && <> Adjunta <strong>«{iaFile.name}»</strong> manualmente antes de enviar.</>}
-            </p>
+
+          {iaError && <p className={styles.iaError}>{iaError}</p>}
+
+          {iaResult && (
+            <div className={styles.iaResult}>
+              <div className={styles.iaResultField}>
+                <span className={styles.iaResultLabel}>Objeto del contrato</span>
+                <p className={styles.iaResultText}>{iaResult.objeto}</p>
+                <button
+                  type="button"
+                  className={styles.iaUseBtn}
+                  onClick={() => setForm(prev => ({ ...prev, objeto: iaResult.objeto }))}
+                >
+                  ↑ Usar este texto
+                </button>
+              </div>
+              <div className={styles.iaResultField}>
+                <span className={styles.iaResultLabel}>Justificación de la necesidad</span>
+                <p className={styles.iaResultText}>{iaResult.justificacionNecesidad}</p>
+                <button
+                  type="button"
+                  className={styles.iaUseBtn}
+                  onClick={() => setForm(prev => ({ ...prev, justificacionNecesidad: iaResult.justificacionNecesidad }))}
+                >
+                  ↑ Usar este texto
+                </button>
+              </div>
+            </div>
           )}
         </div>
 
