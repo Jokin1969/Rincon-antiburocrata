@@ -56,6 +56,7 @@ const NO_BORDERS = {
 const CELL_MARGIN      = { top: 70,  bottom: 70,  left: 110, right: 110 }
 const CELL_MARGIN_WIDE = { top: 100, bottom: 100, left: 110, right: 110 }
 const GRAY_FILL        = { type: ShadingType.CLEAR, color: 'auto', fill: 'D9D9D9' }
+const CREAM_FILL       = { type: ShadingType.CLEAR, color: 'auto', fill: 'FFFACD' }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -94,7 +95,7 @@ function sectionTable(number, title, contentRows) {
     children: [
       makeCell(
         [p([t(`${number}. ${title}`, { bold: true })])],
-        { columnSpan: 2, shading: GRAY_FILL }
+        { columnSpan: 2, shading: CREAM_FILL }
       ),
     ],
   })
@@ -208,7 +209,7 @@ export async function generateContratoMenor(data) {
         children: [
           makeCell(
             [p([t('5. PROVEEDORES CONSULTADOS', { bold: true })])],
-            { columnSpan: 4, shading: GRAY_FILL }
+            { columnSpan: 4, shading: CREAM_FILL }
           ),
         ],
       }),
@@ -267,8 +268,8 @@ export async function generateContratoMenor(data) {
             makeCell(
               [
                 p([t(CONFIG.centro, { bold: true })]),
-                p([t(`Expediente nº: ${codigo || '—'}`)]),
-                p([t(formattedDate, { size: SIZE_SM, color: '444444' })]),
+                p([t('Código de contrato menor: ________')]),
+                p([t(formattedDate, { size: SIZE_LG })]),
               ],
               { borders: NO_BORDERS, width: { size: 42, type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, margins: { top: 0, bottom: 0, left: 110, right: 0 } }
             ),
