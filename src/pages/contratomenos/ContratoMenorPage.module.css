@@ -171,38 +171,6 @@
   color: var(--muted-light);
 }
 
-.iaProviderGroup {
-  display: flex;
-  gap: 0.35rem;
-  flex-wrap: wrap;
-}
-
-.iaProviderBtn {
-  display: inline-flex;
-  align-items: center;
-  font-size: 0.78rem;
-  font-weight: 600;
-  padding: 0.28rem 0.75rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--muted-light);
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s, color 0.15s;
-  user-select: none;
-}
-
-.iaProviderBtn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.iaProviderBtnActive {
-  border-color: var(--accent);
-  background: var(--accent-dim);
-  color: var(--accent);
-}
-
 .iaRowControls {
   display: flex;
   align-items: center;

@@ -31,20 +31,19 @@ export default function ContratoMenorPage() {
   const [certExclusividad, setCertExclusividad] = useState(false)
   const [certFile, setCertFile] = useState(null)
   const [iaFile, setIaFile] = useState(null)
-  const [iaProvider, setIaProvider] = useState('claude')
-  const [iaLoading, setIaLoading] = useState(false)
+  const [iaLoading, setIaLoading] = useState(null) // 'claude' | 'openai' | 'gemini' | null
   const [iaResult, setIaResult] = useState(null)
   const [iaError, setIaError] = useState(null)
 
   const { records, saveRecord, deleteRecord } = useContratoStore()
 
-  async function handleIaGenerar() {
-    setIaLoading(true)
+  async function handleIaGenerar(provider) {
+    setIaLoading(provider)
     setIaResult(null)
     setIaError(null)
     try {
       const body = new FormData()
-      body.append('provider', iaProvider)
+      body.append('provider', provider)
       if (iaFile) body.append('file', iaFile)
       const res = await fetch('/api/ia/contrato', { method: 'POST', body })
       const data = await res.json()
@@ -53,7 +52,7 @@ export default function ContratoMenorPage() {
     } catch (err) {
       setIaError(err.message)
     } finally {
-      setIaLoading(false)
+      setIaLoading(null)
     }
   }
 
@@ -447,25 +446,6 @@ export default function ContratoMenorPage() {
         {/* ── Asistente IA ─────────────────────────────────────────────────── */}
         <div className={styles.iaRow}>
           <span className={styles.iaRowLabel}>✦ Generar textos con IA</span>
-          <div className={styles.iaProviderGroup}>
-            {[
-              { value: 'claude',  label: 'Claude' },
-              { value: 'openai',  label: 'GPT-4o' },
-              { value: 'gemini',  label: 'Gemini' },
-            ].map(p => (
-              <label key={p.value} className={`${styles.iaProviderBtn} ${iaProvider === p.value ? styles.iaProviderBtnActive : ''}`}>
-                <input
-                  type="radio"
-                  name="iaProvider"
-                  value={p.value}
-                  checked={iaProvider === p.value}
-                  onChange={() => { setIaProvider(p.value); setIaResult(null); setIaError(null) }}
-                  className={styles.iaFileInput}
-                />
-                {p.label}
-              </label>
-            ))}
-          </div>
           <div className={styles.iaRowControls}>
             <label className={styles.iaFileLabel}>
               <input
@@ -478,14 +458,21 @@ export default function ContratoMenorPage() {
                 {iaFile ? `📎 ${iaFile.name}` : '📎 Documento de referencia (opcional)'}
               </span>
             </label>
-            <button
-              type="button"
-              className={styles.iaBtn}
-              onClick={handleIaGenerar}
-              disabled={iaLoading}
-            >
-              {iaLoading ? 'Consultando…' : '✦ Generar'}
-            </button>
+            {[
+              { value: 'claude', label: 'Claude' },
+              { value: 'openai', label: 'GPT-4o' },
+              { value: 'gemini', label: 'Gemini' },
+            ].map(p => (
+              <button
+                key={p.value}
+                type="button"
+                className={styles.iaBtn}
+                onClick={() => handleIaGenerar(p.value)}
+                disabled={iaLoading !== null}
+              >
+                {iaLoading === p.value ? 'Consultando…' : `✦ ${p.label}`}
+              </button>
+            ))}
           </div>
 
           {iaError && <p className={styles.iaError}>{iaError}</p>}
