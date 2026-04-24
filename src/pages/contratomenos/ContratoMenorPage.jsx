@@ -171,7 +171,7 @@ export default function ContratoMenorPage() {
                           <button
                             type="button"
                             className={styles.repoDeleteBtn}
-                            onClick={() => deleteRecord(r.codigo)}
+                            onClick={() => { if (window.confirm(`¿Eliminar «${r.codigo}»?`)) deleteRecord(r.codigo) }}
                             title="Eliminar expediente"
                           >
                             ×

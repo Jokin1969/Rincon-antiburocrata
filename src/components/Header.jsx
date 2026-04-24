@@ -2,11 +2,12 @@ import { Link, NavLink } from 'react-router-dom'
 import styles from './Header.module.css'
 
 const NAV_ITEMS = [
-  { href: '/',              label: 'Inicio',        icon: '🏠', end: true  },
-  { href: '/genscript',     label: 'GenScript',     icon: '🧬', end: false },
-  { href: '/adaptar-carta', label: 'Adaptar carta', icon: '📝', end: false },
-  { href: '/logos',          label: 'Logos',          icon: '🖼', end: false },
-  { href: '/aduanas',       label: 'Aduanas',       icon: '📦', end: false, wip: true },
+  { href: '/',               label: 'Inicio',          icon: '🏠', end: true  },
+  { href: '/genscript',      label: 'GenScript',       icon: '🧬', end: false },
+  { href: '/adaptar-carta',  label: 'Adaptar carta',   icon: '📝', end: false },
+  { href: '/logos',          label: 'Logos',            icon: '🖼', end: false },
+  { href: '/contrato-menor', label: 'Contrato Menor',  icon: '📄', end: false },
+  { href: '/aduanas',        label: 'Aduanas',          icon: '📦', end: false, wip: true },
 ]
 
 export default function Header() {

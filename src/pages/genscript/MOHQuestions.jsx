@@ -130,7 +130,7 @@ export default function MOHQuestions() {
                           <button
                             type="button"
                             className={styles.repoDeleteBtn}
-                            onClick={() => deleteRecord(r.id)}
+                            onClick={() => { if (window.confirm(`¿Eliminar «${r.id}»?`)) deleteRecord(r.id) }}
                             title="Eliminar cuestionario"
                           >
                             ×
