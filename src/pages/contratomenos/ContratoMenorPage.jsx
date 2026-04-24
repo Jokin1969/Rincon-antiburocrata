@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import PageHeader from '../../components/PageHeader'
 import { TIPOS_JUSTIFICACION } from '../../data/contratoMenorConfig'
+import { useContratoStore } from '../../hooks/useContratoStore'
 import styles from './ContratoMenorPage.module.css'
 
 const TODAY = new Date().toISOString().split('T')[0]
 const EMPTY_PROVEEDOR = { nombre: '', cif: '', contacto: '', presupuesto: '' }
+const EMPTY_PROVEEDORES = [{ ...EMPTY_PROVEEDOR }, { ...EMPTY_PROVEEDOR }, { ...EMPTY_PROVEEDOR }]
 
 const DEFAULTS = {
   codigo: '',
@@ -12,11 +14,7 @@ const DEFAULTS = {
   justificacionNecesidad: '',
   tipoJustificacion: '',
   centroCoste: '',
-  proveedores: [
-    { ...EMPTY_PROVEEDOR },
-    { ...EMPTY_PROVEEDOR },
-    { ...EMPTY_PROVEEDOR },
-  ],
+  proveedores: EMPTY_PROVEEDORES.map(p => ({ ...p })),
   justificacionEleccion: '',
   plazo: '',
   importe: '',
@@ -25,8 +23,39 @@ const DEFAULTS = {
 
 export default function ContratoMenorPage() {
   const [form, setForm] = useState(DEFAULTS)
-  const [loading, setLoading] = useState(false)
+  const [loadingFmt, setLoadingFmt] = useState(null) // 'docx' | 'pdf' | null
   const [error, setError] = useState(null)
+  const [showRepo, setShowRepo] = useState(false)
+  const [repoSearch, setRepoSearch] = useState('')
+  const [savedMsg, setSavedMsg] = useState(false)
+  const [certExclusividad, setCertExclusividad] = useState(false)
+  const [certFile, setCertFile] = useState(null)
+  const [iaFile, setIaFile] = useState(null)
+  const [iaProvider, setIaProvider] = useState('claude')
+  const [iaLoading, setIaLoading] = useState(false)
+  const [iaResult, setIaResult] = useState(null)
+  const [iaError, setIaError] = useState(null)
+
+  const { records, saveRecord, deleteRecord } = useContratoStore()
+
+  async function handleIaGenerar() {
+    setIaLoading(true)
+    setIaResult(null)
+    setIaError(null)
+    try {
+      const body = new FormData()
+      body.append('provider', iaProvider)
+      if (iaFile) body.append('file', iaFile)
+      const res = await fetch('/api/ia/contrato', { method: 'POST', body })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
+      setIaResult(data)
+    } catch (err) {
+      setIaError(err.message)
+    } finally {
+      setIaLoading(false)
+    }
+  }
 
   function handleChange(e) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -49,34 +78,54 @@ export default function ContratoMenorPage() {
     }))
   }
 
-  async function handleDownload() {
-    setLoading(true)
+  function loadRecord(record) {
+    setForm(prev => ({
+      ...DEFAULTS,
+      ...record.form,
+      proveedores: record.form.proveedores?.length
+        ? record.form.proveedores
+        : EMPTY_PROVEEDORES.map(p => ({ ...p })),
+      fecha: prev.fecha,
+    }))
+    setCertExclusividad(record.form?.justificacionEleccion === 'Se adjunta certificado de exclusividad')
+    setCertFile(null)
+    setShowRepo(false)
     setError(null)
+  }
 
+  function handleSave() {
+    if (!form.codigo.trim()) return
+    const { fecha, ...toSave } = form
+    saveRecord(form.codigo, toSave)
+    setSavedMsg(true)
+    setTimeout(() => setSavedMsg(false), 2500)
+  }
+
+  async function handleDownload(format) {
+    setLoadingFmt(format)
+    setError(null)
     try {
-      const res = await fetch('/api/contrato-menor', {
+      const res = await fetch(`/api/contrato-menor?format=${format}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       })
-
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
         throw new Error(data.error || `Error ${res.status}`)
       }
-
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
       const code = form.codigo.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40)
-      a.download = `Contrato_Menor_#${code}.docx`
+      a.download = `Contrato_Menor_#${code}.${format}`
       a.click()
       URL.revokeObjectURL(url)
     } catch (err) {
       setError(err.message)
     } finally {
-      setLoading(false)
+      setLoadingFmt(null)
     }
   }
 
@@ -85,6 +134,15 @@ export default function ContratoMenorPage() {
     form.objeto.trim() &&
     form.justificacionNecesidad.trim() &&
     form.tipoJustificacion
+
+  const busy = loadingFmt !== null
+
+  const filteredRecords = records.filter(r => {
+    if (!repoSearch) return true
+    const q = repoSearch.toLowerCase()
+    return r.codigo.toLowerCase().includes(q) ||
+      r.form?.proveedores?.some(p => p.nombre?.toLowerCase().includes(q))
+  })
 
   return (
     <div>
@@ -95,10 +153,76 @@ export default function ContratoMenorPage() {
         subtitle="Rellena los campos del formulario. Los datos fijos del centro y del responsable se insertan automáticamente en el documento."
       />
 
-      <form onSubmit={e => e.preventDefault()} className={styles.form}>
+      {/* ── Repositorio de expedientes ───────────────────────────────────── */}
+      <div className={styles.repoPanel}>
+        <button
+          type="button"
+          className={styles.repoPanelToggle}
+          onClick={() => setShowRepo(v => !v)}
+        >
+          {showRepo ? '▲' : '▼'} Repositorio de expedientes
+          {records.length > 0 && <span className={styles.repoBadge}>{records.length}</span>}
+        </button>
+        {showRepo && (
+          <div className={styles.repoPanelBody}>
+            {records.length === 0 ? (
+              <p className={styles.repoEmpty}>Sin expedientes guardados aún. Usa «Guardar expediente» tras rellenar el formulario.</p>
+            ) : (
+              <>
+                <input
+                  type="text"
+                  className={styles.repoSearch}
+                  placeholder="Buscar por código o proveedor…"
+                  value={repoSearch}
+                  onChange={e => setRepoSearch(e.target.value)}
+                />
+                {filteredRecords.length === 0 ? (
+                  <p className={styles.repoEmpty}>Sin resultados para «{repoSearch}».</p>
+                ) : (
+                  <ul className={styles.repoList}>
+                    {filteredRecords.map(r => (
+                      <li key={r.codigo} className={styles.repoItem}>
+                        <div className={styles.repoItemMeta}>
+                          <span className={styles.repoItemCode}>
+                            {r.codigo}
+                            {(() => { const n = r.form?.proveedores?.find(p => p.nombre?.trim())?.nombre?.trim(); return n ? ` (${n})` : '' })()}
+                          </span>
+                          <span className={styles.repoItemDate}>
+                            Guardado el {new Date(r.savedAt).toLocaleDateString('es-ES')}
+                          </span>
+                        </div>
+                        <div className={styles.repoItemActions}>
+                          <button
+                            type="button"
+                            className={styles.repoLoadBtn}
+                            onClick={() => loadRecord(r)}
+                          >
+                            Cargar
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.repoDeleteBtn}
+                            onClick={() => { if (window.confirm(`¿Eliminar «${r.codigo}»?`)) deleteRecord(r.codigo) }}
+                            title="Eliminar expediente"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </div>
 
-        {/* ── Código + Fecha ───────────────────────────────────────────── */}
+      {/* ── Formulario ───────────────────────────────────────────────────── */}
+      <form onSubmit={e => e.preventDefault()} className={styles.form}>
         <div className={styles.fields}>
+
+          {/* Código + Fecha */}
           <div className={styles.row}>
             <div className="form-group">
               <label htmlFor="codigo">Código</label>
@@ -114,7 +238,6 @@ export default function ContratoMenorPage() {
               />
               <span className={styles.hint}>Define el nombre del archivo: Contrato_Menor_#[código].docx</span>
             </div>
-
             <div className="form-group" style={{ maxWidth: '190px' }}>
               <label htmlFor="fecha">Fecha</label>
               <input
@@ -128,7 +251,7 @@ export default function ContratoMenorPage() {
             </div>
           </div>
 
-          {/* ── Objeto ───────────────────────────────────────────────────── */}
+          {/* Objeto */}
           <div className="form-group">
             <label htmlFor="objeto">Objeto del contrato</label>
             <textarea
@@ -142,7 +265,7 @@ export default function ContratoMenorPage() {
             />
           </div>
 
-          {/* ── Importe + Plazo ──────────────────────────────────────────── */}
+          {/* Importe + Plazo + Centro de coste */}
           <div className={styles.row}>
             <div className="form-group" style={{ maxWidth: '180px' }}>
               <label htmlFor="importe">Importe (€, sin IVA)</label>
@@ -157,7 +280,6 @@ export default function ContratoMenorPage() {
                 placeholder="0,00"
               />
             </div>
-
             <div className="form-group" style={{ maxWidth: '220px' }}>
               <label htmlFor="plazo">Plazo de ejecución</label>
               <input
@@ -170,7 +292,6 @@ export default function ContratoMenorPage() {
                 autoComplete="off"
               />
             </div>
-
             <div className="form-group" style={{ maxWidth: '240px' }}>
               <label htmlFor="centroCoste">Centro de coste</label>
               <input
@@ -185,7 +306,7 @@ export default function ContratoMenorPage() {
             </div>
           </div>
 
-          {/* ── Justificación de necesidad ───────────────────────────────── */}
+          {/* Justificación de necesidad */}
           <div className="form-group">
             <label htmlFor="justificacionNecesidad">Justificación de la necesidad</label>
             <textarea
@@ -199,7 +320,7 @@ export default function ContratoMenorPage() {
             />
           </div>
 
-          {/* ── Tipo de justificación ────────────────────────────────────── */}
+          {/* Tipo de justificación */}
           <div className="form-group">
             <label>Tipo de justificación</label>
             <div className={styles.radioGroup}>
@@ -218,7 +339,7 @@ export default function ContratoMenorPage() {
             </div>
           </div>
 
-          {/* ── Proveedores ──────────────────────────────────────────────── */}
+          {/* Proveedores */}
           <div className="form-group">
             <label>Proveedores consultados</label>
             <div className={styles.proveedoresWrapper}>
@@ -276,18 +397,125 @@ export default function ContratoMenorPage() {
             </div>
           </div>
 
-          {/* ── Justificación de elección ────────────────────────────────── */}
+          {/* Justificación de elección */}
           <div className="form-group">
             <label htmlFor="justificacionEleccion">Justificación de la elección del proveedor</label>
+            <label className={styles.certToggle}>
+              <input
+                type="checkbox"
+                checked={certExclusividad}
+                onChange={e => {
+                  const on = e.target.checked
+                  setCertExclusividad(on)
+                  setForm(prev => ({
+                    ...prev,
+                    justificacionEleccion: on ? 'Se adjunta certificado de exclusividad' : '',
+                  }))
+                  if (!on) setCertFile(null)
+                }}
+              />
+              <span>Certificado de exclusividad</span>
+            </label>
+            {certExclusividad && (
+              <div className={styles.certFileRow}>
+                <label className={styles.certFileLabel}>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    className={styles.certFileInput}
+                    onChange={e => setCertFile(e.target.files[0] || null)}
+                  />
+                  <span className={styles.certFileBtn}>
+                    {certFile ? `📎 ${certFile.name}` : '📎 Adjuntar certificado…'}
+                  </span>
+                </label>
+              </div>
+            )}
             <textarea
               id="justificacionEleccion"
               name="justificacionEleccion"
               value={form.justificacionEleccion}
-              onChange={handleChange}
+              onChange={certExclusividad ? undefined : handleChange}
+              readOnly={certExclusividad}
               rows={3}
               placeholder="Motivo por el que se elige el proveedor seleccionado"
+              className={certExclusividad ? styles.textareaLocked : ''}
             />
           </div>
+        </div>
+
+        {/* ── Asistente IA ─────────────────────────────────────────────────── */}
+        <div className={styles.iaRow}>
+          <span className={styles.iaRowLabel}>✦ Generar textos con IA</span>
+          <div className={styles.iaProviderGroup}>
+            {[
+              { value: 'claude',  label: 'Claude' },
+              { value: 'openai',  label: 'GPT-4o' },
+              { value: 'gemini',  label: 'Gemini' },
+            ].map(p => (
+              <label key={p.value} className={`${styles.iaProviderBtn} ${iaProvider === p.value ? styles.iaProviderBtnActive : ''}`}>
+                <input
+                  type="radio"
+                  name="iaProvider"
+                  value={p.value}
+                  checked={iaProvider === p.value}
+                  onChange={() => { setIaProvider(p.value); setIaResult(null); setIaError(null) }}
+                  className={styles.iaFileInput}
+                />
+                {p.label}
+              </label>
+            ))}
+          </div>
+          <div className={styles.iaRowControls}>
+            <label className={styles.iaFileLabel}>
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.txt"
+                className={styles.iaFileInput}
+                onChange={e => { setIaFile(e.target.files[0] || null); setIaResult(null); setIaError(null) }}
+              />
+              <span className={styles.iaFileBtn}>
+                {iaFile ? `📎 ${iaFile.name}` : '📎 Documento de referencia (opcional)'}
+              </span>
+            </label>
+            <button
+              type="button"
+              className={styles.iaBtn}
+              onClick={handleIaGenerar}
+              disabled={iaLoading}
+            >
+              {iaLoading ? 'Consultando…' : '✦ Generar'}
+            </button>
+          </div>
+
+          {iaError && <p className={styles.iaError}>{iaError}</p>}
+
+          {iaResult && (
+            <div className={styles.iaResult}>
+              <div className={styles.iaResultField}>
+                <span className={styles.iaResultLabel}>Objeto del contrato</span>
+                <p className={styles.iaResultText}>{iaResult.objeto}</p>
+                <button
+                  type="button"
+                  className={styles.iaUseBtn}
+                  onClick={() => setForm(prev => ({ ...prev, objeto: iaResult.objeto }))}
+                >
+                  ↑ Usar este texto
+                </button>
+              </div>
+              <div className={styles.iaResultField}>
+                <span className={styles.iaResultLabel}>Justificación de la necesidad</span>
+                <p className={styles.iaResultText}>{iaResult.justificacionNecesidad}</p>
+                <button
+                  type="button"
+                  className={styles.iaUseBtn}
+                  onClick={() => setForm(prev => ({ ...prev, justificacionNecesidad: iaResult.justificacionNecesidad }))}
+                >
+                  ↑ Usar este texto
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {error && <div className="alert alert-error">{error}</div>}
@@ -296,16 +524,32 @@ export default function ContratoMenorPage() {
           <button
             type="button"
             className="btn btn-primary"
-            disabled={!isValid || loading}
-            onClick={handleDownload}
+            disabled={!isValid || busy}
+            onClick={() => handleDownload('docx')}
           >
-            {loading ? 'Generando…' : '⬇ Generar documento'}
+            {loadingFmt === 'docx' ? 'Generando…' : '⬇ .docx'}
           </button>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            disabled={!isValid || busy}
+            onClick={() => handleDownload('pdf')}
+          >
+            {loadingFmt === 'pdf' ? 'Generando…' : '⬇ PDF'}
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            disabled={!form.codigo.trim()}
+            onClick={handleSave}
+          >
+            Guardar expediente
+          </button>
+          {savedMsg && <span className={styles.savedMsg}>✓ Guardado</span>}
           <span className={styles.meta}>
             Logo · Datos del centro · Firma — incluidos automáticamente
           </span>
         </div>
-
       </form>
     </div>
   )

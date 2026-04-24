@@ -150,6 +150,253 @@
   background: var(--accent-dim);
 }
 
+/* ── Consultar a IA ───────────────────────────────────────────────────────── */
+
+.iaRow {
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.9rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.iaRowLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted-light);
+}
+
+.iaProviderGroup {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.iaProviderBtn {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.28rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--muted-light);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  user-select: none;
+}
+
+.iaProviderBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.iaProviderBtnActive {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.iaRowControls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.iaFileLabel {
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: normal;
+}
+
+.iaFileInput {
+  display: none;
+}
+
+.iaFileBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.38rem 0.85rem;
+  background: var(--bg);
+  transition: border-color 0.15s, color 0.15s;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iaFileBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.iaBtn {
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.4rem 1.1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+  transition: background 0.15s;
+}
+
+.iaBtn:hover {
+  background: rgba(123, 28, 46, 0.14);
+}
+
+.iaError {
+  font-size: 0.82rem;
+  color: #b91c1c;
+  background: rgba(185, 28, 28, 0.06);
+  border: 1px solid rgba(185, 28, 28, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
+}
+
+.iaResult {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-top: 0.25rem;
+}
+
+.iaResultField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.iaResultLabel {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+}
+
+.iaResultText {
+  font-size: 0.88rem;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.iaUseBtn {
+  align-self: flex-start;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-dim);
+  border: 1px solid rgba(123, 28, 46, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 0.28rem 0.75rem;
+  transition: background 0.15s;
+}
+
+.iaUseBtn:hover {
+  background: rgba(123, 28, 46, 0.14);
+}
+
+/* ── Actions ──────────────────────────────────────────────────────────────── */
+
+/* ── Certificado de exclusividad ──────────────────────────────────────────── */
+
+.certToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+  width: fit-content;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.certToggle:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.certToggle input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.certFileRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.certFileLabel {
+  display: inline-flex;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: normal;
+}
+
+.certFileInput {
+  display: none;
+}
+
+.certFileBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--accent);
+  border: 1px dashed var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.85rem;
+  background: var(--accent-dim);
+  transition: background 0.15s, border-color 0.15s;
+  max-width: 360px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.certFileBtn:hover {
+  background: rgba(123, 28, 46, 0.14);
+}
+
+.textareaLocked {
+  background: var(--surface-hover) !important;
+  color: var(--muted) !important;
+  cursor: default;
+}
+
 /* ── Actions ──────────────────────────────────────────────────────────────── */
 
 .actions {
