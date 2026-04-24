@@ -129,7 +129,7 @@
 }
 
 .proveedoresTable td input::placeholder {
-  color: var(--muted);
+  color: rgba(107, 61, 77, 0.35);
 }
 
 .addRowBtn {
