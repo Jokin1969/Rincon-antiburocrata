@@ -152,7 +152,10 @@ export default function ContratoMenorPage() {
                     {filteredRecords.map(r => (
                       <li key={r.codigo} className={styles.repoItem}>
                         <div className={styles.repoItemMeta}>
-                          <span className={styles.repoItemCode}>{r.codigo}</span>
+                          <span className={styles.repoItemCode}>
+                            {r.codigo}
+                            {(() => { const n = r.form?.proveedores?.find(p => p.nombre?.trim())?.nombre?.trim(); return n ? ` (${n})` : '' })()}
+                          </span>
                           <span className={styles.repoItemDate}>
                             Guardado el {new Date(r.savedAt).toLocaleDateString('es-ES')}
                           </span>
