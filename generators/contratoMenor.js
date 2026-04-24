@@ -2,6 +2,7 @@ import {
   AlignmentType,
   BorderStyle,
   Document,
+  Header,
   HeightRule,
   ImageRun,
   Packer,
@@ -254,38 +255,36 @@ export async function generateContratoMenor(data) {
     ],
   })
 
+  // ── Page header (repeats on every page) ────────────────────────────────────
+  const pageHeader = new Header({
+    children: [
+      new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: [
+          new TableRow({
+            children: [
+              makeCell(
+                [new Paragraph({
+                  children: logoBuffer
+                    ? [new ImageRun({ data: logoBuffer, transformation: { width: 140, height: 50 }, type: 'png' })]
+                    : [t(CONFIG.centro, { bold: true, size: SIZE_LG })],
+                  spacing: { before: 0, after: 0 },
+                })],
+                { borders: NO_BORDERS, width: { size: 55, type: WidthType.PERCENTAGE }, margins: { top: 0, bottom: 0, left: 0, right: 110 } }
+              ),
+              makeCell(
+                [p([t('Código de contrato menor: ________')])],
+                { borders: NO_BORDERS, width: { size: 45, type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, margins: { top: 0, bottom: 0, left: 110, right: 0 } }
+              ),
+            ],
+          }),
+        ],
+      }),
+    ],
+  })
+
   // ── Document body ──────────────────────────────────────────────────────────
   const children = [
-
-    // ── Header: logo (left) + reference info (right) ───────────────────────
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      rows: [
-        new TableRow({
-          children: [
-            makeCell(
-              [new Paragraph({
-                children: logoBuffer
-                  ? [new ImageRun({ data: logoBuffer, transformation: { width: 155, height: 56 }, type: 'png' })]
-                  : [t(CONFIG.centro, { bold: true, size: SIZE_LG })],
-                spacing: { before: 0, after: 0 },
-              })],
-              { borders: NO_BORDERS, width: { size: 58, type: WidthType.PERCENTAGE }, margins: { top: 0, bottom: 0, left: 0, right: 110 } }
-            ),
-            makeCell(
-              [
-                p([t(CONFIG.centro, { bold: true })]),
-                p([t('Código de contrato menor: ________')]),
-                p([t(formattedDate, { size: SIZE_LG })]),
-              ],
-              { borders: NO_BORDERS, width: { size: 42, type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, margins: { top: 0, bottom: 0, left: 110, right: 0 } }
-            ),
-          ],
-        }),
-      ],
-    }),
-
-    emptyLine(),
 
     // ── Document title ─────────────────────────────────────────────────────
     new Paragraph({
@@ -350,13 +349,17 @@ export async function generateContratoMenor(data) {
 
   const doc = new Document({
     sections: [{
+      headers: {
+        default: pageHeader,
+      },
       properties: {
         page: {
           margin: {
-            top:    convertInchesToTwip(1),
+            top:    convertInchesToTwip(1.4),
             bottom: convertInchesToTwip(1),
             left:   convertInchesToTwip(1.18),
             right:  convertInchesToTwip(1.18),
+            header: convertInchesToTwip(0.4),
           },
         },
       },
