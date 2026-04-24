@@ -288,9 +288,14 @@ export async function generateContratoMenor(data) {
 
     // ── Document title ─────────────────────────────────────────────────────
     new Paragraph({
-      children: [t('INFORME JUSTIFICATIVO DE GASTO A TRAVÉS DE CONTRATO MENOR', { bold: true, size: SIZE_TITLE })],
+      children: [t('INFORME JUSTIFICATIVO DE GASTO A TRAVÉS DE CONTRATO MENOR', { bold: true, size: SIZE_TITLE, underline: {} })],
       alignment: AlignmentType.CENTER,
-      spacing: { before: 120, after: 280 },
+      spacing: { before: 120, after: 60 },
+    }),
+    new Paragraph({
+      children: [t('SERVICIO/SUMINISTRO', { bold: true, size: SIZE_TITLE, underline: {} })],
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 0, after: 280 },
     }),
 
     // ── Objeto del contrato (sin número) ──────────────────────────────────
