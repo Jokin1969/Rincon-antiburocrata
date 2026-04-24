@@ -23,7 +23,7 @@ const DEFAULTS = {
 
 export default function ContratoMenorPage() {
   const [form, setForm] = useState(DEFAULTS)
-  const [loading, setLoading] = useState(false)
+  const [loadingFmt, setLoadingFmt] = useState(null) // 'docx' | 'pdf' | null
   const [error, setError] = useState(null)
   const [showRepo, setShowRepo] = useState(false)
   const [repoSearch, setRepoSearch] = useState('')
@@ -73,11 +73,11 @@ export default function ContratoMenorPage() {
     setTimeout(() => setSavedMsg(false), 2500)
   }
 
-  async function handleDownload() {
-    setLoading(true)
+  async function handleDownload(format) {
+    setLoadingFmt(format)
     setError(null)
     try {
-      const res = await fetch('/api/contrato-menor', {
+      const res = await fetch(`/api/contrato-menor?format=${format}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
@@ -91,13 +91,13 @@ export default function ContratoMenorPage() {
       const a = document.createElement('a')
       a.href = url
       const code = form.codigo.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40)
-      a.download = `Contrato_Menor_#${code}.docx`
+      a.download = `Contrato_Menor_#${code}.${format}`
       a.click()
       URL.revokeObjectURL(url)
     } catch (err) {
       setError(err.message)
     } finally {
-      setLoading(false)
+      setLoadingFmt(null)
     }
   }
 
@@ -106,6 +106,8 @@ export default function ContratoMenorPage() {
     form.objeto.trim() &&
     form.justificacionNecesidad.trim() &&
     form.tipoJustificacion
+
+  const busy = loadingFmt !== null
 
   const filteredRecords = records.filter(r =>
     !repoSearch || r.codigo.toLowerCase().includes(repoSearch.toLowerCase())
@@ -381,10 +383,18 @@ export default function ContratoMenorPage() {
           <button
             type="button"
             className="btn btn-primary"
-            disabled={!isValid || loading}
-            onClick={handleDownload}
+            disabled={!isValid || busy}
+            onClick={() => handleDownload('docx')}
           >
-            {loading ? 'Generando…' : '⬇ Generar documento'}
+            {loadingFmt === 'docx' ? 'Generando…' : '⬇ .docx'}
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            disabled={!isValid || busy}
+            onClick={() => handleDownload('pdf')}
+          >
+            {loadingFmt === 'pdf' ? 'Generando…' : '⬇ PDF'}
           </button>
           <button
             type="button"

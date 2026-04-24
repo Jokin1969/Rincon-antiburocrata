@@ -107,10 +107,12 @@ app.post('/api/contrato-menor', async (req, res) => {
     })
   }
 
+  const format = req.query.format === 'pdf' ? 'pdf' : 'docx'
+
   try {
     const docxBuffer = await generateContratoMenor(req.body)
     const code = codigo.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40)
-    sendDocument(res, docxBuffer, `Contrato_Menor_#${code}`, 'docx')
+    sendDocument(res, docxBuffer, `Contrato_Menor_#${code}`, format)
   } catch (err) {
     console.error('Contrato Menor error:', err)
     res.status(500).json({ error: 'Error al generar el documento.' })

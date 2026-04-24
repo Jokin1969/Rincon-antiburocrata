@@ -77,6 +77,13 @@ function emptyLine() {
   return new Paragraph({ children: [t('')], spacing: { before: 30, after: 30 } })
 }
 
+function footnote(text) {
+  return new Paragraph({
+    children: [t(text, { size: SIZE_SM, italics: true })],
+    spacing: { before: 40, after: 60 },
+  })
+}
+
 function makeCell(paragraphs, opts = {}) {
   return new TableCell({
     children:      paragraphs,
@@ -94,7 +101,7 @@ function sectionTable(number, title, contentRows) {
   const header = new TableRow({
     children: [
       makeCell(
-        [p([t(`${number}. ${title}`, { bold: true })])],
+        [p([t(number != null ? `${number}. ${title}` : title, { bold: true })])],
         { columnSpan: 2, shading: CREAM_FILL }
       ),
     ],
@@ -208,7 +215,7 @@ export async function generateContratoMenor(data) {
       new TableRow({
         children: [
           makeCell(
-            [p([t('5. PROVEEDORES CONSULTADOS', { bold: true })])],
+            [p([t(filledProveedores.length <= 1 ? '5. EMPRESA PROVEEDORA' : '5. EMPRESAS PROVEEDORAS (al menos 3) (**)', { bold: true })])],
             { columnSpan: 4, shading: CREAM_FILL }
           ),
         ],
@@ -224,8 +231,8 @@ export async function generateContratoMenor(data) {
     rows: [
       new TableRow({
         children: [
-          makeCell([p([t('RESPONSABLE DEL CONTRATO', { bold: true })])], { shading: GRAY_FILL }),
-          makeCell([p([t('ADMINISTRACIÓN / GESTIÓN ECONÓMICA', { bold: true })])], { shading: GRAY_FILL }),
+          makeCell([p([t('Investigador Principal o Responsable', { bold: true })])], { shading: GRAY_FILL }),
+          makeCell([p([t('Órgano de Contratación', { bold: true })])], { shading: GRAY_FILL }),
         ],
       }),
       new TableRow({
@@ -287,36 +294,39 @@ export async function generateContratoMenor(data) {
       spacing: { before: 120, after: 280 },
     }),
 
-    // ── 1. Objeto ──────────────────────────────────────────────────────────
-    textSection(1, 'OBJETO', objeto),
+    // ── Objeto del contrato (sin número) ──────────────────────────────────
+    textSection(null, 'OBJETO DEL CONTRATO', objeto),
     emptyLine(),
 
     // ── 2. Justificación de la necesidad ───────────────────────────────────
-    textSection(2, 'JUSTIFICACIÓN DE LA NECESIDAD', justificacionNecesidad),
+    textSection(2, 'JUSTIFICACIÓN DE LA NECESIDAD DEL SUMINISTRO / SERVICIO', justificacionNecesidad),
     emptyLine(),
 
     // ── 3. Tipo de justificación ───────────────────────────────────────────
-    sectionTable(3, 'TIPO DE JUSTIFICACIÓN', [
+    sectionTable(3, 'JUSTIFICACIÓN DEL CONTRATO MENOR (*)', [
       new TableRow({
         children: [makeCell(justifOptions, { columnSpan: 2, margins: CELL_MARGIN_WIDE })],
       }),
     ]),
+    footnote('(*) Será necesario seleccionar uno de los supuestos indicados para la justificación del trámite de contrato menor.'),
     emptyLine(),
 
-    // ── 4. Centro de coste ─────────────────────────────────────────────────
-    shortSection(4, 'CENTRO DE COSTE', centroCoste),
+    // ── 4. Centro de coste/financiación ───────────────────────────────────
+    shortSection(4, 'CENTRO DE COSTE/FINANCIACIÓN', centroCoste),
     emptyLine(),
 
-    // ── 5. Proveedores consultados ─────────────────────────────────────────
+    // ── 5. Proveedores ─────────────────────────────────────────────────────
     proveedoresTable,
+    ...(filledProveedores.length > 1 ? [footnote('(**) Será necesario adjuntar a este documento las 3 ofertas de los proveedores referidos. En el caso de que solo hubiera un proveedor para el servicio/suministro referido, deberá adjuntarse el certificado de exclusividad.')] : []),
     emptyLine(),
 
     // ── 6. Justificación de la elección ────────────────────────────────────
-    textSection(6, 'JUSTIFICACIÓN DE LA ELECCIÓN DEL PROVEEDOR', justificacionEleccion),
+    textSection(6, 'JUSTIFICACIÓN DE LA ELECCIÓN DE LA EMPRESA PROVEEDORA (***)', justificacionEleccion),
+    footnote('(***) Se requiere motivar la elección del proveedor por razón de (i) precio, (ii) características técnicas o (iii) exclusividad.'),
     emptyLine(),
 
     // ── 7. Plazo ───────────────────────────────────────────────────────────
-    shortSection(7, 'PLAZO DE EJECUCIÓN', plazo),
+    shortSection(7, 'PLAZO DE ENTREGA/EJECUCIÓN/VIGENCIA', plazo),
     emptyLine(),
 
     // ── 8. Importe ─────────────────────────────────────────────────────────
