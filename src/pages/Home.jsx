@@ -40,7 +40,7 @@ const MODULES = [
     description: 'Documentación para envíos y recepciones internacionales de material biológico.',
     icon: '📦',
     href: '/aduanas',
-    status: 'wip',
+    status: 'ready',
   },
 ]
 

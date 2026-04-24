@@ -168,6 +168,7 @@ export async function generateFacturaProforma(data) {
     researchText  = '',
     hsCode        = '',
     incluirFirma  = true,
+    incluirSello  = true,
     shipperEsCIC  = false,
   } = data
 
@@ -181,12 +182,15 @@ export async function generateFacturaProforma(data) {
   })
 
   // Load assets
-  let logoBuffer = null
-  let sigBuffer  = null
-  const logoPath = join(ASSETS, 'logo-cicbiogune.png')
-  const sigPath  = join(ASSETS, 'firma-jokin.png')
-  if (existsSync(logoPath)) logoBuffer = readFileSync(logoPath)
-  if (existsSync(sigPath))  sigBuffer  = readFileSync(sigPath)
+  let logoBuffer  = null
+  let sigBuffer   = null
+  let selloBuffer = null
+  const logoPath  = join(ASSETS, 'logo-cicbiogune.png')
+  const sigPath   = join(ASSETS, 'firma-jokin.png')
+  const selloPath = join(ASSETS, 'Sello_cicbiogune.png')
+  if (existsSync(logoPath))  logoBuffer  = readFileSync(logoPath)
+  if (existsSync(sigPath))   sigBuffer   = readFileSync(sigPath)
+  if (existsSync(selloPath)) selloBuffer = readFileSync(selloPath)
 
   // Compute totals
   const validLineas = lineas.filter(l => l.descripcion?.trim())
@@ -319,12 +323,17 @@ export async function generateFacturaProforma(data) {
             p([t(shipper.nombre || '', { bold: true })], { before: 60, after: 40 }),
             p([t(L.printName, { size: SZ_SM, color: '888888' })], { before: 0, after: 60 }),
           ], { borders: ALL_BT, width: { size: 60, type: WidthType.PERCENTAGE } }),
-          // Right: signature image or blank + date
+          // Right: signature + stamp (side by side) + date
           cell([
             new Paragraph({
-              children: (shipperEsCIC && incluirFirma && sigBuffer)
-                ? [new ImageRun({ data: sigBuffer, transformation: { width: 105, height: 65 }, type: 'png' })]
-                : [t('')],
+              children: (() => {
+                const imgs = []
+                if (shipperEsCIC && incluirFirma && sigBuffer)
+                  imgs.push(new ImageRun({ data: sigBuffer, transformation: { width: 95, height: 60 }, type: 'png' }))
+                if (shipperEsCIC && incluirSello && selloBuffer)
+                  imgs.push(new ImageRun({ data: selloBuffer, transformation: { width: 75, height: 75 }, type: 'png' }))
+                return imgs.length ? imgs : [t('')]
+              })(),
               spacing: { before: 40, after: 40 },
             }),
             p([t(`${L.dateLabel}: ${dateStr}`, { size: SZ_SM })], { before: 0, after: 40 }),

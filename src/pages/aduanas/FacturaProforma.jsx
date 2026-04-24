@@ -26,6 +26,7 @@ const DEFAULTS = {
   researchOnly: true,
   researchText: DEFAULT_RESEARCH_TEXT,
   incluirFirma: true,
+  incluirSello: true,
 }
 
 const PERSONA_FIELDS = [
@@ -397,6 +398,13 @@ export default function FacturaProforma() {
             <label className={styles.checkToggle}>
               <input type="checkbox" checked={form.incluirFirma} onChange={e => setField('incluirFirma', e.target.checked)} />
               <span>Incluir firma digital (Joaquín Castilla)</span>
+            </label>
+          )}
+
+          {shipperEsCIC && (
+            <label className={styles.checkToggle}>
+              <input type="checkbox" checked={form.incluirSello} onChange={e => setField('incluirSello', e.target.checked)} />
+              <span>Incluir sello CIC bioGUNE</span>
             </label>
           )}
         </div>
