@@ -2,17 +2,17 @@
   {
     "id": "cicbiogune",
     "name": "CIC bioGUNE",
-    "nombre": "Joaquín Castilla",
+    "nombre": "Joaquín Castilla Castrillón",
     "organizacion": "CIC bioGUNE",
-    "address1": "Parque Tecnológico de Bizkaia, Edificio 801A",
+    "address1": "Parque Tecnológico de Bizkaia, Edif. 502",
     "address2": "",
-    "ciudad": "Derio",
-    "cp": "48160",
+    "ciudad": "48160 Derio (Bizkaia)",
+    "cp": "",
     "pais": "Spain",
-    "telefono": "+34 946 572 525",
+    "telefono": "+34 946572525",
     "fax": "",
     "email": "jcastilla@cicbiogune.es",
-    "vat": "G95/0430328"
+    "vat": "G-95229142"
   },
   {
     "id": "placeholder",
