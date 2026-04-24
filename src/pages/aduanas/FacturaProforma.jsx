@@ -8,6 +8,7 @@ const TODAY = new Date().toISOString().split('T')[0]
 const EMPTY_PERSONA = {
   nombre: '', organizacion: '', address1: '', address2: '',
   ciudad: '', cp: '', pais: '', telefono: '', fax: '', email: '', vat: '',
+  es_cicbiogune: false,
 }
 
 const EMPTY_LINEA = { descripcion: '', cantidad: '', precioUnitario: '' }
@@ -60,8 +61,8 @@ export default function FacturaProforma() {
       .catch(() => {})
   }, [])
 
-  // Detect if current shipper is CIC bioGUNE
-  const shipperEsCIC = form.shipper.organizacion?.toLowerCase().includes('cicbiogune') ||
+  // Detect if current shipper is CIC bioGUNE (flag from directory or org name fallback)
+  const shipperEsCIC = form.shipper.es_cicbiogune === true ||
     form.shipper.organizacion === 'CIC bioGUNE'
 
   // Per-line totals
@@ -98,14 +99,30 @@ export default function FacturaProforma() {
     setForm(prev => ({ ...prev, lineas: prev.lineas.filter((_, idx) => idx !== i) }))
   }
 
-  function applyShipper(persona, id) {
-    const { name, ...rest } = persona
-    setForm(prev => ({ ...prev, shipper: { ...EMPTY_PERSONA, ...rest } }))
+  function personaToForm(p) {
+    return {
+      ...EMPTY_PERSONA,
+      nombre:        p.nombre_contacto   || '',
+      organizacion:  p.organizacion      || '',
+      address1:      p.direccion_linea1  || '',
+      address2:      p.direccion_linea2  || '',
+      ciudad:        p.ciudad            || '',
+      cp:            p.codigo_postal     || '',
+      pais:          p.pais              || '',
+      telefono:      p.telefono          || '',
+      fax:           p.fax               || '',
+      email:         p.email             || '',
+      vat:           p.vat_tax_id        || '',
+      es_cicbiogune: p.es_cicbiogune     || false,
+    }
+  }
+
+  function applyShipper(persona) {
+    setForm(prev => ({ ...prev, shipper: personaToForm(persona) }))
   }
 
   function applyConsignee(persona) {
-    const { name, id, ...rest } = persona
-    setForm(prev => ({ ...prev, consignee: { ...EMPTY_PERSONA, ...rest } }))
+    setForm(prev => ({ ...prev, consignee: personaToForm(persona) }))
   }
 
   function handleSave() {
@@ -454,13 +471,13 @@ function PersonaSection({ title, values, onChange, shippers, onSelectShipper }) 
             className={styles.shipperSelect}
             value=""
             onChange={e => {
-              const s = shippers.find(s => s.id === e.target.value)
+              const s = shippers.find(s => String(s.id) === e.target.value)
               if (s) onSelectShipper(s)
             }}
           >
-            <option value="">— Remitentes frecuentes —</option>
+            <option value="">— Remitentes / destinatarios frecuentes —</option>
             {shippers.map(s => (
-              <option key={s.id} value={s.id}>{s.name}</option>
+              <option key={s.id} value={s.id}>{s.nombre_display}</option>
             ))}
           </select>
         )}
