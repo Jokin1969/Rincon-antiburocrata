@@ -150,6 +150,97 @@
   background: var(--accent-dim);
 }
 
+/* ── Consultar a IA ───────────────────────────────────────────────────────── */
+
+.iaRow {
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.9rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.iaRowLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted-light);
+}
+
+.iaRowControls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.iaFileLabel {
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: normal;
+}
+
+.iaFileInput {
+  display: none;
+}
+
+.iaFileBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.38rem 0.85rem;
+  background: var(--bg);
+  transition: border-color 0.15s, color 0.15s;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iaFileBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.iaBtn {
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.4rem 1.1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+  transition: background 0.15s;
+}
+
+.iaBtn:hover {
+  background: rgba(123, 28, 46, 0.14);
+}
+
+.iaNota {
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.45;
+  padding: 0.4rem 0.6rem;
+  background: var(--surface-hover);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--accent);
+}
+
+.iaNota strong {
+  color: var(--text);
+}
+
 /* ── Actions ──────────────────────────────────────────────────────────────── */
 
 /* ── Certificado de exclusividad ──────────────────────────────────────────── */

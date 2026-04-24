@@ -30,8 +30,21 @@ export default function ContratoMenorPage() {
   const [savedMsg, setSavedMsg] = useState(false)
   const [certExclusividad, setCertExclusividad] = useState(false)
   const [certFile, setCertFile] = useState(null)
+  const [iaFile, setIaFile] = useState(null)
+  const [iaSent, setIaSent] = useState(false)
 
   const { records, saveRecord, deleteRecord } = useContratoStore()
+
+  function handleMailtoIA() {
+    const subject = encodeURIComponent('Pregunta para OpenAI')
+    const body = encodeURIComponent(
+      "Por favor, me podrías generar un texto para 'Objeto del contrato' y para " +
+      "'Justificación de la necesidad'?. Por favor, para ello, utiliza el documento adjunto. Gracias."
+    )
+    window.open(`mailto:ia@joaquincastilla.com?subject=${subject}&body=${body}`)
+    setIaSent(true)
+    setTimeout(() => setIaSent(false), 8000)
+  }
 
   function handleChange(e) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -418,6 +431,36 @@ export default function ContratoMenorPage() {
               className={certExclusividad ? styles.textareaLocked : ''}
             />
           </div>
+        </div>
+
+        {/* ── Consultar a IA ──────────────────────────────────────────────── */}
+        <div className={styles.iaRow}>
+          <span className={styles.iaRowLabel}>Solicitar redacción a IA</span>
+          <div className={styles.iaRowControls}>
+            <label className={styles.iaFileLabel}>
+              <input
+                type="file"
+                className={styles.iaFileInput}
+                onChange={e => { setIaFile(e.target.files[0] || null); setIaSent(false) }}
+              />
+              <span className={styles.iaFileBtn}>
+                {iaFile ? `📎 ${iaFile.name}` : '📎 Adjuntar documento…'}
+              </span>
+            </label>
+            <button
+              type="button"
+              className={styles.iaBtn}
+              onClick={handleMailtoIA}
+            >
+              ✉ Consultar a IA
+            </button>
+          </div>
+          {iaSent && (
+            <p className={styles.iaNota}>
+              Cliente de correo abierto.
+              {iaFile && <> Adjunta <strong>«{iaFile.name}»</strong> manualmente antes de enviar.</>}
+            </p>
+          )}
         </div>
 
         {error && <div className="alert alert-error">{error}</div>}
