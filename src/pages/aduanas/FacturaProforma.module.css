@@ -295,6 +295,27 @@
   cursor: pointer;
 }
 
+/* ── Research textarea ────────────────────────────────────────────────────── */
+
+.researchTextarea {
+  width: 100%;
+  font-family: inherit;
+  font-size: 0.875rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.researchTextarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
 /* ── Actions ──────────────────────────────────────────────────────────────── */
 
 .actions {

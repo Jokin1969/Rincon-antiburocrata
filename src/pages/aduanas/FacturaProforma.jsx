@@ -10,7 +10,9 @@ const EMPTY_PERSONA = {
   ciudad: '', cp: '', pais: '', telefono: '', fax: '', email: '', vat: '',
 }
 
-const EMPTY_LINEA = { descripcion: '', cantidad: '', hsCode: '', precioUnitario: '' }
+const EMPTY_LINEA = { descripcion: '', cantidad: '', precioUnitario: '' }
+
+const DEFAULT_RESEARCH_TEXT = 'For research purposes only. Not for human or veterinary use. No commercial value, not for re-sale. Contents packed on dry ice. Non-infectious, non-pathogenic, non-toxic, biological material'
 
 const DEFAULTS = {
   numero: '',
@@ -20,7 +22,9 @@ const DEFAULTS = {
   consignee: { ...EMPTY_PERSONA },
   paisOrigen: 'Spain',
   lineas: [{ ...EMPTY_LINEA }],
+  hsCode: '',
   researchOnly: true,
+  researchText: DEFAULT_RESEARCH_TEXT,
   incluirFirma: true,
 }
 
@@ -318,11 +322,10 @@ export default function FacturaProforma() {
             <table className={styles.lineasTable}>
               <thead>
                 <tr>
-                  <th style={{ width: '36%' }}>Descripción</th>
+                  <th style={{ width: '45%' }}>Descripción</th>
                   <th style={{ width: '9%'  }}>Cantidad</th>
-                  <th style={{ width: '14%' }}>Código HS</th>
-                  <th style={{ width: '14%' }}>Precio unit.</th>
-                  <th style={{ width: '14%' }}>Total</th>
+                  <th style={{ width: '18%' }}>Precio unit.</th>
+                  <th style={{ width: '18%' }}>Total</th>
                   <th style={{ width: '5%'  }}></th>
                 </tr>
               </thead>
@@ -339,9 +342,6 @@ export default function FacturaProforma() {
                     </td>
                     <td>
                       <input type="number" min="0" value={l.cantidad} onChange={e => setLinea(i, 'cantidad', e.target.value)} placeholder="1" />
-                    </td>
-                    <td>
-                      <input type="text" value={l.hsCode} onChange={e => setLinea(i, 'hsCode', e.target.value)} placeholder="0000000000" />
                     </td>
                     <td>
                       <input type="number" min="0" step="0.01" value={l.precioUnitario} onChange={e => setLinea(i, 'precioUnitario', e.target.value)} placeholder="0.00" />
@@ -362,7 +362,7 @@ export default function FacturaProforma() {
                   <td colSpan={2} className={styles.totalQtyCell}>
                     Total cantidad: <strong>{totalQty}</strong>
                   </td>
-                  <td colSpan={3} className={styles.totalValCell}>
+                  <td colSpan={2} className={styles.totalValCell}>
                     Total: <strong>{sym} {totalValue.toFixed(2)}</strong>
                   </td>
                   <td></td>
@@ -371,6 +371,19 @@ export default function FacturaProforma() {
             </table>
             <button type="button" className={styles.addLineaBtn} onClick={addLinea}>+ Añadir línea</button>
           </div>
+        </div>
+
+        {/* Código HTS global */}
+        <div className="form-group" style={{ maxWidth: '320px' }}>
+          <label htmlFor="hsCode">Código HTS del envío</label>
+          <input
+            id="hsCode"
+            type="text"
+            value={form.hsCode}
+            onChange={e => setField('hsCode', e.target.value)}
+            placeholder="p. ej. 3002.90.9090"
+            autoComplete="off"
+          />
         </div>
 
         {/* Toggles */}
@@ -387,6 +400,19 @@ export default function FacturaProforma() {
             </label>
           )}
         </div>
+
+        {form.researchOnly && (
+          <div className="form-group">
+            <label htmlFor="researchText">Texto "For research purposes"</label>
+            <textarea
+              id="researchText"
+              className={styles.researchTextarea}
+              value={form.researchText}
+              onChange={e => setField('researchText', e.target.value)}
+              rows={3}
+            />
+          </div>
+        )}
 
         {error && <div className="alert alert-error">{error}</div>}
 

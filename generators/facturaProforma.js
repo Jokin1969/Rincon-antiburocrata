@@ -165,6 +165,8 @@ export async function generateFacturaProforma(data) {
     paisOrigen    = 'Spain',
     lineas        = [],
     researchOnly  = true,
+    researchText  = '',
+    hsCode        = '',
     incluirFirma  = true,
     shipperEsCIC  = false,
   } = data
@@ -199,34 +201,19 @@ export async function generateFacturaProforma(data) {
 
   const children = []
 
-  // ── 1. Header table: logo right + invoice info ────────────────────────────
-  children.push(
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      rows: [
-        row(
-          // Left: empty
-          cell([empty(20)], { borders: NO_B, width: { size: 50, type: WidthType.PERCENTAGE } }),
-          // Right: logo + invoice info
-          cell([
-            new Paragraph({
-              children: logoBuffer
-                ? [new ImageRun({ data: logoBuffer, transformation: { width: 160, height: 58 }, type: 'png' })]
-                : [t('CIC bioGUNE', { bold: true, size: SZ_LG })],
-              alignment: AlignmentType.RIGHT,
-              spacing: { before: 0, after: 80 },
-            }),
-            p([t(`${L.invoiceNo}  `, { bold: true }), t(numero)], { align: AlignmentType.RIGHT, before: 30, after: 20 }),
-            shipper.telefono ? p([t(`${L.tel}  `, { bold: true }), t(shipper.telefono)], { align: AlignmentType.RIGHT, before: 0, after: 20 }) : null,
-            shipper.fax      ? p([t(`${L.fax}  `, { bold: true }), t(shipper.fax)],      { align: AlignmentType.RIGHT, before: 0, after: 20 }) : null,
-            shipper.email    ? p([t(`${L.email}  `, { bold: true }), t(shipper.email)],   { align: AlignmentType.RIGHT, before: 0, after: 20 }) : null,
-          ].filter(Boolean), { borders: NO_B, width: { size: 50, type: WidthType.PERCENTAGE } })
-        ),
-      ],
-    })
-  )
+  // ── 1. Header: logo left + invoice number below ───────────────────────────
+  children.push(new Paragraph({
+    children: logoBuffer
+      ? [new ImageRun({ data: logoBuffer, transformation: { width: 160, height: 58 }, type: 'png' })]
+      : [t('CIC bioGUNE', { bold: true, size: SZ_LG })],
+    alignment: AlignmentType.LEFT,
+    spacing: { before: 0, after: 40 },
+  }))
 
-  children.push(empty(60))
+  children.push(p(
+    [t(`${L.invoiceNo}  `, { bold: true, size: SZ_LG }), t(numero, { size: SZ_LG })],
+    { before: 0, after: 80 }
+  ))
 
   // ── 2. SHIPPER | CONSIGNEE table ──────────────────────────────────────────
   children.push(
@@ -273,19 +260,27 @@ export async function generateFacturaProforma(data) {
       const tot  = qty * pu
       return row(
         cell([
-          p([t(l.descripcion, { size: SZ_SM })], { before: 40, after: 20 }),
-          l.hsCode ? p([t(`HS: ${l.hsCode}`, { size: SZ_SM, color: '666666' })], { before: 0, after: 40 }) : null,
-        ].filter(Boolean), { width: { size: 50, type: WidthType.PERCENTAGE } }),
+          p([t(l.descripcion, { size: SZ_SM })], { before: 40, after: 40 }),
+        ], { width: { size: 50, type: WidthType.PERCENTAGE } }),
         cell([p([t(qty > 0 ? String(qty) : '', { size: SZ_SM })], { align: AlignmentType.CENTER })], { width: { size: 10, type: WidthType.PERCENTAGE } }),
         cell([p([t(formatMoney(sym, pu),  { size: SZ_SM })], { align: AlignmentType.RIGHT })], { width: { size: 20, type: WidthType.PERCENTAGE } }),
         cell([p([t(formatMoney(sym, tot), { size: SZ_SM })], { align: AlignmentType.RIGHT })], { width: { size: 20, type: WidthType.PERCENTAGE } }),
       )
     }),
+    // HS code row (if provided)
+    ...(hsCode?.trim() ? [
+      row(
+        cell(
+          [p([t('HS Code: ', { bold: true, size: SZ_SM }), t(hsCode, { size: SZ_SM })])],
+          { borders: ALL_BT, span: 4 }
+        )
+      )
+    ] : []),
     // Research notice row (in red, conditional)
     ...(researchOnly ? [
       row(
         cell(
-          [p([t(L.research, { bold: true, color: 'CC0000', size: SZ_SM })], { align: AlignmentType.CENTER })],
+          [p([t(researchText?.trim() || L.research, { bold: true, color: 'CC0000', size: SZ_SM })], { align: AlignmentType.CENTER })],
           { borders: ALL_BT, span: 4 }
         )
       )
@@ -310,11 +305,6 @@ export async function generateFacturaProforma(data) {
     alignment: AlignmentType.CENTER,
     spacing: { before: 60, after: 120 },
   }))
-
-  // ── 6. Legal text ─────────────────────────────────────────────────────────
-  L.legal.forEach(text => {
-    children.push(p([t(text, { size: SZ_SM })], { before: 40, after: 60 }))
-  })
 
   children.push(empty(60))
 
