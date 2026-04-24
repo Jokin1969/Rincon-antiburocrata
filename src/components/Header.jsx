@@ -7,7 +7,7 @@ const NAV_ITEMS = [
   { href: '/adaptar-carta',  label: 'Adaptar carta',   icon: '📝', end: false },
   { href: '/logos',          label: 'Logos',            icon: '🖼', end: false },
   { href: '/contrato-menor', label: 'Contrato Menor',  icon: '📄', end: false },
-  { href: '/aduanas',        label: 'Aduanas',          icon: '📦', end: false, wip: true },
+  { href: '/aduanas',        label: 'Aduanas',          icon: '📦', end: false },
 ]
 
 export default function Header() {

@@ -5,6 +5,7 @@ import GenScriptHome from './pages/genscript/GenScriptHome'
 import EndUserStatement from './pages/genscript/EndUserStatement'
 import MOHQuestions from './pages/genscript/MOHQuestions'
 import AduanasHome from './pages/aduanas/AduanasHome'
+import FacturaProforma from './pages/aduanas/FacturaProforma'
 import AdaptarCarta from './pages/adaptarcarta/AdaptarCarta'
 import GestorLogos from './pages/logos/GestorLogos'
 import ContratoMenorPage from './pages/contratomenos/ContratoMenorPage'
@@ -21,6 +22,7 @@ export default function App() {
         <Route path="/adaptar-carta" element={<AdaptarCarta />} />
         <Route path="/logos" element={<GestorLogos />} />
         <Route path="/aduanas" element={<AduanasHome />} />
+        <Route path="/aduanas/factura-proforma" element={<FacturaProforma />} />
         <Route path="/contrato-menor" element={<ContratoMenorPage />} />
         <Route path="*" element={<NotFound />} />
       </Route>

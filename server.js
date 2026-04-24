@@ -9,6 +9,7 @@ import { generateEndUserStatement } from './generators/endUserStatement.js'
 import { generateMohQuestions } from './generators/mohQuestions.js'
 import { generateAdaptarCarta } from './generators/adaptarCarta.js'
 import { generateContratoMenor } from './generators/contratoMenor.js'
+import { generateFacturaProforma } from './generators/facturaProforma.js'
 import { docxToPdf } from './utils/pdf.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -121,6 +122,31 @@ app.post('/api/contrato-menor', async (req, res) => {
     sendDocument(res, docxBuffer, `Contrato_Menor_#${code}`, format)
   } catch (err) {
     console.error('Contrato Menor error:', err)
+    res.status(500).json({ error: 'Error al generar el documento.' })
+  }
+})
+
+// ── Aduanas: Factura Proforma ─────────────────────────────────────────────────
+app.post('/api/aduanas/factura-proforma', async (req, res) => {
+  const { numero, shipper, consignee, lineas } = req.body
+
+  if (!numero || !shipper || !consignee) {
+    return res.status(400).json({ error: 'Campos obligatorios: numero, shipper, consignee' })
+  }
+  if (!lineas?.some(l => l.descripcion?.trim())) {
+    return res.status(400).json({ error: 'Se requiere al menos una línea de producto.' })
+  }
+
+  const format = req.query.format === 'pdf' ? 'pdf' : 'docx'
+
+  try {
+    const docxBuffer = await generateFacturaProforma(req.body)
+    const sn  = (shipper.organizacion  || shipper.nombre  || 'shipper').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20)
+    const cn  = (consignee.organizacion || consignee.nombre || 'consignee').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20)
+    const num = numero.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 20)
+    sendDocument(res, docxBuffer, `Proforma_${num}_${sn}_${cn}`, format)
+  } catch (err) {
+    console.error('Factura Proforma error:', err)
     res.status(500).json({ error: 'Error al generar el documento.' })
   }
 })

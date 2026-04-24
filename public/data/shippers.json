@@ -1,0 +1,32 @@
+[
+  {
+    "id": "cicbiogune",
+    "name": "CIC bioGUNE",
+    "nombre": "Joaquín Castilla",
+    "organizacion": "CIC bioGUNE",
+    "address1": "Parque Tecnológico de Bizkaia, Edificio 801A",
+    "address2": "",
+    "ciudad": "Derio",
+    "cp": "48160",
+    "pais": "Spain",
+    "telefono": "+34 946 572 525",
+    "fax": "",
+    "email": "jcastilla@cicbiogune.es",
+    "vat": "G95/0430328"
+  },
+  {
+    "id": "placeholder",
+    "name": "Placeholder Institute",
+    "nombre": "Placeholder Name",
+    "organizacion": "Placeholder Institute",
+    "address1": "123 Placeholder Street",
+    "address2": "",
+    "ciudad": "Placeholder City",
+    "cp": "00000",
+    "pais": "Country",
+    "telefono": "+00 000 000 000",
+    "fax": "",
+    "email": "contact@placeholder.org",
+    "vat": "VATID00000"
+  }
+]
