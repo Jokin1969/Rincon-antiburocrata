@@ -112,6 +112,11 @@ button {
   min-height: 90px;
 }
 
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: rgba(107, 61, 77, 0.35);
+}
+
 /* ── Buttons ─────────────────────────────────────────────────────────────── */
 
 .btn {

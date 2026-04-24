@@ -28,6 +28,8 @@ export default function ContratoMenorPage() {
   const [showRepo, setShowRepo] = useState(false)
   const [repoSearch, setRepoSearch] = useState('')
   const [savedMsg, setSavedMsg] = useState(false)
+  const [certExclusividad, setCertExclusividad] = useState(false)
+  const [certFile, setCertFile] = useState(null)
 
   const { records, saveRecord, deleteRecord } = useContratoStore()
 
@@ -61,6 +63,8 @@ export default function ContratoMenorPage() {
         : EMPTY_PROVEEDORES.map(p => ({ ...p })),
       fecha: prev.fecha,
     }))
+    setCertExclusividad(record.form?.justificacionEleccion === 'Se adjunta certificado de exclusividad')
+    setCertFile(null)
     setShowRepo(false)
     setError(null)
   }
@@ -109,9 +113,12 @@ export default function ContratoMenorPage() {
 
   const busy = loadingFmt !== null
 
-  const filteredRecords = records.filter(r =>
-    !repoSearch || r.codigo.toLowerCase().includes(repoSearch.toLowerCase())
-  )
+  const filteredRecords = records.filter(r => {
+    if (!repoSearch) return true
+    const q = repoSearch.toLowerCase()
+    return r.codigo.toLowerCase().includes(q) ||
+      r.form?.proveedores?.some(p => p.nombre?.toLowerCase().includes(q))
+  })
 
   return (
     <div>
@@ -369,13 +376,46 @@ export default function ContratoMenorPage() {
           {/* Justificación de elección */}
           <div className="form-group">
             <label htmlFor="justificacionEleccion">Justificación de la elección del proveedor</label>
+            <label className={styles.certToggle}>
+              <input
+                type="checkbox"
+                checked={certExclusividad}
+                onChange={e => {
+                  const on = e.target.checked
+                  setCertExclusividad(on)
+                  setForm(prev => ({
+                    ...prev,
+                    justificacionEleccion: on ? 'Se adjunta certificado de exclusividad' : '',
+                  }))
+                  if (!on) setCertFile(null)
+                }}
+              />
+              <span>Certificado de exclusividad</span>
+            </label>
+            {certExclusividad && (
+              <div className={styles.certFileRow}>
+                <label className={styles.certFileLabel}>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    className={styles.certFileInput}
+                    onChange={e => setCertFile(e.target.files[0] || null)}
+                  />
+                  <span className={styles.certFileBtn}>
+                    {certFile ? `📎 ${certFile.name}` : '📎 Adjuntar certificado…'}
+                  </span>
+                </label>
+              </div>
+            )}
             <textarea
               id="justificacionEleccion"
               name="justificacionEleccion"
               value={form.justificacionEleccion}
-              onChange={handleChange}
+              onChange={certExclusividad ? undefined : handleChange}
+              readOnly={certExclusividad}
               rows={3}
               placeholder="Motivo por el que se elige el proveedor seleccionado"
+              className={certExclusividad ? styles.textareaLocked : ''}
             />
           </div>
         </div>

@@ -152,6 +152,88 @@
 
 /* ── Actions ──────────────────────────────────────────────────────────────── */
 
+/* ── Certificado de exclusividad ──────────────────────────────────────────── */
+
+.certToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+  width: fit-content;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.certToggle:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.certToggle input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.certFileRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.certFileLabel {
+  display: inline-flex;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: normal;
+}
+
+.certFileInput {
+  display: none;
+}
+
+.certFileBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--accent);
+  border: 1px dashed var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.85rem;
+  background: var(--accent-dim);
+  transition: background 0.15s, border-color 0.15s;
+  max-width: 360px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.certFileBtn:hover {
+  background: rgba(123, 28, 46, 0.14);
+}
+
+.textareaLocked {
+  background: var(--surface-hover) !important;
+  color: var(--muted) !important;
+  cursor: default;
+}
+
+/* ── Actions ──────────────────────────────────────────────────────────────── */
+
 .actions {
   display: flex;
   align-items: center;
