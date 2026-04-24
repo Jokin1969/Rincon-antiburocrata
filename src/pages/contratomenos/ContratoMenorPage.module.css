@@ -168,7 +168,7 @@
 .savedMsg {
   font-size: 0.82rem;
   font-weight: 600;
-  color: #86efac;
+  color: #16a34a;
 }
 
 /* ── Repository panel ─────────────────────────────────────────────────────── */
@@ -212,7 +212,7 @@
   padding: 0 0.35rem;
   border-radius: 99px;
   background: var(--accent-dim);
-  border: 1px solid rgba(249, 115, 22, 0.4);
+  border: 1px solid rgba(123, 28, 46, 0.35);
   color: var(--accent);
   font-size: 0.68rem;
   font-weight: 700;
@@ -337,7 +337,7 @@
 }
 
 .repoDeleteBtn:hover {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.3);
-  color: #fca5a5;
+  background: rgba(185, 28, 28, 0.08);
+  border-color: rgba(185, 28, 28, 0.3);
+  color: #b91c1c;
 }

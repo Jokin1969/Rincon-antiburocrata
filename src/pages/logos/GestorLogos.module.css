@@ -91,8 +91,8 @@
 }
 
 .card:hover {
-  border-color: var(--muted);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  border-color: var(--muted-light);
+  box-shadow: 0 4px 16px rgba(123, 28, 46, 0.1);
 }
 
 .cardSelected {
@@ -350,7 +350,7 @@
   color: #fff;
 }
 
-.segBtnActive:hover { background: #ea6c0e; }
+.segBtnActive:hover { background: #9B2335; }
 
 .sizeRow {
   display: flex;
@@ -463,9 +463,9 @@
 .dangerBtn {
   margin-left: auto;
   background: none;
-  border: 1px solid rgba(239, 68, 68, 0.35);
+  border: 1px solid rgba(185, 28, 28, 0.3);
   border-radius: var(--radius-sm);
-  color: #fca5a5;
+  color: #b91c1c;
   font-size: 0.82rem;
   font-weight: 600;
   padding: 0.45rem 0.85rem;
@@ -473,8 +473,8 @@
 }
 
 .dangerBtn:hover {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.6);
+  background: rgba(185, 28, 28, 0.08);
+  border-color: rgba(185, 28, 28, 0.5);
 }
 
 /* ── Upload form inside panel ─────────────────────────────────────────────  */

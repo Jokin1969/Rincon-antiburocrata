@@ -158,7 +158,7 @@
 }
 
 .sigTypeBtnActive:hover {
-  background: #ea6c0e;
+  background: #9B2335;
 }
 
 .flagBtn {
@@ -233,9 +233,9 @@
 }
 
 .clearBtn:hover {
-  background: rgba(239, 68, 68, 0.08);
-  border-color: rgba(239, 68, 68, 0.35);
-  color: #fca5a5;
+  background: rgba(185, 28, 28, 0.06);
+  border-color: rgba(185, 28, 28, 0.3);
+  color: #b91c1c;
 }
 
 .textArea {
