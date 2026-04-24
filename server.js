@@ -284,6 +284,97 @@ app.post('/api/ia/contrato', upload.single('file'), async (req, res) => {
   }
 })
 
+// ── IA: localizar código HS / HTS ────────────────────────────────────────────
+
+const HS_SYSTEM_PROMPT =
+  'Eres un experto en clasificación arancelaria aduanera con profundo conocimiento ' +
+  'del Sistema Armonizado (HS) de la OMA y del Arancel de Aduanas de Estados Unidos (HTS). ' +
+  'Tu especialidad es el material biológico de investigación (priones, proteínas, tejidos, ' +
+  'muestras, reactivos, cultivos, ADN/ARN, anticuerpos, etc.). ' +
+  'Responde ÚNICAMENTE con un objeto JSON válido con exactamente estas cuatro claves: ' +
+  '"codigo" (el código arancelario con puntos separadores: 6 dígitos para HS, 10 para HTS), ' +
+  '"tipo" ("HS" o "HTS" según el sistema solicitado), ' +
+  '"certeza" ("alta", "media" o "baja": alta = código claramente aplicable sin ambigüedad; ' +
+  'media = probable pero puede haber alternativas; baja = tentativo, consultar agente aduanas), ' +
+  '"justificacion" (2-3 frases que expliquen la clasificación y por qué es el código correcto, ' +
+  'mencionando la partida arancelaria y su descripción oficial). Responde en español.'
+
+function hsPrompt(descripcion, tipo) {
+  const digitos = tipo === 'HTS' ? '10' : '6'
+  return `Clasifica el siguiente material biológico de investigación bajo el sistema ${tipo} (${digitos} dígitos):\n\n${descripcion}`
+}
+
+function parseHsJson(text) {
+  const match = (text || '{}').match(/\{[\s\S]*\}/)
+  const parsed = JSON.parse(match ? match[0] : '{}')
+  return {
+    codigo:        parsed.codigo        || '',
+    tipo:          parsed.tipo          || 'HS',
+    certeza:       parsed.certeza       || 'baja',
+    justificacion: parsed.justificacion || '',
+  }
+}
+
+async function hsWithClaude(descripcion, tipo) {
+  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  const message = await anthropic.messages.create({
+    model: 'claude-opus-4-7',
+    max_tokens: 512,
+    system: [{ type: 'text', text: HS_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+    messages: [{ role: 'user', content: hsPrompt(descripcion, tipo) }],
+  })
+  return parseHsJson(message.content.find(b => b.type === 'text')?.text)
+}
+
+async function hsWithOpenAI(descripcion, tipo) {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [
+      { role: 'system', content: HS_SYSTEM_PROMPT },
+      { role: 'user',   content: hsPrompt(descripcion, tipo) },
+    ],
+    response_format: { type: 'json_object' },
+    max_tokens: 512,
+  })
+  return parseHsJson(completion.choices[0].message.content)
+}
+
+async function hsWithGemini(descripcion, tipo) {
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-2.0-flash',
+    systemInstruction: HS_SYSTEM_PROMPT,
+    generationConfig: { responseMimeType: 'application/json' },
+  })
+  const result = await model.generateContent({ contents: [{ role: 'user', parts: [{ text: hsPrompt(descripcion, tipo) }] }] })
+  return parseHsJson(result.response.text())
+}
+
+app.post('/api/ia/hs-code', async (req, res) => {
+  const { descripcion, tipo = 'HS', provider = 'claude' } = req.body
+
+  if (!descripcion?.trim()) {
+    return res.status(400).json({ error: 'Campo obligatorio: descripcion' })
+  }
+
+  const KEY_MAP = { claude: 'ANTHROPIC_API_KEY', openai: 'OPENAI_API_KEY', gemini: 'GEMINI_API_KEY' }
+  const keyName = KEY_MAP[provider]
+  if (!keyName) return res.status(400).json({ error: `Proveedor desconocido: ${provider}` })
+  if (!process.env[keyName]) return res.status(503).json({ error: `${keyName} no configurada en el servidor.` })
+
+  try {
+    let data
+    if (provider === 'claude')      data = await hsWithClaude(descripcion, tipo)
+    else if (provider === 'openai') data = await hsWithOpenAI(descripcion, tipo)
+    else                            data = await hsWithGemini(descripcion, tipo)
+    res.json(data)
+  } catch (err) {
+    console.error(`IA HS-Code [${provider}] error:`, err)
+    res.status(500).json({ error: err.message || 'Error al consultar a la IA.' })
+  }
+})
+
 // ── SPA fallback ─────────────────────────────────────────────────────────────
 app.get('*', (_req, res) => {
   res.sendFile(join(__dirname, 'dist', 'index.html'))

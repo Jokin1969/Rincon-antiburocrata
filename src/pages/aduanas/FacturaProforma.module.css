@@ -295,6 +295,137 @@
   cursor: pointer;
 }
 
+/* ── HS / HTS block ──────────────────────────────────────────────────────── */
+
+.hsBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.hsTipoNote {
+  margin-left: 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--muted);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.hsIaRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.hsIaLabel {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted-light);
+}
+
+.hsIaBtn {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted-light);
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+
+.hsIaBtn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.hsIaBtn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.hsIaErr {
+  font-size: 0.8rem;
+  color: #b91c1c;
+}
+
+.hsIaResult {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  max-width: 560px;
+}
+
+.hsIaResultTop {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.hsIaCode {
+  font-size: 1.15rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+
+.hsIaCerteza {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 99px;
+  border: 1px solid;
+}
+
+.certezaalta  { color: #15803d; border-color: #bbf7d0; background: #f0fdf4; }
+.certezamedia { color: #b45309; border-color: #fde68a; background: #fffbeb; }
+.certezabaja  { color: #b91c1c; border-color: #fecaca; background: #fef2f2; }
+
+.hsIaApply {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.25rem 0.7rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  transition: background 0.15s;
+  margin-left: auto;
+}
+
+.hsIaApply:hover { background: var(--accent-dim); }
+
+.hsIaDismiss {
+  font-size: 1rem;
+  line-height: 1;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  transition: background 0.15s, color 0.15s;
+}
+
+.hsIaDismiss:hover { background: var(--surface-hover); color: var(--text); }
+
+.hsIaJustificacion {
+  font-size: 0.8rem;
+  color: var(--muted-light);
+  line-height: 1.55;
+  margin: 0;
+}
+
 /* ── Research textarea ────────────────────────────────────────────────────── */
 
 .researchTextarea {

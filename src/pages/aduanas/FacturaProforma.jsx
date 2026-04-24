@@ -50,8 +50,15 @@ export default function FacturaProforma() {
   const [repoSearch, setRepoSearch] = useState('')
   const [savedMsg, setSavedMsg] = useState(false)
   const [shippers, setShippers] = useState([])
+  const [hsIaLoading, setHsIaLoading] = useState(null)
+  const [hsIaResult, setHsIaResult] = useState(null)
+  const [hsIaError, setHsIaError] = useState(null)
 
   const { records, saveRecord, deleteRecord } = useFacturaProformaStore()
+
+  // HS (6 dig, internacional) vs HTS (10 dig, EE.UU.)
+  const esUSA = (s) => /united states/i.test(s || '')
+  const codigoTipo = esUSA(form.paisOrigen) || esUSA(form.shipper.pais) ? 'HTS' : 'HS'
 
   // Load shippers.json
   useEffect(() => {
@@ -123,6 +130,32 @@ export default function FacturaProforma() {
 
   function applyConsignee(persona) {
     setForm(prev => ({ ...prev, consignee: personaToForm(persona) }))
+  }
+
+  async function handleHsIa(provider) {
+    setHsIaLoading(provider)
+    setHsIaResult(null)
+    setHsIaError(null)
+    try {
+      const descripcion = form.lineas
+        .filter(l => l.descripcion?.trim())
+        .map(l => l.descripcion.trim())
+        .join('; ')
+      const res = await fetch('/api/ia/hs-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ descripcion, tipo: codigoTipo, provider }),
+      })
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        throw new Error(d.error || `Error ${res.status}`)
+      }
+      setHsIaResult(await res.json())
+    } catch (err) {
+      setHsIaError(err.message)
+    } finally {
+      setHsIaLoading(null)
+    }
   }
 
   function handleSave() {
@@ -391,17 +424,71 @@ export default function FacturaProforma() {
           </div>
         </div>
 
-        {/* Código HTS global */}
-        <div className="form-group" style={{ maxWidth: '320px' }}>
-          <label htmlFor="hsCode">Código HTS del envío</label>
-          <input
-            id="hsCode"
-            type="text"
-            value={form.hsCode}
-            onChange={e => setField('hsCode', e.target.value)}
-            placeholder="p. ej. 3002.90.9090"
-            autoComplete="off"
-          />
+        {/* Código HS / HTS global */}
+        <div className={styles.hsBlock}>
+          <div className="form-group">
+            <label htmlFor="hsCode">
+              Código {codigoTipo} del envío
+              <span className={styles.hsTipoNote}>
+                {codigoTipo === 'HTS'
+                  ? 'HTS — 10 dígitos · Arancel de EE.UU.'
+                  : 'HS — 6 dígitos · Sistema Armonizado internacional'}
+              </span>
+            </label>
+            <input
+              id="hsCode"
+              type="text"
+              value={form.hsCode}
+              onChange={e => { setField('hsCode', e.target.value); setHsIaResult(null) }}
+              placeholder={codigoTipo === 'HTS' ? 'p. ej. 3002.90.9090' : 'p. ej. 3002.90'}
+              autoComplete="off"
+              style={{ maxWidth: '220px' }}
+            />
+          </div>
+
+          <div className={styles.hsIaRow}>
+            <span className={styles.hsIaLabel}>Buscar con IA:</span>
+            {[{ v: 'claude', l: 'Claude' }, { v: 'openai', l: 'GPT-4o' }, { v: 'gemini', l: 'Gemini' }].map(p => (
+              <button
+                key={p.v}
+                type="button"
+                className={styles.hsIaBtn}
+                disabled={!form.lineas.some(l => l.descripcion?.trim()) || hsIaLoading !== null}
+                onClick={() => handleHsIa(p.v)}
+              >
+                {hsIaLoading === p.v ? 'Consultando…' : `✦ ${p.l}`}
+              </button>
+            ))}
+          </div>
+
+          {hsIaError && <p className={styles.hsIaErr}>{hsIaError}</p>}
+
+          {hsIaResult && (
+            <div className={styles.hsIaResult}>
+              <div className={styles.hsIaResultTop}>
+                <span className={styles.hsIaCode}>{hsIaResult.codigo}</span>
+                <span className={`${styles.hsIaCerteza} ${styles[`certeza${hsIaResult.certeza}`]}`}>
+                  {hsIaResult.certeza === 'alta' ? '● Alta certeza'
+                    : hsIaResult.certeza === 'media' ? '◑ Certeza media'
+                    : '○ Certeza baja'}
+                </span>
+                <button
+                  type="button"
+                  className={styles.hsIaApply}
+                  onClick={() => { setField('hsCode', hsIaResult.codigo); setHsIaResult(null) }}
+                >
+                  ↑ Aplicar
+                </button>
+                <button
+                  type="button"
+                  className={styles.hsIaDismiss}
+                  onClick={() => setHsIaResult(null)}
+                  title="Descartar"
+                >×</button>
+              </div>
+              <p className={styles.hsIaJustificacion}>{hsIaResult.justificacion}</p>
+            </div>
+          )}
         </div>
 
         {/* Toggles */}
