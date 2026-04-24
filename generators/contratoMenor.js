@@ -18,6 +18,7 @@ import {
 import { readFileSync, existsSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
+import { TIPOS_JUSTIFICACION } from '../src/data/contratoMenorConfig.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -25,17 +26,18 @@ const ASSETS = join(__dirname, '..', 'public', 'assets')
 
 // ── Fixed configuration — editar aquí para personalizar ───────────────────────
 const CONFIG = {
-  centro:   'CIC bioGUNE — [placeholder: unidad/departamento]',
+  centro:   'CIC bioGUNE',
+  lugar:    'Derio',
   firmante: 'Joaquín Castilla',
-  cargo:    'Ikerbasque Research Professor — [placeholder: cargo completo]',
+  cargo:    'Ikerbasque Research Professor – Lab Responsible',
 }
 
 // ── Design constants ──────────────────────────────────────────────────────────
-const FONT      = 'Calibri'
-const SIZE      = 20   // half-points → 10 pt
-const SIZE_SM   = 16   // 8 pt
-const SIZE_LG   = 24   // 12 pt
-const SIZE_TITLE = 32  // 16 pt
+const FONT       = 'Calibri'
+const SIZE       = 20   // half-points → 10 pt
+const SIZE_SM    = 16   // 8 pt
+const SIZE_LG    = 24   // 12 pt
+const SIZE_TITLE = 28   // 14 pt
 
 const BORDER_SINGLE = { style: BorderStyle.SINGLE, size: 1, color: '000000' }
 const ALL_BORDERS = {
@@ -51,8 +53,9 @@ const NO_BORDERS = {
   right:  { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
 }
 
-const CELL_MARGIN = { top: 70, bottom: 70, left: 110, right: 110 }
-const GRAY_FILL   = { type: ShadingType.CLEAR, color: 'auto', fill: 'D9D9D9' }
+const CELL_MARGIN      = { top: 70,  bottom: 70,  left: 110, right: 110 }
+const CELL_MARGIN_WIDE = { top: 100, bottom: 100, left: 110, right: 110 }
+const GRAY_FILL        = { type: ShadingType.CLEAR, color: 'auto', fill: 'D9D9D9' }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -70,12 +73,12 @@ function p(children, opts = {}) {
 }
 
 function emptyLine() {
-  return new Paragraph({ children: [t('')], spacing: { before: 20, after: 20 } })
+  return new Paragraph({ children: [t('')], spacing: { before: 30, after: 30 } })
 }
 
 function makeCell(paragraphs, opts = {}) {
   return new TableCell({
-    children: paragraphs,
+    children:      paragraphs,
     borders:       opts.borders       ?? ALL_BORDERS,
     shading:       opts.shading,
     columnSpan:    opts.columnSpan,
@@ -86,65 +89,63 @@ function makeCell(paragraphs, opts = {}) {
   })
 }
 
-function labelCell(text, widthPct = 36) {
-  return makeCell([p(text)], {
-    width: { size: widthPct, type: WidthType.PERCENTAGE },
-  })
-}
-
-function valueCell(content, bold = false) {
-  const children = typeof content === 'string'
-    ? [p([t(content, { bold })])]
-    : content
-  return makeCell(children)
-}
-
-function sectionHeaderRow(label, colSpan = 2) {
-  return new TableRow({
+function sectionTable(number, title, contentRows) {
+  const header = new TableRow({
     children: [
       makeCell(
-        [p([t(label, { bold: true })])],
-        { columnSpan: colSpan, shading: GRAY_FILL }
+        [p([t(`${number}. ${title}`, { bold: true })])],
+        { columnSpan: 2, shading: GRAY_FILL }
       ),
     ],
   })
-}
-
-function dataRow(label, content, bold = false) {
-  return new TableRow({
-    children: [labelCell(label), valueCell(content, bold)],
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [header, ...contentRows],
   })
 }
 
-function multilineCell(text) {
-  const lines = (text || '—').split('\n').map(line => p([t(line.trim() || '')]))
-  return makeCell(lines.length > 0 ? lines : [p('')])
+function textSection(number, title, text) {
+  const lines = (text || '—').split('\n').map(line =>
+    p([t(line.trim() || '')])
+  )
+  return sectionTable(number, title, [
+    new TableRow({
+      children: [makeCell(lines, { columnSpan: 2, margins: CELL_MARGIN_WIDE })],
+    }),
+  ])
+}
+
+function shortSection(number, title, value) {
+  return sectionTable(number, title, [
+    new TableRow({
+      children: [makeCell([p([t(value || '—')])], { columnSpan: 2, margins: CELL_MARGIN_WIDE })],
+    }),
+  ])
 }
 
 // ── Main generator ────────────────────────────────────────────────────────────
 
 export async function generateContratoMenor(data) {
   const {
-    codigo             = '',
-    objeto             = '',
+    codigo                = '',
+    objeto                = '',
     justificacionNecesidad = '',
-    tipoJustificacion  = '',
-    centroCoste        = '',
-    proveedores        = [],
+    tipoJustificacion     = '',
+    centroCoste           = '',
+    proveedores           = [],
     justificacionEleccion = '',
-    plazo              = '',
-    importe            = '',
-    fecha              = new Date().toISOString().split('T')[0],
+    plazo                 = '',
+    importe               = '',
+    fecha                 = new Date().toISOString().split('T')[0],
   } = data
 
-  // Format date in Spanish
-  const formattedDate = new Date(fecha + 'T12:00:00').toLocaleDateString('es-ES', {
-    day:   'numeric',
-    month: 'long',
-    year:  'numeric',
+  // Formatted date: "24 de abril de 2026"
+  const fechaObj = new Date(fecha + 'T12:00:00')
+  const formattedDate = fechaObj.toLocaleDateString('es-ES', {
+    day: 'numeric', month: 'long', year: 'numeric',
   })
 
-  // Format importe
+  // Formatted importe
   const importeFormatted = importe !== '' && importe !== null
     ? parseFloat(importe).toLocaleString('es-ES', {
         minimumFractionDigits: 2,
@@ -165,193 +166,174 @@ export async function generateContratoMenor(data) {
     prov => prov.nombre?.trim() || prov.cif?.trim() || prov.contacto?.trim() || prov.presupuesto?.trim()
   )
 
-  // Build provider table rows
-  const proveedorHeaderRow = new TableRow({
-    children: [
-      makeCell([p([t('Nombre', { bold: true })])], { width: { size: 35, type: WidthType.PERCENTAGE }, shading: GRAY_FILL }),
-      makeCell([p([t('CIF', { bold: true })])],    { width: { size: 15, type: WidthType.PERCENTAGE }, shading: GRAY_FILL }),
-      makeCell([p([t('Contacto', { bold: true })])],   { width: { size: 30, type: WidthType.PERCENTAGE }, shading: GRAY_FILL }),
-      makeCell([p([t('Presupuesto', { bold: true })])], { width: { size: 20, type: WidthType.PERCENTAGE }, shading: GRAY_FILL }),
+  // ── Section 3: Tipo de justificación ───────────────────────────────────────
+  // All 7 options listed; selected one marked with ☑ and bold, others with ☐
+  const justifOptions = TIPOS_JUSTIFICACION.map(({ label }) => {
+    const selected = label === tipoJustificacion
+    return new Paragraph({
+      children: [
+        t(selected ? '☑  ' : '☐  ', { bold: selected, size: SIZE_LG }),
+        t(label, { bold: selected }),
+      ],
+      spacing: { before: 70, after: 70 },
+    })
+  })
+
+  // ── Section 5: Providers table ─────────────────────────────────────────────
+  const COL_W = [
+    { size: 35, type: WidthType.PERCENTAGE },
+    { size: 15, type: WidthType.PERCENTAGE },
+    { size: 30, type: WidthType.PERCENTAGE },
+    { size: 20, type: WidthType.PERCENTAGE },
+  ]
+  const provHeaderRow = new TableRow({
+    children: ['Nombre', 'CIF', 'Contacto', 'Presupuesto'].map((h, i) =>
+      makeCell([p([t(h, { bold: true })])], { width: COL_W[i], shading: GRAY_FILL })
+    ),
+  })
+  const provDataRows = filledProveedores.length > 0
+    ? filledProveedores.map(prov =>
+        new TableRow({
+          children: [prov.nombre, prov.cif, prov.contacto, prov.presupuesto].map((v, i) =>
+            makeCell([p(v || '—')], { width: COL_W[i] })
+          ),
+        })
+      )
+    : [new TableRow({ children: [makeCell([p('—')], { columnSpan: 4 })] })]
+
+  const proveedoresTable = new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [
+      new TableRow({
+        children: [
+          makeCell(
+            [p([t('5. PROVEEDORES CONSULTADOS', { bold: true })])],
+            { columnSpan: 4, shading: GRAY_FILL }
+          ),
+        ],
+      }),
+      provHeaderRow,
+      ...provDataRows,
     ],
   })
 
-  const proveedorDataRows = filledProveedores.length > 0
-    ? filledProveedores.map(prov =>
-        new TableRow({
-          children: [
-            makeCell([p(prov.nombre  || '—')], { width: { size: 35, type: WidthType.PERCENTAGE } }),
-            makeCell([p(prov.cif     || '—')], { width: { size: 15, type: WidthType.PERCENTAGE } }),
-            makeCell([p(prov.contacto || '—')], { width: { size: 30, type: WidthType.PERCENTAGE } }),
-            makeCell([p(prov.presupuesto || '—')], { width: { size: 20, type: WidthType.PERCENTAGE } }),
-          ],
-        })
-      )
-    : [
-        new TableRow({
-          children: [
-            makeCell([p([t('—', { color: '888888' })])], { columnSpan: 4 }),
-          ],
-        }),
-      ]
+  // ── Signature table ────────────────────────────────────────────────────────
+  const signatureTable = new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [
+      new TableRow({
+        children: [
+          makeCell([p([t('RESPONSABLE DEL CONTRATO', { bold: true })])], { shading: GRAY_FILL }),
+          makeCell([p([t('ADMINISTRACIÓN / GESTIÓN ECONÓMICA', { bold: true })])], { shading: GRAY_FILL }),
+        ],
+      }),
+      new TableRow({
+        height: { value: 1600, rule: HeightRule.ATLEAST },
+        children: [
+          makeCell([
+            new Paragraph({
+              children: sigBuffer
+                ? [new ImageRun({ data: sigBuffer, transformation: { width: 105, height: 65 }, type: 'png' })]
+                : [t('')],
+              spacing: { before: 80, after: 120 },
+            }),
+            p([t(CONFIG.firmante, { bold: true })]),
+            p([t(CONFIG.cargo, { size: SIZE_SM })]),
+          ]),
+          makeCell([p('')]),
+        ],
+      }),
+    ],
+  })
 
+  // ── Document body ──────────────────────────────────────────────────────────
   const children = [
 
-    // ── Logo ──────────────────────────────────────────────────────────────────
-    new Paragraph({
-      children: logoBuffer
-        ? [new ImageRun({ data: logoBuffer, transformation: { width: 155, height: 56 }, type: 'png' })]
-        : [t('CIC bioGUNE', { bold: true, size: SIZE_LG })],
-      spacing: { before: 0, after: 200 },
+    // ── Header: logo (left) + reference info (right) ───────────────────────
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [
+        new TableRow({
+          children: [
+            makeCell(
+              [new Paragraph({
+                children: logoBuffer
+                  ? [new ImageRun({ data: logoBuffer, transformation: { width: 155, height: 56 }, type: 'png' })]
+                  : [t(CONFIG.centro, { bold: true, size: SIZE_LG })],
+                spacing: { before: 0, after: 0 },
+              })],
+              { borders: NO_BORDERS, width: { size: 58, type: WidthType.PERCENTAGE }, margins: { top: 0, bottom: 0, left: 0, right: 110 } }
+            ),
+            makeCell(
+              [
+                p([t(CONFIG.centro, { bold: true })]),
+                p([t(`Expediente nº: ${codigo || '—'}`)]),
+                p([t(formattedDate, { size: SIZE_SM, color: '444444' })]),
+              ],
+              { borders: NO_BORDERS, width: { size: 42, type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, margins: { top: 0, bottom: 0, left: 110, right: 0 } }
+            ),
+          ],
+        }),
+      ],
     }),
 
-    // ── Title ─────────────────────────────────────────────────────────────────
+    emptyLine(),
+
+    // ── Document title ─────────────────────────────────────────────────────
     new Paragraph({
-      children: [t('CONTRATO MENOR', { bold: true, size: SIZE_TITLE })],
+      children: [t('INFORME JUSTIFICATIVO DE GASTO A TRAVÉS DE CONTRATO MENOR', { bold: true, size: SIZE_TITLE })],
       alignment: AlignmentType.CENTER,
-      spacing: { before: 0, after: 280 },
+      spacing: { before: 120, after: 280 },
     }),
 
-    // ── Identification ────────────────────────────────────────────────────────
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      rows: [
-        sectionHeaderRow('Identificación del expediente'),
-        dataRow('Nº de expediente / Código:', codigo || '—', true),
-        dataRow('Centro:',       CONFIG.centro),
-        dataRow('Centro de coste:', centroCoste || '—'),
-        dataRow('Fecha:',        formattedDate),
-      ],
-    }),
-
+    // ── 1. Objeto ──────────────────────────────────────────────────────────
+    textSection(1, 'OBJETO', objeto),
     emptyLine(),
 
-    // ── Object and economic data ──────────────────────────────────────────────
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      rows: [
-        sectionHeaderRow('Objeto del contrato'),
-        new TableRow({
-          children: [
-            labelCell('Descripción del objeto:'),
-            multilineCell(objeto || '—'),
-          ],
-        }),
-        dataRow('Importe (sin IVA):',     importeFormatted),
-        dataRow('Plazo de ejecución:',    plazo || '—'),
-      ],
-    }),
-
+    // ── 2. Justificación de la necesidad ───────────────────────────────────
+    textSection(2, 'JUSTIFICACIÓN DE LA NECESIDAD', justificacionNecesidad),
     emptyLine(),
 
-    // ── Justificación de necesidad ────────────────────────────────────────────
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      rows: [
-        sectionHeaderRow('Justificación de la necesidad'),
-        new TableRow({
-          children: [
-            makeCell(
-              (justificacionNecesidad || '—').split('\n').map(line => p([t(line.trim())])),
-              { columnSpan: 2 }
-            ),
-          ],
-        }),
-      ],
-    }),
-
+    // ── 3. Tipo de justificación ───────────────────────────────────────────
+    sectionTable(3, 'TIPO DE JUSTIFICACIÓN', [
+      new TableRow({
+        children: [makeCell(justifOptions, { columnSpan: 2, margins: CELL_MARGIN_WIDE })],
+      }),
+    ]),
     emptyLine(),
 
-    // ── Tipo de justificación ─────────────────────────────────────────────────
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      rows: [
-        sectionHeaderRow('Tipo de justificación'),
-        new TableRow({
-          children: [
-            makeCell([p([t(tipoJustificacion || '—')])], { columnSpan: 2 }),
-          ],
-        }),
-      ],
-    }),
-
+    // ── 4. Centro de coste ─────────────────────────────────────────────────
+    shortSection(4, 'CENTRO DE COSTE', centroCoste),
     emptyLine(),
 
-    // ── Proveedores consultados ───────────────────────────────────────────────
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      rows: [
-        sectionHeaderRow('Proveedores consultados', 4),
-        proveedorHeaderRow,
-        ...proveedorDataRows,
-      ],
-    }),
-
+    // ── 5. Proveedores consultados ─────────────────────────────────────────
+    proveedoresTable,
     emptyLine(),
 
-    // ── Justificación de elección ─────────────────────────────────────────────
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      rows: [
-        sectionHeaderRow('Justificación de la elección del proveedor'),
-        new TableRow({
-          children: [
-            makeCell(
-              (justificacionEleccion || '—').split('\n').map(line => p([t(line.trim())])),
-              { columnSpan: 2 }
-            ),
-          ],
-        }),
-      ],
-    }),
+    // ── 6. Justificación de la elección ────────────────────────────────────
+    textSection(6, 'JUSTIFICACIÓN DE LA ELECCIÓN DEL PROVEEDOR', justificacionEleccion),
+    emptyLine(),
+
+    // ── 7. Plazo ───────────────────────────────────────────────────────────
+    shortSection(7, 'PLAZO DE EJECUCIÓN', plazo),
+    emptyLine(),
+
+    // ── 8. Importe ─────────────────────────────────────────────────────────
+    shortSection(8, 'IMPORTE', importeFormatted),
 
     emptyLine(),
     emptyLine(),
 
-    // ── Signature table ───────────────────────────────────────────────────────
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      rows: [
-        // Header row
-        new TableRow({
-          children: [
-            makeCell(
-              [p([t('RESPONSABLE DEL CONTRATO', { bold: true })])],
-              { shading: GRAY_FILL }
-            ),
-            makeCell(
-              [p([t('ADMINISTRACIÓN / GESTIÓN ECONÓMICA', { bold: true })])],
-              { shading: GRAY_FILL }
-            ),
-          ],
-        }),
-        // Signature row
-        new TableRow({
-          height: { value: 1600, rule: HeightRule.ATLEAST },
-          children: [
-            // Left: responsable's signature
-            makeCell([
-              new Paragraph({
-                children: sigBuffer
-                  ? [new ImageRun({ data: sigBuffer, transformation: { width: 105, height: 65 }, type: 'png' })]
-                  : [t('')],
-                spacing: { before: 80, after: 120 },
-              }),
-              p([t(CONFIG.firmante, { bold: true })]),
-              p([t(CONFIG.cargo, { size: SIZE_SM })]),
-            ]),
-            // Right: blank for administration
-            makeCell([p('')]),
-          ],
-        }),
-      ],
-    }),
+    // ── Signature table ────────────────────────────────────────────────────
+    signatureTable,
 
     emptyLine(),
 
+    // ── Footer: place and date ─────────────────────────────────────────────
     new Paragraph({
-      children: [t(`Documento generado el ${new Date().toLocaleDateString('es-ES')}`, { size: SIZE_SM, color: '888888' })],
+      children: [t(`${CONFIG.lugar}, ${formattedDate}`)],
       alignment: AlignmentType.RIGHT,
-      spacing: { before: 40, after: 0 },
+      spacing: { before: 80, after: 0 },
     }),
   ]
 
