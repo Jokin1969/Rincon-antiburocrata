@@ -1,0 +1,166 @@
+.form {
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+}
+
+.row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.row .form-group {
+  flex: 1;
+  min-width: 160px;
+}
+
+.hint {
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: 1.4;
+  margin-top: 0.2rem;
+  display: block;
+}
+
+/* ── Radio group ──────────────────────────────────────────────────────────── */
+
+.radioGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.radioOption {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  font-size: 0.9rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.radioOption:hover {
+  border-color: var(--muted);
+  background: var(--surface-hover);
+}
+
+.radioOption input[type="radio"] {
+  accent-color: var(--accent);
+  flex-shrink: 0;
+  margin-top: 0.2rem;
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+}
+
+.radioOption:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.radioOption:has(input:checked) span {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ── Providers table ──────────────────────────────────────────────────────── */
+
+.proveedoresWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.proveedoresTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.proveedoresTable th {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted-light);
+}
+
+.proveedoresTable td {
+  border: 1px solid var(--border);
+  padding: 0.3rem 0.4rem;
+}
+
+.proveedoresTable td input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.875rem;
+  padding: 0.3rem 0.35rem;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.proveedoresTable td input:focus {
+  background: var(--surface-hover);
+  box-shadow: 0 0 0 2px var(--accent-dim);
+}
+
+.proveedoresTable td input::placeholder {
+  color: var(--muted);
+}
+
+.addRowBtn {
+  align-self: flex-start;
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--muted-light);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.4rem 0.9rem;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.addRowBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+/* ── Actions ──────────────────────────────────────────────────────────────── */
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.meta {
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
