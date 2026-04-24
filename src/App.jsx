@@ -7,6 +7,7 @@ import MOHQuestions from './pages/genscript/MOHQuestions'
 import AduanasHome from './pages/aduanas/AduanasHome'
 import AdaptarCarta from './pages/adaptarcarta/AdaptarCarta'
 import GestorLogos from './pages/logos/GestorLogos'
+import ContratoMenorPage from './pages/contratomenos/ContratoMenorPage'
 import NotFound from './pages/NotFound'
 
 export default function App() {
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="/adaptar-carta" element={<AdaptarCarta />} />
         <Route path="/logos" element={<GestorLogos />} />
         <Route path="/aduanas" element={<AduanasHome />} />
+        <Route path="/contrato-menor" element={<ContratoMenorPage />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

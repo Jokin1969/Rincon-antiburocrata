@@ -4,6 +4,7 @@ import { dirname, join } from 'path'
 import { generateEndUserStatement } from './generators/endUserStatement.js'
 import { generateMohQuestions } from './generators/mohQuestions.js'
 import { generateAdaptarCarta } from './generators/adaptarCarta.js'
+import { generateContratoMenor } from './generators/contratoMenor.js'
 import { docxToPdf } from './utils/pdf.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -92,6 +93,26 @@ app.post('/api/adaptar-carta', async (req, res) => {
     sendDocument(res, docxBuffer, `Carta_${label}_${safeDate}`, format)
   } catch (err) {
     console.error('Adaptar carta error:', err)
+    res.status(500).json({ error: 'Error al generar el documento.' })
+  }
+})
+
+// ── Contrato Menor ────────────────────────────────────────────────────────────
+app.post('/api/contrato-menor', async (req, res) => {
+  const { codigo, objeto, justificacionNecesidad, tipoJustificacion } = req.body
+
+  if (!codigo || !objeto || !justificacionNecesidad || !tipoJustificacion) {
+    return res.status(400).json({
+      error: 'Campos obligatorios: codigo, objeto, justificacionNecesidad, tipoJustificacion',
+    })
+  }
+
+  try {
+    const docxBuffer = await generateContratoMenor(req.body)
+    const code = codigo.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40)
+    sendDocument(res, docxBuffer, `Contrato_Menor_#${code}`, 'docx')
+  } catch (err) {
+    console.error('Contrato Menor error:', err)
     res.status(500).json({ error: 'Error al generar el documento.' })
   }
 })
