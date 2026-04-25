@@ -284,6 +284,65 @@ app.post('/api/ia/contrato', upload.single('file'), async (req, res) => {
   }
 })
 
+// ── Logos: mejorar con OpenAI ─────────────────────────────────────────────────
+
+const LOGO_ENHANCE_SYSTEM =
+  'Eres un experto diseñador gráfico y desarrollador SVG. Tu tarea es analizar el logo ' +
+  'proporcionado y generar código SVG limpio y optimizado que lo reproduzca con la mayor ' +
+  'fidelidad posible: mismos colores, tipografías, proporciones y diseño. Solo puedes reparar ' +
+  'imperfecciones técnicas (bordes dentados, ruido, artefactos de compresión, trazados irregulares). ' +
+  'No añadas ni elimines ningún elemento del diseño original. ' +
+  'Responde ÚNICAMENTE con código SVG válido y completo. Empieza con <svg y termina con </svg>. ' +
+  'No incluyas explicaciones, comentarios ni bloques de código markdown.'
+
+app.post('/api/logos/openai-enhance', async (req, res) => {
+  const { imageBase64, mimeType, nombre, instrucciones } = req.body
+
+  if (!imageBase64 || !mimeType)
+    return res.status(400).json({ error: 'Faltan imageBase64 y mimeType.' })
+  if (!process.env.OPENAI_API_KEY)
+    return res.status(503).json({ error: 'OPENAI_API_KEY no configurada en el servidor.' })
+
+  try {
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+    const isSvg = mimeType === 'image/svg+xml'
+    const userText = instrucciones?.trim()
+      || `Reproduce fielmente el logo "${nombre}", reparando imperfecciones sin alterar el diseño.`
+
+    let userContent
+    if (isSvg) {
+      const svgText = Buffer.from(imageBase64, 'base64').toString('utf-8')
+      userContent = [{ type: 'text', text: `SVG original del logo "${nombre}":\n\n${svgText}\n\n${userText}` }]
+    } else {
+      userContent = [
+        { type: 'image_url', image_url: { url: `data:${mimeType};base64,${imageBase64}`, detail: 'high' } },
+        { type: 'text', text: userText },
+      ]
+    }
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      max_tokens: 4096,
+      messages: [
+        { role: 'system', content: LOGO_ENHANCE_SYSTEM },
+        { role: 'user',   content: userContent },
+      ],
+    })
+
+    const raw = completion.choices[0].message.content?.trim() || ''
+    const match = raw.match(/<svg[\s\S]*<\/svg>/i)
+    if (!match) {
+      return res.status(422).json({
+        error: 'OpenAI no devolvió SVG válido. Prueba con un logo más sencillo o añade instrucciones.',
+      })
+    }
+    res.json({ svg: match[0] })
+  } catch (err) {
+    console.error('OpenAI logo enhance error:', err)
+    res.status(500).json({ error: err.message || 'Error al contactar con OpenAI.' })
+  }
+})
+
 // ── IA: localizar código HS / HTS ────────────────────────────────────────────
 
 const HS_SYSTEM_PROMPT =

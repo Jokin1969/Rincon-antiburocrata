@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import PageHeader from '../../components/PageHeader'
 import { useLogoStore } from '../../hooks/useLogoStore'
-import { MIME_EXT, formatBytes, getImageInfo, fileToArrayBuffer, downloadLogo } from '../../utils/imageUtils'
+import { MIME_EXT, formatBytes, getImageInfo, fileToArrayBuffer, downloadLogo, arrayBufferToBase64 } from '../../utils/imageUtils'
 import styles from './GestorLogos.module.css'
 
 const PREDEFINED_NAMES = [
@@ -34,6 +34,175 @@ const ACCEPTED_MIME = Object.keys(MIME_EXT)
 
 function blobUrl(data, mime) {
   return URL.createObjectURL(new Blob([data], { type: mime }))
+}
+
+function bumpVersion(v) {
+  const parts = String(v || '1').split('.')
+  if (parts.length === 1) return `${parts[0]}.1`
+  return [...parts.slice(0, -1), parseInt(parts[parts.length - 1], 10) + 1].join('.')
+}
+
+// ── OpenAI enhance panel ──────────────────────────────────────────────────────
+
+function OpenAIPanel({ logo, onAccept, onClose }) {
+  const [phase, setPhase] = useState('loading') // loading | result | refine | error
+  const [svgResult, setSvgResult] = useState(null)
+  const [error, setError] = useState(null)
+  const [instrucciones, setInstrucciones] = useState('')
+  const [accepting, setAccepting] = useState(false)
+
+  async function fetchEnhancement(extraInstr = '') {
+    setPhase('loading')
+    setError(null)
+    try {
+      const base64 = arrayBufferToBase64(logo.data)
+      const res = await fetch('/api/logos/openai-enhance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageBase64: base64,
+          mimeType: logo.mimeType,
+          nombre: logo.name,
+          instrucciones: extraInstr || undefined,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
+      setSvgResult(data.svg)
+      setPhase('result')
+    } catch (err) {
+      setError(err.message)
+      setPhase('error')
+    }
+  }
+
+  useEffect(() => { fetchEnhancement() }, [])
+
+  async function handleAccept() {
+    setAccepting(true)
+    const encoder = new TextEncoder()
+    const buf = encoder.encode(svgResult).buffer
+    await onAccept({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      name: logo.name,
+      version: bumpVersion(logo.version),
+      categories: logo.categories || [],
+      mimeType: 'image/svg+xml',
+      width: null,
+      height: null,
+      fileSize: encoder.encode(svgResult).byteLength,
+      data: buf,
+      uploadedAt: Date.now(),
+      origin: 'OpenAI',
+    })
+    setAccepting(false)
+    onClose()
+  }
+
+  const svgDataUrl = svgResult
+    ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgResult)}`
+    : null
+
+  return (
+    <div className={styles.openaiOverlay}>
+      <div className={styles.openaiPanel}>
+        <div className={styles.panelHeader}>
+          <span className={styles.panelTitle}>✦ OpenAI — {logo.name}</span>
+          <button className={styles.closeBtn} onClick={onClose}>✕</button>
+        </div>
+
+        <div className={styles.panelBody}>
+          {phase === 'loading' && (
+            <div className={styles.openaiLoading}>
+              <span className={styles.openaiSpinner} />
+              <p>OpenAI está analizando el logo y generando SVG…</p>
+              <p className={styles.openaiHint}>Puede tardar hasta 30 segundos.</p>
+            </div>
+          )}
+
+          {phase === 'error' && (
+            <div className={styles.openaiError}>
+              <p className={styles.openaiErrorMsg}>{error}</p>
+              <button className="btn btn-ghost" onClick={() => fetchEnhancement()}>Reintentar</button>
+            </div>
+          )}
+
+          {(phase === 'result' || phase === 'refine') && svgResult && (
+            <>
+              <div className={styles.openaiCompare}>
+                <div className={styles.openaiCompareCol}>
+                  <span className={styles.openaiCompareLabel}>Original</span>
+                  <div className={styles.openaiPreview}>
+                    <img src={blobUrl(logo.data, logo.mimeType)} alt="original" />
+                  </div>
+                </div>
+                <div className={styles.openaiCompareCol}>
+                  <span className={styles.openaiCompareLabel}>OpenAI SVG</span>
+                  <div className={styles.openaiPreview}>
+                    <img src={svgDataUrl} alt="openai svg" />
+                  </div>
+                </div>
+              </div>
+
+              <p className={styles.openaiMeta}>
+                Nueva versión: <strong>v{bumpVersion(logo.version)}</strong> · Formato: <strong>SVG</strong> · Origen: <strong>OpenAI</strong>
+              </p>
+            </>
+          )}
+
+          {phase === 'refine' && (
+            <div className={styles.openaiRefine}>
+              <label className={styles.openaiRefineLabel}>Indicaciones para OpenAI</label>
+              <textarea
+                className={styles.openaiRefineTextarea}
+                rows={4}
+                value={instrucciones}
+                onChange={e => setInstrucciones(e.target.value)}
+                placeholder="Describe qué mejorar o corregir en el SVG generado…"
+                autoFocus
+              />
+              <button
+                className="btn btn-primary"
+                disabled={!instrucciones.trim()}
+                onClick={() => { fetchEnhancement(instrucciones); setInstrucciones('') }}
+              >
+                Volver a pedir a OpenAI
+              </button>
+            </div>
+          )}
+        </div>
+
+        {phase === 'result' && (
+          <div className={styles.panelActions}>
+            <button
+              className="btn btn-primary"
+              disabled={accepting}
+              onClick={handleAccept}
+            >
+              {accepting ? 'Guardando…' : '✓ Aceptar y guardar nueva versión'}
+            </button>
+            <button className="btn btn-ghost" onClick={() => setPhase('refine')}>
+              ✎ Rechazar con modificaciones
+            </button>
+            <button className="btn btn-ghost" onClick={onClose}>
+              Rechazar
+            </button>
+          </div>
+        )}
+
+        {phase === 'refine' && (
+          <div className={styles.panelActions}>
+            <button className="btn btn-ghost" onClick={() => setPhase('result')}>
+              ← Volver al resultado
+            </button>
+            <button className="btn btn-ghost" onClick={onClose}>
+              Cancelar
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
 }
 
 // ── Upload panel ─────────────────────────────────────────────────────────────
@@ -193,11 +362,12 @@ function UploadPanel({ onSave, onClose, existingNames }) {
 
 // ── Detail / download panel ───────────────────────────────────────────────────
 
-function DetailPanel({ logo, onClose, onSave, onDelete }) {
+function DetailPanel({ logo, onClose, onSave, onSaveNew, onDelete }) {
   const [name, setName] = useState(logo.name)
   const [version, setVersion] = useState(logo.version)
   const [cats, setCats] = useState(logo.categories || [])
   const [saving, setSaving] = useState(false)
+  const [showOpenAI, setShowOpenAI] = useState(false)
 
   // Download opts
   const [fmt, setFmt] = useState('png')
@@ -317,6 +487,7 @@ function DetailPanel({ logo, onClose, onSave, onDelete }) {
     : ['png', 'webp', 'jpg']
 
   return (
+    <>
     <div className={styles.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
       <div className={styles.panel}>
         <div className={styles.panelHeader}>
@@ -495,6 +666,13 @@ function DetailPanel({ logo, onClose, onSave, onDelete }) {
           </button>
           <button
             type="button"
+            className={styles.openaiBtn}
+            onClick={() => setShowOpenAI(true)}
+          >
+            ✦ OpenAI
+          </button>
+          <button
+            type="button"
             className="btn btn-ghost"
             onClick={onClose}
           >
@@ -510,6 +688,15 @@ function DetailPanel({ logo, onClose, onSave, onDelete }) {
         </div>
       </div>
     </div>
+
+    {showOpenAI && (
+      <OpenAIPanel
+        logo={logo}
+        onClose={() => setShowOpenAI(false)}
+        onAccept={onSaveNew}
+      />
+    )}
+    </>
   )
 }
 
@@ -690,6 +877,7 @@ export default function GestorLogos() {
           logo={selected}
           onClose={() => setSelected(null)}
           onSave={async entry => { await saveLogo(entry); setSelected(null) }}
+          onSaveNew={saveLogo}
           onDelete={deleteLogo}
         />
       )}
