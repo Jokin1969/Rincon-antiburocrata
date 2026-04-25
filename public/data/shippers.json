@@ -14,6 +14,7 @@
     "email": "castilla@joaquincastilla.es",
     "vat_tax_id": "ESG95229142",
     "es_cicbiogune": true,
+    "logo": "CIC_bioGUNE.svg",
     "notas": "Remitente principal. Firma automática de Jokin."
   },
   {
@@ -31,6 +32,7 @@
     "email": "jcastilla@cicbiogune.es",
     "vat_tax_id": "ESG95229142",
     "es_cicbiogune": true,
+    "logo": "CIC_bioGUNE.svg",
     "notas": ""
   },
   {
@@ -48,6 +50,7 @@
     "email": "infor@atlasmolecularpharma.com",
     "vat_tax_id": "B95817888",
     "es_cicbiogune": false,
+    "logo": "ATLAS_molecular_pharma.svg",
     "notas": ""
   },
   {
@@ -65,6 +68,7 @@
     "email": "jorge.sepulcre@yale.edu",
     "vat_tax_id": "06-0646973",
     "es_cicbiogune": false,
+    "logo": "Yale_University.svg",
     "notas": ""
   },
   {
@@ -82,6 +86,7 @@
     "email": "Jifeng.Bian@usda.gov",
     "vat_tax_id": "",
     "es_cicbiogune": false,
+    "logo": "National_Animal_Disease_Center.svg",
     "notas": ""
   },
   {
@@ -99,6 +104,7 @@
     "email": "laruscg@ccf.org",
     "vat_tax_id": "",
     "es_cicbiogune": false,
+    "logo": "",
     "notas": ""
   },
   {
@@ -116,6 +122,7 @@
     "email": "",
     "vat_tax_id": "",
     "es_cicbiogune": false,
+    "logo": "",
     "notas": ""
   },
   {
@@ -133,6 +140,7 @@
     "email": "",
     "vat_tax_id": "",
     "es_cicbiogune": false,
+    "logo": "",
     "notas": ""
   },
   {
@@ -150,6 +158,7 @@
     "email": "help@addgene.org",
     "vat_tax_id": "",
     "es_cicbiogune": false,
+    "logo": "Addgene.svg",
     "notas": ""
   },
   {
@@ -167,6 +176,7 @@
     "email": "",
     "vat_tax_id": "",
     "es_cicbiogune": false,
+    "logo": "",
     "notas": ""
   },
   {
@@ -184,6 +194,7 @@
     "email": "",
     "vat_tax_id": "",
     "es_cicbiogune": false,
+    "logo": "",
     "notas": ""
   },
   {
@@ -201,6 +212,7 @@
     "email": "p.kloehn@prion.ucl.ac.uk",
     "vat_tax_id": "GB524371168",
     "es_cicbiogune": false,
+    "logo": "",
     "notas": ""
   },
   {
@@ -218,6 +230,7 @@
     "email": "sylvie.benestad@vetinst.no",
     "vat_tax_id": "",
     "es_cicbiogune": false,
+    "logo": "Norwegian_Veterinary_Institute.svg",
     "notas": ""
   },
   {
@@ -235,6 +248,7 @@
     "email": "glenn.telling@colostate.edu",
     "vat_tax_id": "",
     "es_cicbiogune": false,
+    "logo": "Colorado_State_University.svg",
     "notas": ""
   },
   {
@@ -252,6 +266,7 @@
     "email": "joel.watts@utoronto.ca",
     "vat_tax_id": "",
     "es_cicbiogune": false,
+    "logo": "Tanz_Centre_for_Research_in_Neurodegenerative_Diseases.svg",
     "notas": ""
   },
   {
@@ -269,6 +284,7 @@
     "email": "",
     "vat_tax_id": "",
     "es_cicbiogune": false,
+    "logo": "",
     "notas": ""
   },
   {
@@ -286,6 +302,7 @@
     "email": "matthias.schmitz@med.uni-goettingen.de",
     "vat_tax_id": "",
     "es_cicbiogune": false,
+    "logo": "",
     "notas": ""
   },
   {
@@ -303,6 +320,7 @@
     "email": "",
     "vat_tax_id": "",
     "es_cicbiogune": false,
+    "logo": "",
     "notas": ""
   },
   {
@@ -320,6 +338,7 @@
     "email": "",
     "vat_tax_id": "",
     "es_cicbiogune": false,
+    "logo": "",
     "notas": ""
   },
   {
@@ -337,6 +356,7 @@
     "email": "",
     "vat_tax_id": "",
     "es_cicbiogune": false,
+    "logo": "",
     "notas": ""
   },
   {
@@ -354,6 +374,7 @@
     "email": "",
     "vat_tax_id": "",
     "es_cicbiogune": false,
+    "logo": "",
     "notas": ""
   },
   {
@@ -371,6 +392,7 @@
     "email": "",
     "vat_tax_id": "",
     "es_cicbiogune": false,
+    "logo": "",
     "notas": ""
   },
   {
@@ -388,6 +410,7 @@
     "email": "",
     "vat_tax_id": "",
     "es_cicbiogune": false,
+    "logo": "",
     "notas": ""
   },
   {
@@ -405,6 +428,7 @@
     "email": "",
     "vat_tax_id": "",
     "es_cicbiogune": false,
+    "logo": "",
     "notas": ""
   },
   {
@@ -422,6 +446,7 @@
     "email": "",
     "vat_tax_id": "",
     "es_cicbiogune": false,
+    "logo": "",
     "notas": ""
   },
   {
@@ -439,6 +464,7 @@
     "email": "Jenna.Crowell@colostate.edu",
     "vat_tax_id": "",
     "es_cicbiogune": false,
+    "logo": "Colorado_State_University.svg",
     "notas": ""
   },
   {
@@ -456,6 +482,7 @@
     "email": "",
     "vat_tax_id": "",
     "es_cicbiogune": false,
+    "logo": "",
     "notas": ""
   },
   {
@@ -473,6 +500,7 @@
     "email": "",
     "vat_tax_id": "",
     "es_cicbiogune": false,
+    "logo": "",
     "notas": ""
   },
   {
@@ -490,6 +518,7 @@
     "email": "",
     "vat_tax_id": "",
     "es_cicbiogune": false,
+    "logo": "",
     "notas": ""
   }
 ]

@@ -133,3 +133,17 @@ function triggerDownload(blob, filename) {
 function slug(name) {
   return name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w.-]/g, '')
 }
+
+// Convert any image URL (SVG, PNG, etc.) to PNG base64 for DOCX embedding.
+// Returns { base64, width, height } scaled to fit within maxW × maxH.
+export async function svgUrlToPng(url, maxW = 220, maxH = 80) {
+  const img = await loadImage(url)
+  const nW = img.naturalWidth || maxW
+  const nH = img.naturalHeight || maxH
+  const ratio = Math.min(maxW / nW, maxH / nH, 1)
+  const w = Math.max(1, Math.round(nW * ratio))
+  const h = Math.max(1, Math.round(nH * ratio))
+  const canvas = drawToCanvas(img, w, h, false, 'transparent')
+  const base64 = canvas.toDataURL('image/png').split(',')[1]
+  return { base64, width: w, height: h }
+}
