@@ -494,6 +494,13 @@
   color: #166534;
 }
 
+.aiNotice {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-style: italic;
+  align-self: center;
+}
+
 /* ── OpenAI / Gemini enhance panel ───────────────────────────────────────── */
 
 .openaiOverlay {
