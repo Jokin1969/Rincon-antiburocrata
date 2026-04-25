@@ -12,6 +12,68 @@ function buildDefaults() {
   return d
 }
 
+// ── Q4 plasmid selector ───────────────────────────────────────────────────────
+
+const PLASMIDS = [
+  {
+    key: 'pCDNA',
+    label: 'pcDNA',
+    category: 'nonviral',
+    entry: 'pcDNA3.1: A mammalian expression plasmid used for transient expression in cultured cells.',
+  },
+  {
+    key: 'pOPINE',
+    label: 'pOPINE',
+    category: 'nonviral',
+    entry:
+      'pOPINE: A dual-purpose expression plasmid containing a T7 promoter for bacterial expression ' +
+      'and a promoter suitable for insect cell expression, and including a 6xHis tag for recombinant ' +
+      'protein purification.',
+  },
+  {
+    key: 'pTIGRE',
+    label: 'pTIGRE',
+    category: 'nonviral',
+    entry:
+      'pTIGRE: A donor plasmid designed for targeted genomic insertion by homologous recombination. ' +
+      'It contains the DNA sequence of interest flanked by homology arms corresponding to the TIGRE ' +
+      'genomic locus, allowing site-specific integration in transgenic cell engineering workflows. ' +
+      'It is used only as a molecular cloning and genome-targeting tool and does not contain elements ' +
+      'enabling the generation of infectious agents.',
+  },
+  {
+    key: 'pAAV',
+    label: 'pAAV',
+    category: 'delivery',
+    entry:
+      'pAAV: A recombinant AAV transfer plasmid used as a DNA backbone for gene delivery studies. ' +
+      'It carries the expression cassette of interest between AAV inverted terminal repeats (ITRs), ' +
+      'but does not contain the viral genes required for replication, packaging, or production of ' +
+      'viral particles. Therefore, by itself it cannot generate infectious biological agents.',
+  },
+]
+
+const ALL_PLASMID_KEYS = new Set(PLASMIDS.map(p => p.key))
+
+function buildQ4(selected) {
+  const nonViral  = PLASMIDS.filter(p => p.category === 'nonviral'  && selected.has(p.key))
+  const delivery  = PLASMIDS.filter(p => p.category === 'delivery'  && selected.has(p.key))
+  const lines = []
+
+  if (nonViral.length > 0) {
+    lines.push(`The system involves ${nonViral.length} main type of non-viral plasmid vectors:`)
+    nonViral.forEach(p => lines.push(p.entry))
+  }
+
+  if (delivery.length > 0) {
+    lines.push(`The system involves ${delivery.length} main type of non-pathogenic DNA delivery plasmid:`)
+    delivery.forEach(p => lines.push(p.entry))
+  }
+
+  lines.push('These vectors are used strictly as molecular tools and cannot generate infectious biological agents.')
+  return lines.join('\n')
+}
+
 export default function MOHQuestions() {
   const [form, setForm] = useState(buildDefaults)
   const [loadingFmt, setLoadingFmt] = useState(null)
@@ -19,6 +81,7 @@ export default function MOHQuestions() {
   const [showRepo, setShowRepo] = useState(false)
   const [repoSearch, setRepoSearch] = useState('')
   const [savedMsg, setSavedMsg] = useState(false)
+  const [selectedPlasmids, setSelectedPlasmids] = useState(() => new Set(ALL_PLASMID_KEYS))
 
   const { records, saveRecord, deleteRecord } = useMOHStore()
 
@@ -27,8 +90,19 @@ export default function MOHQuestions() {
     setError(null)
   }
 
+  function togglePlasmid(key) {
+    setSelectedPlasmids(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      setForm(f => ({ ...f, q4: buildQ4(next) }))
+      return next
+    })
+  }
+
   function loadRecord(record) {
     setForm({ ...buildDefaults(), ...record.form, date: form.date })
+    setSelectedPlasmids(new Set(ALL_PLASMID_KEYS))
     setShowRepo(false)
     setError(null)
   }
@@ -171,9 +245,29 @@ export default function MOHQuestions() {
                 <p className={styles.questionText}>{q.question}</p>
               </div>
               <div className="form-group">
-                <label htmlFor={q.key} className={styles.answerLabel}>
-                  Respuesta
-                </label>
+                <div className={styles.answerLabelRow}>
+                  <label htmlFor={q.key} className={styles.answerLabel}>
+                    Respuesta
+                  </label>
+                  {q.key === 'q4' && (
+                    <span className={styles.plasmidBtns}>
+                      {PLASMIDS.map(p => (
+                        <button
+                          key={p.key}
+                          type="button"
+                          className={
+                            styles.plasmidBtn +
+                            (selectedPlasmids.has(p.key) ? ' ' + styles.plasmidBtnActive : '')
+                          }
+                          onClick={() => togglePlasmid(p.key)}
+                          title={selectedPlasmids.has(p.key) ? `Quitar ${p.label}` : `Añadir ${p.label}`}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </span>
+                  )}
+                </div>
                 <textarea
                   id={q.key}
                   name={q.key}

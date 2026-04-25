@@ -67,6 +67,46 @@
   color: var(--muted) !important;
 }
 
+.answerLabelRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.plasmidBtns {
+  display: inline-flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.plasmidBtn {
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-family: inherit;
+  padding: 0.15rem 0.55rem;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.13s, border-color 0.13s, color 0.13s;
+  line-height: 1.5;
+}
+
+.plasmidBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.plasmidBtnActive {
+  background: var(--accent-dim);
+  border-color: rgba(123, 28, 46, 0.45);
+  color: var(--accent);
+}
+
 /* Actions */
 .actions {
   display: flex;
