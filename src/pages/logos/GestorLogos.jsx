@@ -116,7 +116,7 @@ function OpenAIPanel({ logo, onAccept, onClose }) {
             <div className={styles.openaiLoading}>
               <span className={styles.openaiSpinner} />
               <p>OpenAI está analizando el logo y generando SVG…</p>
-              <p className={styles.openaiHint}>Puede tardar hasta 30 segundos.</p>
+              <p className={styles.openaiHint}>Puede tardar hasta 5 minutos.</p>
             </div>
           )}
 

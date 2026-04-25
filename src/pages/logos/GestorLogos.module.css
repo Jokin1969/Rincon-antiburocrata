@@ -461,10 +461,10 @@
 }
 
 .openaiBtn {
-  background: none;
-  border: 1px solid var(--border);
+  background: #eff6ff;
+  border: 1px solid #93c5fd;
   border-radius: var(--radius-sm);
-  color: var(--muted-light);
+  color: #1d4ed8;
   font-size: 0.82rem;
   font-weight: 700;
   padding: 0.45rem 0.85rem;
@@ -472,9 +472,9 @@
 }
 
 .openaiBtn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: var(--accent-dim);
+  background: #dbeafe;
+  border-color: #3b82f6;
+  color: #1e40af;
 }
 
 /* ── OpenAI enhance panel ─────────────────────────────────────────────────── */
