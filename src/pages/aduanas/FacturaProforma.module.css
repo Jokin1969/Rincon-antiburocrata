@@ -638,3 +638,86 @@
   border-color: rgba(185, 28, 28, 0.3);
   color: #b91c1c;
 }
+
+/* ── Logo zone (inside Shipper block) ────────────────────────────────────── */
+
+.logoZone {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2rem;
+}
+
+.logoLoading {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.logoPreview {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.logoPreviewImg {
+  max-height: 36px;
+  max-width: 140px;
+  object-fit: contain;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  background: #fff;
+  padding: 2px 4px;
+}
+
+.logoOk {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #16a34a;
+}
+
+.logoChangeBtn {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted-light);
+  transition: border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.logoChangeBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.logoWarning {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius-sm);
+  background: #fffbeb;
+  font-size: 0.75rem;
+  color: #92400e;
+  font-weight: 500;
+}
+
+.logoUploadBtn {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid #f59e0b;
+  background: transparent;
+  color: #b45309;
+  transition: background 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.logoUploadBtn:hover { background: #fef3c7; }

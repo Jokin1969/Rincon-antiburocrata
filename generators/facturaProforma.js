@@ -170,6 +170,10 @@ export async function generateFacturaProforma(data) {
     incluirFirma  = true,
     incluirSello  = true,
     shipperEsCIC  = false,
+    logoBase64    = null,   // PNG base64 from client (canvas-converted from SVG)
+    logoWidth     = 200,    // display width in document (px)
+    logoHeight    = 70,     // display height in document (px)
+    incluirLogo   = true,
   } = data
 
   const L   = TR[lang] ?? TR.en
@@ -185,12 +189,18 @@ export async function generateFacturaProforma(data) {
   let logoBuffer  = null
   let sigBuffer   = null
   let selloBuffer = null
-  const logoPath  = join(ASSETS, 'logo-cicbiogune.png')
   const sigPath   = join(ASSETS, 'firma-jokin.png')
   const selloPath = join(ASSETS, 'Sello_cicbiogune.png')
-  if (existsSync(logoPath))  logoBuffer  = readFileSync(logoPath)
   if (existsSync(sigPath))   sigBuffer   = readFileSync(sigPath)
   if (existsSync(selloPath)) selloBuffer = readFileSync(selloPath)
+
+  // Logo: prefer client-supplied PNG (converted from SVG); fall back to CIC PNG for legacy calls
+  if (incluirLogo && logoBase64) {
+    logoBuffer = Buffer.from(logoBase64, 'base64')
+  } else if (incluirLogo && shipperEsCIC) {
+    const cicPath = join(ASSETS, 'logo-cicbiogune.png')
+    if (existsSync(cicPath)) logoBuffer = readFileSync(cicPath)
+  }
 
   // Compute totals
   const validLineas = lineas.filter(l => l.descripcion?.trim())
@@ -208,8 +218,8 @@ export async function generateFacturaProforma(data) {
   // ── 1. Header: logo left + invoice number below ───────────────────────────
   children.push(new Paragraph({
     children: logoBuffer
-      ? [new ImageRun({ data: logoBuffer, transformation: { width: 160, height: 58 }, type: 'png' })]
-      : [t('CIC bioGUNE', { bold: true, size: SZ_LG })],
+      ? [new ImageRun({ data: logoBuffer, transformation: { width: logoWidth, height: logoHeight }, type: 'png' })]
+      : [t(shipper.organizacion || shipper.nombre || '', { bold: true, size: SZ_LG })],
     alignment: AlignmentType.LEFT,
     spacing: { before: 0, after: 40 },
   }))

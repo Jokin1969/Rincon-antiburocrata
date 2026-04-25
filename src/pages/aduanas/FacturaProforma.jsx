@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import PageHeader from '../../components/PageHeader'
 import { useFacturaProformaStore } from '../../hooks/useAduanasStore'
+import { svgUrlToPng } from '../../utils/imageUtils'
 import styles from './FacturaProforma.module.css'
 
 const TODAY = new Date().toISOString().split('T')[0]
@@ -9,6 +10,7 @@ const EMPTY_PERSONA = {
   nombre: '', organizacion: '', address1: '', address2: '',
   ciudad: '', cp: '', pais: '', telefono: '', fax: '', email: '', vat: '',
   es_cicbiogune: false,
+  logo: '',
 }
 
 const EMPTY_LINEA = { descripcion: '', cantidad: '', precioUnitario: '' }
@@ -28,6 +30,7 @@ const DEFAULTS = {
   researchText: DEFAULT_RESEARCH_TEXT,
   incluirFirma: true,
   incluirSello: true,
+  incluirLogo: true,
 }
 
 const PERSONA_FIELDS = [
@@ -53,6 +56,11 @@ export default function FacturaProforma() {
   const [hsIaLoading, setHsIaLoading] = useState(null)
   const [hsIaResult, setHsIaResult] = useState(null)
   const [hsIaError, setHsIaError] = useState(null)
+  // logoData: { base64, width, height, previewUrl } | null
+  const [logoData, setLogoData] = useState(null)
+  // null=no shipper selected yet | 'loading' | 'ok' | 'error' | 'none'
+  const [logoStatus, setLogoStatus] = useState(null)
+  const logoFileRef = useRef(null)
 
   const { records, saveRecord, deleteRecord } = useFacturaProformaStore()
 
@@ -121,15 +129,51 @@ export default function FacturaProforma() {
       email:         p.email             || '',
       vat:           p.vat_tax_id        || '',
       es_cicbiogune: p.es_cicbiogune     || false,
+      logo:          p.logo              || '',
     }
   }
 
   function applyShipper(persona) {
     setForm(prev => ({ ...prev, shipper: personaToForm(persona) }))
+    const logoFile = persona.logo
+    if (logoFile) {
+      setLogoStatus('loading')
+      setLogoData(null)
+      const url = `/assets/logos/${logoFile}`
+      svgUrlToPng(url)
+        .then(d => {
+          setLogoData({ ...d, previewUrl: url })
+          setLogoStatus('ok')
+        })
+        .catch(() => setLogoStatus('error'))
+    } else {
+      setLogoStatus('none')
+      setLogoData(null)
+    }
   }
 
   function applyConsignee(persona) {
     setForm(prev => ({ ...prev, consignee: personaToForm(persona) }))
+  }
+
+  async function handleLogoUpload(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const dataUrl = await new Promise(resolve => {
+      const r = new FileReader()
+      r.onload = ev => resolve(ev.target.result)
+      r.readAsDataURL(file)
+    })
+    setLogoStatus('loading')
+    try {
+      const d = await svgUrlToPng(dataUrl, 300, 120)
+      setLogoData({ ...d, previewUrl: dataUrl })
+      setLogoStatus('ok')
+      setField('shipper.logo', '__manual__')
+    } catch {
+      setLogoStatus('error')
+    }
+    e.target.value = ''
   }
 
   async function handleHsIa(provider) {
@@ -175,6 +219,8 @@ export default function FacturaProforma() {
 
   function loadRecord(record) {
     setForm(prev => ({ ...DEFAULTS, ...record.form, lineas: record.form.lineas?.length ? record.form.lineas : [{ ...EMPTY_LINEA }] }))
+    setLogoData(null)
+    setLogoStatus(null)
     setShowRepo(false)
     setError(null)
   }
@@ -183,7 +229,13 @@ export default function FacturaProforma() {
     setLoadingFmt(format)
     setError(null)
     try {
-      const payload = { ...form, shipperEsCIC }
+      const payload = {
+        ...form,
+        shipperEsCIC,
+        logoBase64:  form.incluirLogo && logoData ? logoData.base64  : null,
+        logoWidth:   logoData?.width,
+        logoHeight:  logoData?.height,
+      }
       const res = await fetch(`/api/aduanas/factura-proforma?format=${format}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -343,6 +395,9 @@ export default function FacturaProforma() {
             onChange={(field, val) => setField(`shipper.${field}`, val)}
             shippers={shippers}
             onSelectShipper={applyShipper}
+            logoStatus={logoStatus}
+            logoData={logoData}
+            onUploadLogo={() => logoFileRef.current?.click()}
           />
           <PersonaSection
             title="Consignee (Destinatario)"
@@ -353,6 +408,15 @@ export default function FacturaProforma() {
             onSelectShipper={applyConsignee}
           />
         </div>
+
+        {/* Hidden file input for logo upload */}
+        <input
+          ref={logoFileRef}
+          type="file"
+          accept="image/svg+xml,image/png,image/jpeg"
+          style={{ display: 'none' }}
+          onChange={handleLogoUpload}
+        />
 
         {/* País de origen */}
         <div className="form-group" style={{ maxWidth: '280px' }}>
@@ -498,6 +562,13 @@ export default function FacturaProforma() {
             <span>For research purposes only</span>
           </label>
 
+          {logoData && (
+            <label className={styles.checkToggle}>
+              <input type="checkbox" checked={form.incluirLogo} onChange={e => setField('incluirLogo', e.target.checked)} />
+              <span>Incluir logo en el documento</span>
+            </label>
+          )}
+
           {shipperEsCIC && (
             <label className={styles.checkToggle}>
               <input type="checkbox" checked={form.incluirFirma} onChange={e => setField('incluirFirma', e.target.checked)} />
@@ -548,7 +619,8 @@ export default function FacturaProforma() {
 
 // ── PersonaSection ────────────────────────────────────────────────────────────
 
-function PersonaSection({ title, values, onChange, shippers, onSelectShipper }) {
+function PersonaSection({ title, values, onChange, shippers, onSelectShipper, logoStatus, logoData, onUploadLogo }) {
+  const isShipper = logoStatus !== undefined
   return (
     <div className={styles.personaSection}>
       <div className={styles.personaHeader}>
@@ -569,6 +641,31 @@ function PersonaSection({ title, values, onChange, shippers, onSelectShipper }) 
           </select>
         )}
       </div>
+
+      {/* Logo zone — only for Shipper column */}
+      {isShipper && logoStatus !== null && (
+        <div className={styles.logoZone}>
+          {logoStatus === 'loading' && (
+            <span className={styles.logoLoading}>Cargando logo…</span>
+          )}
+          {logoStatus === 'ok' && logoData && (
+            <div className={styles.logoPreview}>
+              <img src={logoData.previewUrl} alt="logo" className={styles.logoPreviewImg} />
+              <span className={styles.logoOk}>✓ Logo cargado</span>
+              <button type="button" className={styles.logoChangeBtn} onClick={onUploadLogo} title="Cambiar logo">↑ Cambiar</button>
+            </div>
+          )}
+          {(logoStatus === 'none' || logoStatus === 'error') && (
+            <div className={styles.logoWarning}>
+              <span>⚠ Sin logo para esta organización.</span>
+              <button type="button" className={styles.logoUploadBtn} onClick={onUploadLogo}>
+                ↑ Adjuntar logo
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className={styles.personaFields}>
         {PERSONA_FIELDS.map(f => (
           <div key={f.key} className={`form-group ${f.half ? styles.halfField : ''}`}>
