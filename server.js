@@ -289,7 +289,7 @@ async function iaWithOpenAI(file) {
 async function iaWithGemini(file) {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
   const model = genAI.getGenerativeModel({
-    model: 'gemini-2.5-flash-preview-04-17',
+    model: 'gemini-2.0-flash-lite',
     systemInstruction: IA_SYSTEM_PROMPT,
     generationConfig: { responseMimeType: 'application/json' },
   })
@@ -402,7 +402,7 @@ app.post('/api/logos/gemini-enhance', async (req, res) => {
   try {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash-preview-04-17',
+      model: 'gemini-2.0-flash-lite',
       systemInstruction: LOGO_ENHANCE_SYSTEM,
     })
 
@@ -495,7 +495,7 @@ async function hsWithOpenAI(descripcion, tipo) {
 async function hsWithGemini(descripcion, tipo) {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
   const model = genAI.getGenerativeModel({
-    model: 'gemini-2.5-flash-preview-04-17',
+    model: 'gemini-2.0-flash-lite',
     systemInstruction: HS_SYSTEM_PROMPT,
     generationConfig: { responseMimeType: 'application/json' },
   })
