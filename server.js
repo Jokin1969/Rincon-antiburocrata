@@ -343,6 +343,51 @@ app.post('/api/logos/openai-enhance', async (req, res) => {
   }
 })
 
+app.post('/api/logos/gemini-enhance', async (req, res) => {
+  const { imageBase64, mimeType, nombre, instrucciones } = req.body
+
+  if (!imageBase64 || !mimeType)
+    return res.status(400).json({ error: 'Faltan imageBase64 y mimeType.' })
+  if (!process.env.GEMINI_API_KEY)
+    return res.status(503).json({ error: 'GEMINI_API_KEY no configurada en el servidor.' })
+
+  try {
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.0-flash',
+      systemInstruction: LOGO_ENHANCE_SYSTEM,
+    })
+
+    const isSvg = mimeType === 'image/svg+xml'
+    const userText = instrucciones?.trim()
+      || `Reproduce fielmente el logo "${nombre}", reparando imperfecciones sin alterar el diseño.`
+
+    let parts
+    if (isSvg) {
+      const svgText = Buffer.from(imageBase64, 'base64').toString('utf-8')
+      parts = [{ text: `SVG original del logo "${nombre}":\n\n${svgText}\n\n${userText}` }]
+    } else {
+      parts = [
+        { inlineData: { data: imageBase64, mimeType } },
+        { text: userText },
+      ]
+    }
+
+    const result = await model.generateContent({ contents: [{ role: 'user', parts }] })
+    const raw = result.response.text()?.trim() || ''
+    const match = raw.match(/<svg[\s\S]*<\/svg>/i)
+    if (!match) {
+      return res.status(422).json({
+        error: 'Gemini no devolvió SVG válido. Prueba con un logo más sencillo o añade instrucciones.',
+      })
+    }
+    res.json({ svg: match[0] })
+  } catch (err) {
+    console.error('Gemini logo enhance error:', err)
+    res.status(500).json({ error: err.message || 'Error al contactar con Gemini.' })
+  }
+})
+
 // ── IA: localizar código HS / HTS ────────────────────────────────────────────
 
 const HS_SYSTEM_PROMPT =

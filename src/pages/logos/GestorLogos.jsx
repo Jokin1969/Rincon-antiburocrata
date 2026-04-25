@@ -42,9 +42,15 @@ function bumpVersion(v) {
   return [...parts.slice(0, -1), parseInt(parts[parts.length - 1], 10) + 1].join('.')
 }
 
-// ── OpenAI enhance panel ──────────────────────────────────────────────────────
+// ── AI enhance panel (OpenAI / Gemini) ───────────────────────────────────────
 
-function OpenAIPanel({ logo, onAccept, onClose }) {
+const PROVIDER_META = {
+  openai: { label: 'OpenAI', endpoint: '/api/logos/openai-enhance' },
+  gemini: { label: 'Gemini', endpoint: '/api/logos/gemini-enhance' },
+}
+
+function EnhancePanel({ logo, provider, onAccept, onClose }) {
+  const { label, endpoint } = PROVIDER_META[provider]
   const [phase, setPhase] = useState('loading') // loading | result | refine | error
   const [svgResult, setSvgResult] = useState(null)
   const [error, setError] = useState(null)
@@ -56,7 +62,7 @@ function OpenAIPanel({ logo, onAccept, onClose }) {
     setError(null)
     try {
       const base64 = arrayBufferToBase64(logo.data)
-      const res = await fetch('/api/logos/openai-enhance', {
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -93,7 +99,7 @@ function OpenAIPanel({ logo, onAccept, onClose }) {
       fileSize: encoder.encode(svgResult).byteLength,
       data: buf,
       uploadedAt: Date.now(),
-      origin: 'OpenAI',
+      origin: label,
     })
     setAccepting(false)
     onClose()
@@ -107,7 +113,7 @@ function OpenAIPanel({ logo, onAccept, onClose }) {
     <div className={styles.openaiOverlay}>
       <div className={styles.openaiPanel}>
         <div className={styles.panelHeader}>
-          <span className={styles.panelTitle}>✦ OpenAI — {logo.name}</span>
+          <span className={styles.panelTitle}>✦ {label} — {logo.name}</span>
           <button className={styles.closeBtn} onClick={onClose}>✕</button>
         </div>
 
@@ -115,7 +121,7 @@ function OpenAIPanel({ logo, onAccept, onClose }) {
           {phase === 'loading' && (
             <div className={styles.openaiLoading}>
               <span className={styles.openaiSpinner} />
-              <p>OpenAI está analizando el logo y generando SVG…</p>
+              <p>{label} está analizando el logo y generando SVG…</p>
               <p className={styles.openaiHint}>Puede tardar hasta 5 minutos.</p>
             </div>
           )}
@@ -137,7 +143,7 @@ function OpenAIPanel({ logo, onAccept, onClose }) {
                   </div>
                 </div>
                 <div className={styles.openaiCompareCol}>
-                  <span className={styles.openaiCompareLabel}>OpenAI SVG</span>
+                  <span className={styles.openaiCompareLabel}>{label} SVG</span>
                   <div className={styles.openaiPreview}>
                     <img src={svgDataUrl} alt="openai svg" />
                   </div>
@@ -145,7 +151,7 @@ function OpenAIPanel({ logo, onAccept, onClose }) {
               </div>
 
               <p className={styles.openaiMeta}>
-                Nueva versión: <strong>v{bumpVersion(logo.version)}</strong> · Formato: <strong>SVG</strong> · Origen: <strong>OpenAI</strong>
+                Nueva versión: <strong>v{bumpVersion(logo.version)}</strong> · Formato: <strong>SVG</strong> · Origen: <strong>{label}</strong>
               </p>
             </>
           )}
@@ -367,7 +373,7 @@ function DetailPanel({ logo, onClose, onSave, onSaveNew, onDelete }) {
   const [version, setVersion] = useState(logo.version)
   const [cats, setCats] = useState(logo.categories || [])
   const [saving, setSaving] = useState(false)
-  const [showOpenAI, setShowOpenAI] = useState(false)
+  const [aiProvider, setAiProvider] = useState(null) // 'openai' | 'gemini' | null
 
   // Download opts
   const [fmt, setFmt] = useState('png')
@@ -667,9 +673,16 @@ function DetailPanel({ logo, onClose, onSave, onSaveNew, onDelete }) {
           <button
             type="button"
             className={styles.openaiBtn}
-            onClick={() => setShowOpenAI(true)}
+            onClick={() => setAiProvider('openai')}
           >
             ✦ OpenAI
+          </button>
+          <button
+            type="button"
+            className={styles.geminiBtn}
+            onClick={() => setAiProvider('gemini')}
+          >
+            ✦ Gemini
           </button>
           <button
             type="button"
@@ -689,10 +702,11 @@ function DetailPanel({ logo, onClose, onSave, onSaveNew, onDelete }) {
       </div>
     </div>
 
-    {showOpenAI && (
-      <OpenAIPanel
+    {aiProvider && (
+      <EnhancePanel
         logo={logo}
-        onClose={() => setShowOpenAI(false)}
+        provider={aiProvider}
+        onClose={() => setAiProvider(null)}
         onAccept={onSaveNew}
       />
     )}
