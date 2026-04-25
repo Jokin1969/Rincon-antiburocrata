@@ -1,55 +1,24 @@
 import { useState, useEffect, useCallback } from 'react'
+import { arrayBufferToBase64 } from '../utils/imageUtils'
 
-const DB_NAME = 'rincon-logos'
-const DB_VERSION = 1
-const STORE = 'logos'
-
-function openDB() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION)
-    req.onupgradeneeded = e => {
-      const db = e.target.result
-      if (!db.objectStoreNames.contains(STORE)) {
-        const store = db.createObjectStore(STORE, { keyPath: 'id' })
-        store.createIndex('name', 'name', { unique: false })
-        store.createIndex('uploadedAt', 'uploadedAt', { unique: false })
-      }
-    }
-    req.onsuccess = e => resolve(e.target.result)
-    req.onerror = e => reject(e.target.error)
-  })
-}
-
-function tx(db, mode, fn) {
-  return new Promise((resolve, reject) => {
-    const t = db.transaction(STORE, mode)
-    const store = t.objectStore(STORE)
-    const req = fn(store)
-    if (mode === 'readonly') {
-      // resolve with the request result once the read completes
-      req.onsuccess = e => resolve(e.target.result)
-      req.onerror  = e => reject(e.target.error)
-    } else {
-      // wait for full transaction commit before resolving
-      if (req) req.onerror = e => reject(e.target.error)
-      t.oncomplete = () => resolve()
-      t.onerror    = e => reject(e.target.error)
-    }
-  })
+function b64ToBuf(b64) {
+  const bin = atob(b64)
+  const arr = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i)
+  return arr.buffer
 }
 
 export function useLogoStore() {
-  const [logos, setLogos] = useState([])
+  const [logos, setLogos]   = useState([])
   const [loading, setLoading] = useState(true)
 
   const refresh = useCallback(async () => {
     try {
-      const db = await openDB()
-      const all = await tx(db, 'readonly', s => s.getAll())
-      all.sort((a, b) => a.name.localeCompare(b.name))
-      setLogos(all)
-    } catch (err) {
-      console.error('useLogoStore refresh:', err)
+      const res = await fetch('/api/store/logos')
+      const raw = await res.json()
+      setLogos(raw.map(l => ({ ...l, data: b64ToBuf(l.data) })))
+    } catch {
+      setLogos([])
     } finally {
       setLoading(false)
     }
@@ -58,14 +27,24 @@ export function useLogoStore() {
   useEffect(() => { refresh() }, [refresh])
 
   const saveLogo = useCallback(async (entry) => {
-    const db = await openDB()
-    await tx(db, 'readwrite', s => s.put(entry))
+    try {
+      await fetch('/api/store/logos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...entry, data: arrayBufferToBase64(entry.data) }),
+      })
+    } catch (err) {
+      console.error('saveLogo:', err)
+    }
     await refresh()
   }, [refresh])
 
   const deleteLogo = useCallback(async (id) => {
-    const db = await openDB()
-    await tx(db, 'readwrite', s => s.delete(id))
+    try {
+      await fetch(`/api/store/logos/${id}`, { method: 'DELETE' })
+    } catch (err) {
+      console.error('deleteLogo:', err)
+    }
     await refresh()
   }, [refresh])
 

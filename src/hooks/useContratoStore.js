@@ -1,36 +1,42 @@
-import { useState, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
-const KEY = 'contratomenos-store'
-
-function readStore() {
-  try {
-    return JSON.parse(localStorage.getItem(KEY) || '[]')
-  } catch {
-    return []
-  }
-}
-
-function writeStore(records) {
-  localStorage.setItem(KEY, JSON.stringify(records))
-}
+const COL = 'contrato'
 
 export function useContratoStore() {
-  const [records, setRecords] = useState(readStore)
+  const [records, setRecords] = useState([])
 
-  const saveRecord = useCallback((codigo, formData) => {
-    const next = [
-      { codigo, savedAt: new Date().toISOString(), form: formData },
-      ...readStore().filter(r => r.codigo !== codigo),
-    ]
-    writeStore(next)
-    setRecords(next)
+  const refresh = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/store/${COL}`)
+      setRecords(await res.json())
+    } catch {
+      setRecords([])
+    }
   }, [])
 
-  const deleteRecord = useCallback((codigo) => {
-    const next = readStore().filter(r => r.codigo !== codigo)
-    writeStore(next)
-    setRecords(next)
-  }, [])
+  useEffect(() => { refresh() }, [refresh])
+
+  const saveRecord = useCallback(async (codigo, formData) => {
+    try {
+      await fetch(`/api/store/${COL}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: codigo, codigo, savedAt: new Date().toISOString(), form: formData }),
+      })
+    } catch (err) {
+      console.error('saveRecord:', err)
+    }
+    await refresh()
+  }, [refresh])
+
+  const deleteRecord = useCallback(async (codigo) => {
+    try {
+      await fetch(`/api/store/${COL}/${encodeURIComponent(codigo)}`, { method: 'DELETE' })
+    } catch (err) {
+      console.error('deleteRecord:', err)
+    }
+    await refresh()
+  }, [refresh])
 
   return { records, saveRecord, deleteRecord }
 }

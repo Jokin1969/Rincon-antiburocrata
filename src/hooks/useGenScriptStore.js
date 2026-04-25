@@ -1,30 +1,45 @@
-import { useState, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
-function makeHooks(KEY) {
-  const read  = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]') } catch { return [] } }
-  const write = (recs) => localStorage.setItem(KEY, JSON.stringify(recs))
-
+function makeApiHooks(col) {
   return function useStore() {
-    const [records, setRecords] = useState(read)
+    const [records, setRecords] = useState([])
 
-    const saveRecord = useCallback((id, formData) => {
-      const next = [
-        { id, savedAt: new Date().toISOString(), form: formData },
-        ...read().filter(r => r.id !== id),
-      ]
-      write(next)
-      setRecords(next)
+    const refresh = useCallback(async () => {
+      try {
+        const res = await fetch(`/api/store/${col}`)
+        setRecords(await res.json())
+      } catch {
+        setRecords([])
+      }
     }, [])
 
-    const deleteRecord = useCallback((id) => {
-      const next = read().filter(r => r.id !== id)
-      write(next)
-      setRecords(next)
-    }, [])
+    useEffect(() => { refresh() }, [refresh])
+
+    const saveRecord = useCallback(async (id, formData) => {
+      try {
+        await fetch(`/api/store/${col}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, savedAt: new Date().toISOString(), form: formData }),
+        })
+      } catch (err) {
+        console.error('saveRecord:', err)
+      }
+      await refresh()
+    }, [refresh])
+
+    const deleteRecord = useCallback(async (id) => {
+      try {
+        await fetch(`/api/store/${col}/${encodeURIComponent(id)}`, { method: 'DELETE' })
+      } catch (err) {
+        console.error('deleteRecord:', err)
+      }
+      await refresh()
+    }, [refresh])
 
     return { records, saveRecord, deleteRecord }
   }
 }
 
-export const useEUSStore = makeHooks('genscript-eus-store')
-export const useMOHStore = makeHooks('genscript-moh-store')
+export const useEUSStore = makeApiHooks('genscript-eus')
+export const useMOHStore = makeApiHooks('genscript-moh')

@@ -1,6 +1,7 @@
 import express from 'express'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import multer from 'multer'
 import Anthropic from '@anthropic-ai/sdk'
 import OpenAI from 'openai'
@@ -18,7 +19,7 @@ const __dirname = dirname(__filename)
 const app = express()
 const PORT = process.env.PORT || 3000
 
-app.use(express.json())
+app.use(express.json({ limit: '20mb' }))
 app.use(express.static(join(__dirname, 'dist')))
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } })
@@ -525,6 +526,68 @@ app.post('/api/ia/hs-code', async (req, res) => {
     console.error(`IA HS-Code [${provider}] error:`, err)
     res.status(500).json({ error: classifyAIError(err, provider) })
   }
+})
+
+// ── Persistent data store ─────────────────────────────────────────────────────
+
+const DATA_DIR = process.env.DATA_DIR || join(__dirname, 'data')
+try { mkdirSync(DATA_DIR, { recursive: true }) } catch {}
+
+function readData(file, fallback) {
+  try {
+    const p = join(DATA_DIR, file)
+    if (!existsSync(p)) return fallback
+    return JSON.parse(readFileSync(p, 'utf-8'))
+  } catch { return fallback }
+}
+
+function writeData(file, value) {
+  writeFileSync(join(DATA_DIR, file), JSON.stringify(value), 'utf-8')
+}
+
+const VALID_COLS = new Set(['contrato', 'proforma', 'genscript-eus', 'genscript-moh'])
+
+// Logos (binary stored as base64 strings inside JSON)
+app.get('/api/store/logos', (_req, res) => {
+  res.json(readData('logos.json', []))
+})
+app.post('/api/store/logos', (req, res) => {
+  const entry = req.body
+  if (!entry?.id) return res.status(400).json({ error: 'id requerido' })
+  const list = readData('logos.json', [])
+  const idx = list.findIndex(l => l.id === entry.id)
+  if (idx >= 0) list[idx] = entry; else list.push(entry)
+  writeData('logos.json', list)
+  res.json({ ok: true })
+})
+app.delete('/api/store/logos/:id', (req, res) => {
+  const list = readData('logos.json', [])
+  writeData('logos.json', list.filter(l => l.id !== req.params.id))
+  res.json({ ok: true })
+})
+
+// Generic JSON collections (contrato, proforma, genscript-eus, genscript-moh)
+app.get('/api/store/:col', (req, res) => {
+  if (!VALID_COLS.has(req.params.col)) return res.status(404).json({ error: 'Colección desconocida' })
+  res.json(readData(`${req.params.col}.json`, []))
+})
+app.post('/api/store/:col', (req, res) => {
+  const { col } = req.params
+  if (!VALID_COLS.has(col)) return res.status(404).json({ error: 'Colección desconocida' })
+  const record = req.body
+  if (!record?.id) return res.status(400).json({ error: 'id requerido' })
+  const list = readData(`${col}.json`, [])
+  const idx = list.findIndex(r => r.id === record.id)
+  if (idx >= 0) list[idx] = record; else list.unshift(record)
+  writeData(`${col}.json`, list)
+  res.json({ ok: true })
+})
+app.delete('/api/store/:col/:id', (req, res) => {
+  const { col, id } = req.params
+  if (!VALID_COLS.has(col)) return res.status(404).json({ error: 'Colección desconocida' })
+  const list = readData(`${col}.json`, [])
+  writeData(`${col}.json`, list.filter(r => r.id !== id))
+  res.json({ ok: true })
 })
 
 // ── SPA fallback ─────────────────────────────────────────────────────────────
