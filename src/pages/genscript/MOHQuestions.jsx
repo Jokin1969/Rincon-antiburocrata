@@ -56,17 +56,24 @@ const PLASMIDS = [
 const ALL_PLASMID_KEYS = new Set(PLASMIDS.map(p => p.key))
 
 function buildQ4(selected) {
-  const nonViral  = PLASMIDS.filter(p => p.category === 'nonviral'  && selected.has(p.key))
-  const delivery  = PLASMIDS.filter(p => p.category === 'delivery'  && selected.has(p.key))
-  const lines = []
+  const nonViral = PLASMIDS.filter(p => p.category === 'nonviral' && selected.has(p.key))
+  const delivery = PLASMIDS.filter(p => p.category === 'delivery' && selected.has(p.key))
+  const total    = nonViral.length + delivery.length
+  const lines    = []
 
-  if (nonViral.length > 0) {
+  if (nonViral.length > 0 && delivery.length === 0) {
+    // Solo plásmidos no-virales: sección específica con su cuenta
     lines.push(`The system involves ${nonViral.length} main type of non-viral plasmid vectors:`)
     nonViral.forEach(p => lines.push(p.entry))
-  }
-
-  if (delivery.length > 0) {
+  } else if (nonViral.length === 0 && delivery.length > 0) {
+    // Solo pAAV: sección específica de delivery
     lines.push(`The system involves ${delivery.length} main type of non-pathogenic DNA delivery plasmid:`)
+    delivery.forEach(p => lines.push(p.entry))
+  } else if (total > 0) {
+    // Ambas categorías: UNA sola frase con el total (ej. 4), todos los plásmidos en lista única.
+    // Las descripciones individuales ya especifican la naturaleza de cada uno.
+    lines.push(`The system involves ${total} main type of non-viral plasmid vectors:`)
+    nonViral.forEach(p => lines.push(p.entry))
     delivery.forEach(p => lines.push(p.entry))
   }
 
