@@ -40,6 +40,54 @@ function sendDocument(res, docxBuffer, basename, format) {
   res.send(docxBuffer)
 }
 
+// ── AI error classifier ───────────────────────────────────────────────────────
+
+const AI_PROVIDER_NAMES = {
+  claude: 'Claude (Anthropic)',
+  openai: 'OpenAI',
+  gemini: 'Google Gemini',
+}
+
+const BILLING_LINKS = {
+  claude: 'https://console.anthropic.com/settings/plans',
+  openai: 'https://platform.openai.com/account/billing',
+  gemini: 'https://aistudio.google.com/apikey',
+}
+
+function classifyAIError(err, provider) {
+  const name = AI_PROVIDER_NAMES[provider] || provider
+  const link = BILLING_LINKS[provider] || ''
+
+  // Extract HTTP status from Anthropic/OpenAI SDK (.status) or from the error message string (Gemini)
+  const msgStatus = err.message?.match(/\[(\d{3})\s/)?.[1]
+  const status = err.status ?? err.statusCode ?? (msgStatus ? parseInt(msgStatus, 10) : null)
+
+  if (
+    status === 429 ||
+    /quota|rate.?limit|too many requests|exceeded.*quota|resource.*exhausted/i.test(err.message)
+  ) {
+    return (
+      `Se ha agotado la cuota de ${name}. ` +
+      `Puede que hayas alcanzado el límite de uso gratuito o necesites recargar saldo. ` +
+      (link ? `Revisa tu cuenta en: ${link}` : '')
+    ).trim()
+  }
+
+  if (
+    status === 401 ||
+    status === 403 ||
+    /invalid.{0,10}api.?key|incorrect.{0,10}api.?key|api.?key.{0,10}invalid|authentication|unauthorized|forbidden|permission denied/i.test(err.message)
+  ) {
+    return `La API key de ${name} no es válida o no está autorizada. Verifica que la clave esté bien configurada en el servidor.`
+  }
+
+  if (status >= 500 || /server.?error|internal.?error/i.test(err.message)) {
+    return `El servidor de ${name} ha devuelto un error. Inténtalo de nuevo en unos minutos.`
+  }
+
+  return `Error al consultar a ${name}. ${err.message || 'Error desconocido.'}`
+}
+
 // ── GenScript: End User Statement ────────────────────────────────────────────
 app.post('/api/genscript/end-user-statement', async (req, res) => {
   const { model, quantity, endUse, date, projectCode } = req.body
@@ -280,7 +328,7 @@ app.post('/api/ia/contrato', upload.single('file'), async (req, res) => {
     res.json(data)
   } catch (err) {
     console.error(`IA Contrato [${provider}] error:`, err)
-    res.status(500).json({ error: err.message || 'Error al consultar a la IA.' })
+    res.status(500).json({ error: classifyAIError(err, provider) })
   }
 })
 
@@ -339,7 +387,7 @@ app.post('/api/logos/openai-enhance', async (req, res) => {
     res.json({ svg: match[0] })
   } catch (err) {
     console.error('OpenAI logo enhance error:', err)
-    res.status(500).json({ error: err.message || 'Error al contactar con OpenAI.' })
+    res.status(500).json({ error: classifyAIError(err, 'openai') })
   }
 })
 
@@ -384,7 +432,7 @@ app.post('/api/logos/gemini-enhance', async (req, res) => {
     res.json({ svg: match[0] })
   } catch (err) {
     console.error('Gemini logo enhance error:', err)
-    res.status(500).json({ error: err.message || 'Error al contactar con Gemini.' })
+    res.status(500).json({ error: classifyAIError(err, 'gemini') })
   }
 })
 
@@ -475,7 +523,7 @@ app.post('/api/ia/hs-code', async (req, res) => {
     res.json(data)
   } catch (err) {
     console.error(`IA HS-Code [${provider}] error:`, err)
-    res.status(500).json({ error: err.message || 'Error al consultar a la IA.' })
+    res.status(500).json({ error: classifyAIError(err, provider) })
   }
 })
 
