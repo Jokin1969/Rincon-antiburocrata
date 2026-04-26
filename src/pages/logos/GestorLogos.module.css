@@ -291,18 +291,18 @@
   background-size: 16px 16px;
   background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
   border-radius: var(--radius-sm);
+  width: 100%;
+  height: 240px;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
-  min-height: 140px;
-  overflow: hidden;
 }
 
 .preview img {
   display: block;
   max-width: 100%;
-  max-height: 280px;
+  max-height: 100%;
   width: auto;
   height: auto;
   object-fit: contain;
