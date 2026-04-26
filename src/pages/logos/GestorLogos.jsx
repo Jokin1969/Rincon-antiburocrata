@@ -374,12 +374,6 @@ function DetailPanel({ logo, onClose, onSave, onSaveNew, onDelete }) {
   const [cats, setCats] = useState(logo.categories || [])
   const [saving, setSaving] = useState(false)
   const [aiProvider, setAiProvider] = useState(null) // 'openai' | 'gemini' | null
-  const [aiNotice, setAiNotice] = useState(false)
-
-  function handleAiClick() {
-    setAiNotice(true)
-    setTimeout(() => setAiNotice(false), 3500)
-  }
 
   // Download opts
   const [fmt, setFmt] = useState('png')
@@ -679,24 +673,19 @@ function DetailPanel({ logo, onClose, onSave, onSaveNew, onDelete }) {
           <button
             type="button"
             className={styles.openaiBtn}
-            onClick={handleAiClick}
-            style={{ opacity: 0.5 }}
+            disabled
+            title="Mejora con IA temporalmente desactivada"
           >
             ✦ OpenAI
           </button>
           <button
             type="button"
             className={styles.geminiBtn}
-            onClick={handleAiClick}
-            style={{ opacity: 0.5 }}
+            disabled
+            title="Mejora con IA temporalmente desactivada"
           >
             ✦ Gemini
           </button>
-          {aiNotice && (
-            <span className={styles.aiNotice}>
-              Mejora con IA temporalmente desactivada.
-            </span>
-          )}
           <button
             type="button"
             className="btn btn-ghost"

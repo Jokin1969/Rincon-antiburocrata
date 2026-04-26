@@ -477,6 +477,13 @@
   color: #1e40af;
 }
 
+.openaiBtn:disabled,
+.geminiBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .geminiBtn {
   background: #f0fdf4;
   border: 1px solid #86efac;
@@ -492,13 +499,6 @@
   background: #dcfce7;
   border-color: #4ade80;
   color: #166534;
-}
-
-.aiNotice {
-  font-size: 0.75rem;
-  color: var(--muted);
-  font-style: italic;
-  align-self: center;
 }
 
 /* ── OpenAI / Gemini enhance panel ───────────────────────────────────────── */
