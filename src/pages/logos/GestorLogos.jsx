@@ -213,7 +213,7 @@ function EnhancePanel({ logo, provider, onAccept, onClose }) {
 
 // ── Upload panel ─────────────────────────────────────────────────────────────
 
-function UploadPanel({ onSave, onClose, existingNames }) {
+function UploadPanel({ onSave, onClose, existingNames, initialFile }) {
   const [file, setFile] = useState(null)
   const [preview, setPreview] = useState(null)
   const [name, setName] = useState('')
@@ -233,14 +233,31 @@ function UploadPanel({ onSave, onClose, existingNames }) {
     setPreview(URL.createObjectURL(f))
     setFile(f)
     if (!name) {
-      const stem = f.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ')
+      const stem = (f.name || '').replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ')
       const match = PREDEFINED_NAMES.find(n =>
         n.toLowerCase().includes(stem.toLowerCase()) ||
         stem.toLowerCase().includes(n.toLowerCase().split(' ')[0])
       )
-      setName(match || stem)
+      setName(match || stem || '')
     }
   }
+
+  // Apply file passed from external paste (before panel opened)
+  useEffect(() => { if (initialFile) applyFile(initialFile) }, [])
+
+  // Paste listener inside the panel (Ctrl+V while panel is open)
+  useEffect(() => {
+    function onPaste(e) {
+      let f = [...(e.clipboardData?.files ?? [])].find(i => ACCEPTED_MIME.includes(i.type))
+      if (!f) {
+        const item = [...(e.clipboardData?.items ?? [])].find(i => ACCEPTED_MIME.includes(i.type))
+        if (item) f = item.getAsFile()
+      }
+      if (f) applyFile(f)
+    }
+    document.addEventListener('paste', onPaste)
+    return () => document.removeEventListener('paste', onPaste)
+  }, [name])
 
   function onDrop(e) {
     e.preventDefault()
@@ -291,10 +308,13 @@ function UploadPanel({ onSave, onClose, existingNames }) {
             onDrop={onDrop}
           >
             {preview
-              ? <div className={styles.uploadThumb}><img src={preview} alt="preview" /></div>
+              ? <>
+                  <div className={styles.uploadThumb}><img src={preview} alt="preview" /></div>
+                  <span style={{ fontSize: '0.7rem', opacity: 0.55 }}>Ctrl+V · clic · arrastra para cambiar</span>
+                </>
               : <>
                   <span className={styles.uploadIcon}>📁</span>
-                  <span>Haz clic, arrastra o pega (Ctrl+V)</span>
+                  <span>Haz clic, arrastra o pega con Ctrl+V</span>
                   <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>PNG · WebP · JPG · SVG · GIF</span>
                 </>
             }
@@ -757,20 +777,26 @@ export default function GestorLogos() {
   const [search, setSearch] = useState('')
   const [catFilter, setCatFilter] = useState(null)
   const [showUpload, setShowUpload] = useState(false)
+  const [pastedFile, setPastedFile] = useState(null)
   const [selected, setSelected] = useState(null)
   const [dragging, setDragging] = useState(false)
   const dropRef = useRef()
   const fileRef = useRef()
 
-  // Global paste listener
+  // Global paste listener — only when the upload panel is NOT already open
   useEffect(() => {
     function onPaste(e) {
-      const file = [...(e.clipboardData?.files ?? [])].find(f => ACCEPTED_MIME.includes(f.type))
-      if (file) { setShowUpload(true); /* paste handled inside UploadPanel */ }
+      if (showUpload) return // panel already open; its own listener handles it
+      let f = [...(e.clipboardData?.files ?? [])].find(i => ACCEPTED_MIME.includes(i.type))
+      if (!f) {
+        const item = [...(e.clipboardData?.items ?? [])].find(i => ACCEPTED_MIME.includes(i.type))
+        if (item) f = item.getAsFile()
+      }
+      if (f) { setPastedFile(f); setShowUpload(true) }
     }
     document.addEventListener('paste', onPaste)
     return () => document.removeEventListener('paste', onPaste)
-  }, [])
+  }, [showUpload])
 
   function onDragOver(e) {
     e.preventDefault()
@@ -883,8 +909,9 @@ export default function GestorLogos() {
       {showUpload && (
         <UploadPanel
           onSave={saveLogo}
-          onClose={() => setShowUpload(false)}
+          onClose={() => { setShowUpload(false); setPastedFile(null) }}
           existingNames={logos.map(l => l.name)}
+          initialFile={pastedFile}
         />
       )}
 
