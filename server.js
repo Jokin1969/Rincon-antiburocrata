@@ -530,7 +530,7 @@ app.post('/api/ia/hs-code', async (req, res) => {
 
 // ── Persistent data store ─────────────────────────────────────────────────────
 
-const DATA_DIR = process.env.DATA_DIR || join(__dirname, 'data')
+const DATA_DIR = process.env.DATA_DIR || '/data'
 try { mkdirSync(DATA_DIR, { recursive: true }) } catch {}
 
 function readData(file, fallback) {
