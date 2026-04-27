@@ -565,6 +565,17 @@ app.delete('/api/store/logos/:id', (req, res) => {
   writeData('logos.json', list.filter(l => l.id !== req.params.id))
   res.json({ ok: true })
 })
+app.post('/api/store/logos/reorder', (req, res) => {
+  const { ids } = req.body
+  if (!Array.isArray(ids)) return res.status(400).json({ error: 'ids debe ser un array' })
+  const list = readData('logos.json', [])
+  const map = new Map(list.map(l => [l.id, l]))
+  const reordered = ids.map(id => map.get(id)).filter(Boolean)
+  const inIds = new Set(ids)
+  list.filter(l => !inIds.has(l.id)).forEach(l => reordered.push(l))
+  writeData('logos.json', reordered)
+  res.json({ ok: true })
+})
 
 // Generic JSON collections (contrato, proforma, genscript-eus, genscript-moh)
 app.get('/api/store/:col', (req, res) => {

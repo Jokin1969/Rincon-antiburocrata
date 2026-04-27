@@ -738,7 +738,7 @@ function DetailPanel({ logo, onClose, onSave, onSaveNew, onDelete }) {
 
 // ── Logo card ─────────────────────────────────────────────────────────────────
 
-function LogoCard({ logo, onClick }) {
+function LogoCard({ logo, onClick, onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd, isDragOver }) {
   const url = useRef(blobUrl(logo.data, logo.mimeType))
   useEffect(() => () => URL.revokeObjectURL(url.current), [])
 
@@ -746,13 +746,24 @@ function LogoCard({ logo, onClick }) {
   const dims = logo.width ? `${logo.width}×${logo.height}` : null
 
   return (
-    <div className={styles.card} onClick={onClick}>
+    <div
+      className={`${styles.card} ${isDragOver ? styles.cardDragOver : ''}`}
+      draggable
+      onClick={onClick}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+      onDragEnd={onDragEnd}
+    >
       <div className={styles.thumb}>
         <img src={url.current} alt={logo.name} />
         <span className={styles.versionBadge}>v{logo.version}</span>
       </div>
       <div className={styles.cardBody}>
-        <span className={styles.cardName}>{logo.name}</span>
+        <span className={styles.cardName}>
+          {logo.name} <span className={styles.cardVersion}>(v{logo.version})</span>
+        </span>
         <span className={styles.cardMeta}>
           {ext}{dims ? ` · ${dims}` : ''} · {formatBytes(logo.fileSize)}
         </span>
@@ -773,15 +784,31 @@ function LogoCard({ logo, onClick }) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function GestorLogos() {
-  const { logos, loading, saveLogo, deleteLogo } = useLogoStore()
+  const { logos, loading, saveLogo, deleteLogo, saveOrder } = useLogoStore()
   const [search, setSearch] = useState('')
   const [catFilter, setCatFilter] = useState(null)
   const [showUpload, setShowUpload] = useState(false)
   const [pastedFile, setPastedFile] = useState(null)
   const [selected, setSelected] = useState(null)
   const [dragging, setDragging] = useState(false)
+  const [dragOverId, setDragOverId] = useState(null)
+  const dragId = useRef(null)
   const dropRef = useRef()
   const fileRef = useRef()
+
+  function handleCardDrop(targetId) {
+    const fromId = dragId.current
+    dragId.current = null
+    setDragOverId(null)
+    if (!fromId || fromId === targetId) return
+    const newOrder = [...logos]
+    const fromIdx = newOrder.findIndex(l => l.id === fromId)
+    const toIdx = newOrder.findIndex(l => l.id === targetId)
+    if (fromIdx < 0 || toIdx < 0) return
+    const [moved] = newOrder.splice(fromIdx, 1)
+    newOrder.splice(toIdx, 0, moved)
+    saveOrder(newOrder.map(l => l.id))
+  }
 
   // Global paste listener — only when the upload panel is NOT already open
   useEffect(() => {
@@ -799,6 +826,7 @@ export default function GestorLogos() {
   }, [showUpload])
 
   function onDragOver(e) {
+    if (!e.dataTransfer.types.includes('Files')) return
     e.preventDefault()
     setDragging(true)
   }
@@ -901,6 +929,12 @@ export default function GestorLogos() {
               key={logo.id}
               logo={logo}
               onClick={() => setSelected(logo)}
+              onDragStart={() => { dragId.current = logo.id }}
+              onDragOver={e => { e.preventDefault(); e.stopPropagation(); setDragOverId(logo.id) }}
+              onDragLeave={() => setDragOverId(null)}
+              onDrop={e => { e.preventDefault(); e.stopPropagation(); handleCardDrop(logo.id) }}
+              onDragEnd={() => { dragId.current = null; setDragOverId(null) }}
+              isDragOver={dragOverId === logo.id}
             />
           ))}
         </div>

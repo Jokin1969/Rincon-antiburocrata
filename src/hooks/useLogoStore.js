@@ -48,5 +48,18 @@ export function useLogoStore() {
     await refresh()
   }, [refresh])
 
-  return { logos, loading, saveLogo, deleteLogo, refresh }
+  const saveOrder = useCallback(async (ids) => {
+    try {
+      await fetch('/api/store/logos/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+      })
+    } catch (err) {
+      console.error('saveOrder:', err)
+    }
+    await refresh()
+  }, [refresh])
+
+  return { logos, loading, saveLogo, deleteLogo, saveOrder, refresh }
 }
