@@ -11,6 +11,14 @@ const MODULES = [
     status: 'ready',
   },
   {
+    id: 'contrato-menor',
+    name: 'Contrato menor',
+    description: 'Documentación para la tramitación de contratos menores con proveedores especializados.',
+    icon: '📝',
+    href: '/contrato-menor',
+    status: 'ready',
+  },
+  {
     id: 'aduanas',
     name: 'Aduanas',
     description: 'Documentación para envíos y recepciones internacionales de material biológico.',
