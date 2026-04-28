@@ -9,6 +9,7 @@ import FacturaProforma from './pages/aduanas/FacturaProforma'
 import AdaptarCarta from './pages/adaptarcarta/AdaptarCarta'
 import GestorLogos from './pages/logos/GestorLogos'
 import ContratoMenorPage from './pages/contratomenos/ContratoMenorPage'
+import CertificadoExclusividad from './pages/contratomenor/CertificadoExclusividad'
 import NotFound from './pages/NotFound'
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="/aduanas" element={<AduanasHome />} />
         <Route path="/aduanas/factura-proforma" element={<FacturaProforma />} />
         <Route path="/contrato-menor" element={<ContratoMenorPage />} />
+        <Route path="/contrato-menor/certificado-exclusividad" element={<CertificadoExclusividad />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

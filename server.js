@@ -11,6 +11,7 @@ import { generateMohQuestions } from './generators/mohQuestions.js'
 import { generateAdaptarCarta } from './generators/adaptarCarta.js'
 import { generateContratoMenor } from './generators/contratoMenor.js'
 import { generateFacturaProforma } from './generators/facturaProforma.js'
+import { generateCertificadoExclusividad } from './generators/certificadoExclusividad.js'
 import { docxToPdf } from './utils/pdf.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -149,6 +150,27 @@ app.post('/api/adaptar-carta', async (req, res) => {
     sendDocument(res, docxBuffer, `Carta_${label}_${safeDate}`, format)
   } catch (err) {
     console.error('Adaptar carta error:', err)
+    res.status(500).json({ error: 'Error al generar el documento.' })
+  }
+})
+
+// ── Contrato menor: Certificado de exclusividad ──────────────────────────────
+app.post('/api/contrato-menor/certificado-exclusividad', async (req, res) => {
+  const { descripcion, date } = req.body
+
+  if (!descripcion || !date) {
+    return res.status(400).json({ error: 'Campos obligatorios: descripcion, date' })
+  }
+
+  const format = req.query.format === 'pdf' ? 'pdf' : 'docx'
+
+  try {
+    const docxBuffer = await generateCertificadoExclusividad(req.body)
+    const code = (req.body.expediente || descripcion)
+      .replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40)
+    sendDocument(res, docxBuffer, `CertificadoExclusividad_${code}_${date}`, format)
+  } catch (err) {
+    console.error('Certificado de exclusividad error:', err)
     res.status(500).json({ error: 'Error al generar el documento.' })
   }
 })
