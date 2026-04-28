@@ -30,12 +30,41 @@ export default function ContratoMenorPage() {
   const [savedMsg, setSavedMsg] = useState(false)
   const [certExclusividad, setCertExclusividad] = useState(false)
   const [certFile, setCertFile] = useState(null)
+  // { name, type, data: base64 } — persisted across save/load
+  const [certFileData, setCertFileData] = useState(null)
   const [iaFile, setIaFile] = useState(null)
   const [iaLoading, setIaLoading] = useState(null) // 'claude' | 'openai' | 'gemini' | null
   const [iaResult, setIaResult] = useState(null)
   const [iaError, setIaError] = useState(null)
 
   const { records, saveRecord, deleteRecord } = useContratoStore()
+
+  function readFileAsBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = e => resolve({
+        name: file.name,
+        type: file.type || 'application/octet-stream',
+        data: e.target.result.split(',')[1],
+      })
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
+  }
+
+  function openCertData(fileOrData) {
+    let url
+    if (fileOrData instanceof File) {
+      url = URL.createObjectURL(fileOrData)
+    } else {
+      const bytes = atob(fileOrData.data)
+      const arr = new Uint8Array(bytes.length)
+      for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i)
+      url = URL.createObjectURL(new Blob([arr], { type: fileOrData.type }))
+    }
+    window.open(url, '_blank', 'noopener,noreferrer')
+    setTimeout(() => URL.revokeObjectURL(url), 30000)
+  }
 
   async function handleIaGenerar(provider) {
     setIaLoading(provider)
@@ -88,14 +117,21 @@ export default function ContratoMenorPage() {
     }))
     setCertExclusividad(record.form?.justificacionEleccion === 'Se adjunta certificado de exclusividad')
     setCertFile(null)
+    setCertFileData(record.form?.certFileData ?? null)
     setShowRepo(false)
     setError(null)
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.codigo.trim()) return
     const { fecha, ...toSave } = form
-    saveRecord(form.codigo, toSave)
+
+    let certData = certFileData
+    if (certFile) {
+      try { certData = await readFileAsBase64(certFile) } catch { /* keep existing */ }
+    }
+
+    saveRecord(form.codigo, { ...toSave, certFileData: certData })
     setSavedMsg(true)
     setTimeout(() => setSavedMsg(false), 2500)
   }
@@ -185,6 +221,7 @@ export default function ContratoMenorPage() {
                           <span className={styles.repoItemCode}>
                             {r.codigo}
                             {(() => { const n = r.form?.proveedores?.find(p => p.nombre?.trim())?.nombre?.trim(); return n ? ` (${n})` : '' })()}
+                            {r.form?.certFileData && <span className={styles.certBadge} title={r.form.certFileData.name}> 📎</span>}
                           </span>
                           <span className={styles.repoItemDate}>
                             Guardado el {new Date(r.savedAt).toLocaleDateString('es-ES')}
@@ -422,12 +459,28 @@ export default function ContratoMenorPage() {
                     type="file"
                     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                     className={styles.certFileInput}
-                    onChange={e => setCertFile(e.target.files[0] || null)}
+                    onChange={e => {
+                      setCertFile(e.target.files[0] || null)
+                      setCertFileData(null)
+                    }}
                   />
                   <span className={styles.certFileBtn}>
-                    {certFile ? `📎 ${certFile.name}` : '📎 Adjuntar certificado…'}
+                    {certFile
+                      ? `📎 ${certFile.name}`
+                      : certFileData
+                        ? `📎 ${certFileData.name}`
+                        : '📎 Adjuntar certificado…'}
                   </span>
                 </label>
+                {(certFile || certFileData) && (
+                  <button
+                    type="button"
+                    className={styles.certViewBtn}
+                    onClick={() => openCertData(certFile ?? certFileData)}
+                  >
+                    Abrir
+                  </button>
+                )}
               </div>
             )}
             <textarea

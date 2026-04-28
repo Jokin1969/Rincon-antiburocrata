@@ -359,6 +359,28 @@
   background: rgba(123, 28, 46, 0.14);
 }
 
+.certViewBtn {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 0.28rem 0.65rem;
+  background: transparent;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.certViewBtn:hover {
+  background: var(--accent-dim);
+}
+
+.certBadge {
+  font-style: normal;
+}
+
 .textareaLocked {
   background: var(--surface-hover) !important;
   color: var(--muted) !important;
