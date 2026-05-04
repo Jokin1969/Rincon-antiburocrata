@@ -4,12 +4,15 @@ import styles from './LogosPage.module.css'
 
 const PAGE_SIZE_OPTIONS = [6, 12, 24, 48]
 
+const CATEGORIES = ['Todos', 'Institucional', 'Proyecto', 'Fundación', 'Organismo', 'Universidad', 'Empresa']
+
 export default function LogosPage() {
   const [logos, setLogos] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [pageSize, setPageSize] = useState(12)
   const [currentPage, setCurrentPage] = useState(1)
+  const [activeCategory, setActiveCategory] = useState('Todos')
 
   useEffect(() => {
     fetch('/api/logos')
@@ -27,8 +30,22 @@ export default function LogosPage() {
       })
   }, [])
 
-  const totalPages = Math.ceil(logos.length / pageSize)
-  const paginated = logos.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+  function countForCategory(cat) {
+    if (cat === 'Todos') return logos.length
+    return logos.filter(l => l.category === cat).length
+  }
+
+  const filtered = activeCategory === 'Todos'
+    ? logos
+    : logos.filter(l => l.category === activeCategory)
+
+  const totalPages = Math.ceil(filtered.length / pageSize)
+  const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+
+  function handleCategoryChange(cat) {
+    setActiveCategory(cat)
+    setCurrentPage(1)
+  }
 
   function handlePageSizeChange(e) {
     setPageSize(Number(e.target.value))
@@ -53,9 +70,25 @@ export default function LogosPage() {
 
       {!loading && !error && (
         <>
+          <div className={styles.tabs}>
+            {CATEGORIES.map(cat => {
+              const count = countForCategory(cat)
+              return (
+                <button
+                  key={cat}
+                  className={`${styles.tab} ${activeCategory === cat ? styles.tabActive : ''}`}
+                  onClick={() => handleCategoryChange(cat)}
+                >
+                  {cat}
+                  <span className={styles.tabCount}>{count}</span>
+                </button>
+              )
+            })}
+          </div>
+
           <div className={styles.toolbar}>
             <span className={styles.count}>
-              {logos.length} {logos.length === 1 ? 'logo' : 'logos'}
+              {filtered.length} {filtered.length === 1 ? 'logo' : 'logos'}
             </span>
             <div className="form-group" style={{ flexDirection: 'row', alignItems: 'center', gap: '0.5rem' }}>
               <label htmlFor="page-size" style={{ whiteSpace: 'nowrap' }}>Por página</label>
@@ -72,8 +105,8 @@ export default function LogosPage() {
             </div>
           </div>
 
-          {logos.length === 0 ? (
-            <p className={styles.status}>No hay logos disponibles todavía.</p>
+          {filtered.length === 0 ? (
+            <p className={styles.status}>No hay logos en esta categoría.</p>
           ) : (
             <>
               <div className={styles.grid}>
@@ -87,7 +120,10 @@ export default function LogosPage() {
                       />
                     </div>
                     <div className={styles.cardFooter}>
-                      <span className={styles.name}>{logo.label}</span>
+                      <div className={styles.cardInfo}>
+                        <span className={styles.name}>{logo.label}</span>
+                        <span className={styles.category}>{logo.category}</span>
+                      </div>
                       {logo.pdf && (
                         <a
                           href={logo.pdf}

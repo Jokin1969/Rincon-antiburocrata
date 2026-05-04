@@ -1,7 +1,7 @@
 import express from 'express'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
-import { readdirSync, existsSync } from 'fs'
+import { readdirSync, existsSync, readFileSync } from 'fs'
 import { generateEndUserStatement } from './generators/endUserStatement.js'
 import { generateMohQuestions } from './generators/mohQuestions.js'
 import { docxToPdf } from './utils/pdf.js'
@@ -36,17 +36,25 @@ function sendDocument(res, docxBuffer, basename, format) {
 app.get('/api/logos', (_req, res) => {
   const logosDir = join(__dirname, 'public', 'assets', 'logos')
   try {
+    const metaPath = join(logosDir, 'metadata.json')
+    const meta = existsSync(metaPath)
+      ? JSON.parse(readFileSync(metaPath, 'utf-8'))
+      : {}
+
     const files = readdirSync(logosDir)
     const logos = files
       .filter(f => /\.(png|jpg|jpeg|svg|webp)$/i.test(f))
       .sort()
       .map(f => {
         const name = f.replace(/\.[^.]+$/, '')
-        const label = name.charAt(0).toUpperCase() + name.slice(1)
+        const entry = meta[name] ?? {}
+        const label = entry.label ?? (name.charAt(0).toUpperCase() + name.slice(1))
+        const category = entry.category ?? 'Sin categoría'
         const pdfPath = join(__dirname, 'public', 'assets', 'modelos', `${name}.pdf`)
         return {
           name,
           label,
+          category,
           image: `/assets/logos/${f}`,
           pdf: existsSync(pdfPath) ? `/assets/modelos/${name}.pdf` : null,
         }
