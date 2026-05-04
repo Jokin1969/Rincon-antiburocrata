@@ -18,6 +18,14 @@ const MODULES = [
     href: '/aduanas',
     status: 'wip',
   },
+  {
+    id: 'logos',
+    name: 'Logos',
+    description: 'Galería de logotipos de instituciones y proyectos con acceso a sus modelos en PDF.',
+    icon: '🖼️',
+    href: '/logos',
+    status: 'ready',
+  },
 ]
 
 export default function Home() {

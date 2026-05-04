@@ -1,6 +1,7 @@
 import express from 'express'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
+import { readdirSync, existsSync } from 'fs'
 import { generateEndUserStatement } from './generators/endUserStatement.js'
 import { generateMohQuestions } from './generators/mohQuestions.js'
 import { docxToPdf } from './utils/pdf.js'
@@ -30,6 +31,32 @@ function sendDocument(res, docxBuffer, basename, format) {
   res.setHeader('Content-Disposition', `attachment; filename="${basename}.docx"`)
   res.send(docxBuffer)
 }
+
+// ── Logos ─────────────────────────────────────────────────────────────────────
+app.get('/api/logos', (_req, res) => {
+  const logosDir = join(__dirname, 'public', 'assets', 'logos')
+  try {
+    const files = readdirSync(logosDir)
+    const logos = files
+      .filter(f => /\.(png|jpg|jpeg|svg|webp)$/i.test(f))
+      .sort()
+      .map(f => {
+        const name = f.replace(/\.[^.]+$/, '')
+        const label = name.charAt(0).toUpperCase() + name.slice(1)
+        const pdfPath = join(__dirname, 'public', 'assets', 'modelos', `${name}.pdf`)
+        return {
+          name,
+          label,
+          image: `/assets/logos/${f}`,
+          pdf: existsSync(pdfPath) ? `/assets/modelos/${name}.pdf` : null,
+        }
+      })
+    res.json(logos)
+  } catch (err) {
+    console.error('Logos API error:', err)
+    res.status(500).json({ error: 'Error al leer los logos.' })
+  }
+})
 
 // ── GenScript: End User Statement ────────────────────────────────────────────
 app.post('/api/genscript/end-user-statement', async (req, res) => {
