@@ -1,7 +1,7 @@
 import express from 'express'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'fs'
 import multer from 'multer'
 import Anthropic from '@anthropic-ai/sdk'
 import OpenAI from 'openai'
@@ -89,6 +89,40 @@ function classifyAIError(err, provider) {
 
   return `Error al consultar a ${name}. ${err.message || 'Error desconocido.'}`
 }
+
+// ── Logos: galería estática (public/assets/logos/) ────────────────────────────
+app.get('/api/logos', (_req, res) => {
+  const logosDir = join(__dirname, 'public', 'assets', 'logos')
+  try {
+    const metaPath = join(logosDir, 'metadata.json')
+    const meta = existsSync(metaPath)
+      ? JSON.parse(readFileSync(metaPath, 'utf-8'))
+      : {}
+
+    const files = readdirSync(logosDir)
+    const logos = files
+      .filter(f => /\.(png|jpg|jpeg|svg|webp)$/i.test(f))
+      .sort()
+      .map(f => {
+        const name = f.replace(/\.[^.]+$/, '')
+        const entry = meta[name] ?? {}
+        const label = entry.label ?? (name.charAt(0).toUpperCase() + name.slice(1))
+        const category = entry.category ?? 'Sin categoría'
+        const pdfPath = join(__dirname, 'public', 'assets', 'modelos', `${name}.pdf`)
+        return {
+          name,
+          label,
+          category,
+          image: `/assets/logos/${f}`,
+          pdf: existsSync(pdfPath) ? `/assets/modelos/${name}.pdf` : null,
+        }
+      })
+    res.json(logos)
+  } catch (err) {
+    console.error('Logos API error:', err)
+    res.status(500).json({ error: 'Error al leer los logos.' })
+  }
+})
 
 // ── GenScript: End User Statement ────────────────────────────────────────────
 app.post('/api/genscript/end-user-statement', async (req, res) => {
