@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import PageHeader from '../../../components/PageHeader'
 import s from './ModificacionForm.module.css'
+import ExportButton from '../../../components/animalario/ExportButton'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -844,6 +845,12 @@ export default function ModificacionForm() {
         >
           {saving ? 'Guardando…' : 'Guardar y continuar'}
         </button>
+        {isEdit && (
+          <ExportButton
+            endpoint={`/api/animalario/modificaciones/${mId}/exportar`}
+            basename={`Modificacion_${mId}`}
+          />
+        )}
       </div>
 
       {toast && <Toast message={toast} onDone={() => setToast(null)} />}

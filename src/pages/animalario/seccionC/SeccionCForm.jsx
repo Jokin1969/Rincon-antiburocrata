@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import PageHeader from '../../../components/PageHeader'
 import s from './SeccionCForm.module.css'
+import ExportButton from '../../../components/animalario/ExportButton'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -1289,6 +1290,12 @@ export default function SeccionCForm() {
         >
           {saving ? 'Guardando…' : 'Guardar y continuar'}
         </button>
+        {isEdit && (
+          <ExportButton
+            endpoint={`/api/animalario/crias/${cId}/exportar`}
+            basename={`SeccionC_${cId}`}
+          />
+        )}
       </div>
 
       {toast && <Toast message={toast} onDone={() => setToast(null)} />}

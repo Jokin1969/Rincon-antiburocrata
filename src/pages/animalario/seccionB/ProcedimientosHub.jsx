@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import PageHeader from '../../../components/PageHeader'
 import styles from '../../../styles/animalario/animalario.module.css'
+import ManualUsuario from '../../../components/animalario/ManualUsuario'
 
 const SEVERITY_LABELS = { none: 'Sin clasificar', low: 'Leve', medium: 'Moderado', high: 'Severo' }
 const SEVERITY_CLASSES = {
@@ -30,6 +31,7 @@ export default function ProcedimientosHub() {
   const [error, setError]             = useState(null)
   const [deleting, setDeleting]       = useState(null)
   const [duplicating, setDuplicating] = useState(null)
+  const [showManual, setShowManual]   = useState(false)
 
   function load() {
     setLoading(true)
@@ -86,12 +88,31 @@ export default function ProcedimientosHub() {
 
   return (
     <div>
-      <PageHeader
-        back={`/animalario/proyecto/${proyectoId}`}
-        backLabel="Proyecto"
-        title="Sección B — Procedimientos"
-        subtitle={proyecto?.seccionA?.titulo ?? ''}
-      />
+      <div style={{ position: 'relative' }}>
+        <PageHeader
+          back={`/animalario/proyecto/${proyectoId}`}
+          backLabel="Proyecto"
+          title="Sección B — Procedimientos"
+          subtitle={proyecto?.seccionA?.titulo ?? ''}
+        />
+        <button
+          type="button"
+          onClick={() => setShowManual(true)}
+          title="Manual de usuario"
+          style={{
+            position: 'absolute', top: 0, right: 0,
+            background: 'none', border: '1px solid rgba(123,28,46,0.3)',
+            borderRadius: 'var(--radius-sm)',
+            color: 'var(--accent)', cursor: 'pointer',
+            padding: '0.3rem 0.55rem', fontSize: '0.82rem', fontFamily: 'inherit',
+            lineHeight: 1,
+          }}
+        >
+          📖
+        </button>
+      </div>
+
+      {showManual && <ManualUsuario onClose={() => setShowManual(false)} />}
 
       {/* Summary bar */}
       {procs.length > 0 && (

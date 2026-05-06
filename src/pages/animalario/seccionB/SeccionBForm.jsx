@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import PageHeader from '../../../components/PageHeader'
 import s from './SeccionBForm.module.css'
+import ExportButton from '../../../components/animalario/ExportButton'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -1007,6 +1008,12 @@ export default function SeccionBForm() {
         >
           {saving ? 'Guardando…' : 'Guardar y volver'}
         </button>
+        {isEdit && (
+          <ExportButton
+            endpoint={`/api/animalario/procedimientos/${procId}/exportar`}
+            basename={`SeccionB_${procId}`}
+          />
+        )}
       </div>
 
       {toast && <Toast message={toast} onDone={() => setToast(null)} />}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import PageHeader from '../../../components/PageHeader'
 import styles from './SeccionAForm.module.css'
+import ExportButton from '../../../components/animalario/ExportButton'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -727,6 +728,12 @@ export default function SeccionAForm() {
           disabled={saving} onClick={() => doSave(true)}>
           {saving ? 'Guardando…' : 'Guardar y continuar →'}
         </button>
+        {!isNew && (
+          <ExportButton
+            endpoint={`/api/animalario/proyectos/${proyectoId}/exportar/seccionA`}
+            basename={`SeccionA_${proyectoId}`}
+          />
+        )}
       </div>
     </div>
   )

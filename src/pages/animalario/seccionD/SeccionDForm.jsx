@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import PageHeader from '../../../components/PageHeader'
 import s from './SeccionDForm.module.css'
+import ExportButton from '../../../components/animalario/ExportButton'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -408,6 +409,12 @@ export default function SeccionDForm() {
         >
           {saving ? 'Guardando…' : 'Guardar y continuar'}
         </button>
+        {!isNew && (
+          <ExportButton
+            endpoint={`/api/animalario/proyectos/${proyectoId}/exportar/seccionD`}
+            basename={`SeccionD_${proyectoId}`}
+          />
+        )}
       </div>
 
       {toast && <Toast message={toast} onDone={() => setToast(null)} />}

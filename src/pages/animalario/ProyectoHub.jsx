@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import styles from '../../styles/animalario/animalario.module.css'
 
@@ -101,6 +101,104 @@ function ModificacionesSection({ proyectoId, modificaciones, navigate, onDelete 
           </div>
         )
       })}
+    </div>
+  )
+}
+
+// ── Export dropdown ───────────────────────────────────────────────────────────
+
+const MENU_ITEM = {
+  display: 'block', width: '100%', textAlign: 'left',
+  background: 'none', border: 'none',
+  padding: '0.5rem 1rem', fontSize: '0.85rem',
+  color: 'var(--text)', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
+}
+const MENU_SEPARATOR = { borderTop: '1px solid var(--border)', margin: '0.2rem 0' }
+
+function ExportProyectoDropdown({ proyectoId }) {
+  const [open, setOpen]       = useState(false)
+  const [loading, setLoading] = useState(false)
+  const wrapRef               = useRef(null)
+
+  useEffect(() => {
+    const onOut = e => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', onOut)
+    return () => document.removeEventListener('mousedown', onOut)
+  }, [])
+
+  async function doExport(endpoint, basename, formato) {
+    setOpen(false)
+    setLoading(true)
+    try {
+      const res = await fetch(`${endpoint}?formato=${formato}`)
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error ?? `Error ${res.status}`)
+      }
+      const blob = await res.blob()
+      const url  = URL.createObjectURL(blob)
+      const cd   = res.headers.get('Content-Disposition') ?? ''
+      const name = cd.match(/filename="(.+?)"/)?.[1] ?? `${basename}.zip`
+      const a = document.createElement('a')
+      a.href = url; a.download = name
+      document.body.appendChild(a); a.click()
+      document.body.removeChild(a); URL.revokeObjectURL(url)
+    } catch (e) {
+      alert(`No se pudo exportar: ${e.message}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const base = `/api/animalario/proyectos/${proyectoId}`
+
+  return (
+    <div ref={wrapRef} style={{ position: 'relative', display: 'inline-block' }}>
+      <button
+        type="button"
+        className="btn btn-ghost"
+        onClick={() => setOpen(o => !o)}
+        disabled={loading}
+      >
+        {loading ? 'Exportando…' : '⬇ Exportar proyecto completo ▾'}
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'absolute', left: 0, top: 'calc(100% + 4px)',
+          zIndex: 100, background: 'var(--surface)',
+          border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)',
+          boxShadow: '0 4px 14px rgba(0,0,0,0.12)', minWidth: 230, overflow: 'hidden',
+        }}>
+          {[
+            { label: '📦 Todo en Word (.docx)',   formato: 'docx' },
+            { label: '📕 Todo en PDF',            formato: 'pdf'  },
+            { label: '🗂 Todo en ambos formatos', formato: 'ambos'},
+          ].map(({ label, formato }) => (
+            <button key={formato} type="button" style={MENU_ITEM}
+              onMouseEnter={e => e.target.style.background = 'var(--surface-hover)'}
+              onMouseLeave={e => e.target.style.background = 'none'}
+              onClick={() => doExport(`${base}/exportar/completo`, 'Proyecto', formato)}>
+              {label}
+            </button>
+          ))}
+          <div style={MENU_SEPARATOR} />
+          {[
+            { label: '📄 Solo Sección A',          url: `${base}/exportar/seccionA` },
+            { label: '🔬 Solo Procedimientos (B)',  url: `${base}/exportar/completo` },
+            { label: '🐭 Solo Crías (C)',           url: `${base}/exportar/completo` },
+            { label: '⚗ Solo Productos (D)',       url: `${base}/exportar/seccionD` },
+            { label: '📝 Solo Modificaciones',     url: `${base}/exportar/completo` },
+          ].map(({ label, url }) => (
+            <button key={label} type="button" style={{ ...MENU_ITEM, fontSize: '0.8rem', color: 'var(--muted)' }}
+              onMouseEnter={e => e.target.style.background = 'var(--surface-hover)'}
+              onMouseLeave={e => e.target.style.background = 'none'}
+              onClick={() => doExport(url, 'Proyecto', 'docx')}>
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -285,9 +383,7 @@ export default function ProyectoHub() {
       </div>
 
       {/* Exportar */}
-      <button className="btn btn-ghost" disabled title="Próximamente">
-        ⬇ Exportar proyecto completo
-      </button>
+      <ExportProyectoDropdown proyectoId={proyectoId} />
     </div>
   )
 }
