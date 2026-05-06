@@ -37,6 +37,20 @@ function dbxPath(filename) {
 let _token  = null
 let _expiry = 0
 
+// Safe JSON parser — never throws "Unexpected end of JSON input"
+async function safeJson(resp, label) {
+  const text = await resp.text()
+  if (!text.trim()) {
+    if (!resp.ok) throw new Error(`[${label}] HTTP ${resp.status} (respuesta vacía)`)
+    return {}
+  }
+  try {
+    return JSON.parse(text)
+  } catch {
+    throw new Error(`[${label}] HTTP ${resp.status} — respuesta no JSON: ${text.slice(0, 200)}`)
+  }
+}
+
 async function getToken() {
   if (_token && Date.now() < _expiry - 60_000) return _token
 
@@ -50,8 +64,8 @@ async function getToken() {
       client_secret: process.env.DROPBOX_APP_SECRET,
     }),
   })
-  const data = await resp.json()
-  if (!data.access_token) throw new Error(`Dropbox auth error: ${JSON.stringify(data)}`)
+  const data = await safeJson(resp, 'oauth2/token')
+  if (!data.access_token) throw new Error(`Dropbox auth fallido: ${JSON.stringify(data)}`)
   _token  = data.access_token
   _expiry = Date.now() + (data.expires_in ?? 14400) * 1000
   return _token
@@ -66,8 +80,14 @@ async function dbxListFolder() {
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body:    JSON.stringify({ path: DBX_FOLDER || '', recursive: false }),
   })
-  const data = await resp.json()
-  if (!resp.ok) throw new Error(data?.error_summary ?? JSON.stringify(data))
+  const data = await safeJson(resp, 'list_folder')
+
+  // Folder not found → return empty list (first backup will create it implicitly)
+  if (!resp.ok) {
+    const tag = data?.error?.path?.['.tag'] ?? data?.error_summary ?? ''
+    if (tag.includes('not_found')) return []
+    throw new Error(`[list_folder] ${data?.error_summary ?? JSON.stringify(data)}`)
+  }
   return data.entries ?? []
 }
 
@@ -76,7 +96,7 @@ async function dbxUpload(filename, buffer) {
   const resp  = await fetch('https://content.dropboxapi.com/2/files/upload', {
     method:  'POST',
     headers: {
-      Authorization:    `Bearer ${token}`,
+      Authorization:     `Bearer ${token}`,
       'Dropbox-API-Arg': JSON.stringify({
         path:       dbxPath(filename),
         mode:       'overwrite',
@@ -87,8 +107,8 @@ async function dbxUpload(filename, buffer) {
     },
     body: buffer,
   })
-  const data = await resp.json()
-  if (!resp.ok) throw new Error(data?.error_summary ?? JSON.stringify(data))
+  const data = await safeJson(resp, 'files/upload')
+  if (!resp.ok) throw new Error(`[files/upload] ${data?.error_summary ?? JSON.stringify(data)}`)
   return data
 }
 
@@ -97,13 +117,13 @@ async function dbxDownload(filename) {
   const resp  = await fetch('https://content.dropboxapi.com/2/files/download', {
     method:  'POST',
     headers: {
-      Authorization:    `Bearer ${token}`,
+      Authorization:     `Bearer ${token}`,
       'Dropbox-API-Arg': JSON.stringify({ path: dbxPath(filename) }),
     },
   })
   if (!resp.ok) {
     const err = await resp.text()
-    throw new Error(`Dropbox download error: ${err}`)
+    throw new Error(`[files/download] HTTP ${resp.status}: ${err.slice(0, 200)}`)
   }
   return Buffer.from(await resp.arrayBuffer())
 }
@@ -115,8 +135,8 @@ async function dbxDelete(filename) {
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body:    JSON.stringify({ path: dbxPath(filename) }),
   })
-  const data = await resp.json()
-  if (!resp.ok) throw new Error(data?.error_summary ?? JSON.stringify(data))
+  const data = await safeJson(resp, 'files/delete_v2')
+  if (!resp.ok) throw new Error(`[files/delete_v2] ${data?.error_summary ?? JSON.stringify(data)}`)
 }
 
 // ── Backup logic ──────────────────────────────────────────────────────────────
