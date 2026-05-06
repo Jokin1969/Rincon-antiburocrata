@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import PageHeader from '../../../components/PageHeader'
 import styles from './SeccionAForm.module.css'
@@ -30,36 +30,44 @@ const EMPTY_FORM = {
   titulo:          '',
   referencia_cbba: '',
   responsable: {
-    nif_pasaporte:       '',
-    nombre_apellidos:    '',
-    telefono:            '',
-    email:               '',
-    funcion_ecc566:      '',
-    autoridad_competente:'',
-    fecha_acreditacion:  '',
+    nif_pasaporte:        '16287336R',
+    nombre_apellidos:     'Castilla, Joaquín',
+    telefono:             '+34 956 572 525',
+    email:                'jcastilla@cicbiogune.es',
+    funcion_ecc566:       'D',
+    autoridad_competente: 'Convalidado por el Ministerio de Agricultura, Pesca y Alimentación (RD 1201/2005)',
+    fecha_acreditacion:   '2023-12-27',
   },
   participantes: [],
   duracion: { fecha_inicio: '', fecha_fin: '' },
   financiacion: {
-    entidad_programa:     '',
-    estado:               'solicitada',
-    numero_proyecto:      '',
-    ip_es_responsable:    true,
-    ip_responsable_otro:  '',
+    entidad_programa:    'Plan Nacional (P. of Concept)',
+    estado:              'aprobada',
+    numero_proyecto:     'PDC2025-165940-I00',
+    ip_es_responsable:   true,
+    ip_responsable_otro: '',
   },
-  lugar_realizacion: { tipo: 'animalario_cicbiogune', descripcion: '' },
+  lugar_realizacion: {
+    animalario_cicbiogune: true,
+    otro:                  true,
+    descripcion:           'Inoculaciones de diferentes cepas de priones en el animalario BSL3 de NEIKER - Instituto Vasco de Investigación y Desarrollo Agrario. Código REGA: ES489010006099, en el animalario BSL-3 del Centre de Recerca en Sanitat Animal (CReSA). Código REGA: ES082660037069 y en el animalario de Centro de Investigación en Encefalopatías y Enfermedades Transmisibles de la Universidad de Zaragoza (UNIZAR). Código REGA: ES502970012009',
+  },
   objetivos: {
     objetivo_principal: '',
     resumen:            '',
     dano_beneficio:     '',
   },
-  tipo_proyecto: 'I',
-  finalidad:     [],
+  tipo_proyecto: 'II',
+  finalidad:     ['a', 'b'],
   tres_rs: { reemplazo: '', reduccion: '', refinamiento: '' },
   hay_cria:    false,
   cepas_cria:  [],
-  condiciones_alojamiento: { tipo: 'estandar', descripcion: '' },
-  firmante: '',
+  condiciones_alojamiento: {
+    estandar:    true,
+    variaciones: true,
+    descripcion: 'Una vez los animales se hayan administrado con AAV se mantendrán en la zona limpia (rack ventilado) durante 10 días. Pasado este tiempo, los animales se trasladarán a la zona sucia del SDA para su perfusión o su traslado a Neiker, CReSA o UNIZAR para la inoculación de priones.',
+  },
+  firmante: 'Joaquín Castilla',
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -93,30 +101,100 @@ function CollapsibleBlock({ title, children, defaultOpen = true }) {
   )
 }
 
-function AutocompleteInput({ campo, value, onChange, placeholder }) {
+// Input with quick-fill preset options (▾ dropdown button)
+function QuickFillInput({ value, onChange, presets = [], type = 'text', placeholder, disabled }) {
+  const [show, setShow] = useState(false)
+  const wrapRef         = useRef(null)
+
+  useEffect(() => {
+    const onOut = e => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setShow(false)
+    }
+    document.addEventListener('mousedown', onOut)
+    return () => document.removeEventListener('mousedown', onOut)
+  }, [])
+
+  return (
+    <div ref={wrapRef} style={{ position: 'relative', display: 'flex', gap: '0.3rem' }}>
+      <input
+        type={type}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        disabled={disabled}
+        style={{ flex: 1 }}
+      />
+      {presets.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setShow(o => !o)}
+          title="Opciones rápidas"
+          style={{
+            padding: '0 0.55rem', fontSize: '0.78rem', lineHeight: 1,
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+            color: 'var(--muted)', flexShrink: 0, fontFamily: 'inherit',
+          }}
+        >▾</button>
+      )}
+      {show && (
+        <ul style={{
+          position: 'absolute', right: 0, top: 'calc(100% + 2px)', zIndex: 60,
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-sm)', boxShadow: '0 4px 14px rgba(0,0,0,0.12)',
+          listStyle: 'none', margin: 0, padding: '0.2rem 0', minWidth: 220,
+        }}>
+          {presets.map(opt => (
+            <li
+              key={opt}
+              onMouseDown={() => { onChange(opt); setShow(false) }}
+              style={{
+                padding: '0.45rem 0.85rem', cursor: 'pointer',
+                fontSize: '0.855rem', color: 'var(--text)',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-hover)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+            >{opt}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function AutocompleteInput({ campo, value, onChange, placeholder, presets = [] }) {
   const [suggestions, setSuggestions] = useState([])
   const [show, setShow]               = useState(false)
+  const wrapRef                       = useRef(null)
 
   useEffect(() => {
     fetch(`/api/animalario/repositorio/campo/${campo}`)
       .then(r => r.ok ? r.json() : [])
-      .then(setSuggestions)
+      .then(data => setSuggestions(Array.isArray(data) ? data : []))
       .catch(() => {})
   }, [campo])
 
-  const filtered = suggestions.filter(
+  useEffect(() => {
+    const onOut = e => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setShow(false)
+    }
+    document.addEventListener('mousedown', onOut)
+    return () => document.removeEventListener('mousedown', onOut)
+  }, [])
+
+  const combined = [...new Set([...presets, ...suggestions])]
+  const filtered = combined.filter(
     s => s.toLowerCase().includes((value || '').toLowerCase()) && s !== value
   )
 
   return (
-    <div className={styles.acWrap}>
+    <div className={styles.acWrap} ref={wrapRef}>
       <input
         type="text"
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
         onFocus={() => setShow(true)}
-        onBlur={() => setTimeout(() => setShow(false), 160)}
         autoComplete="off"
       />
       {show && filtered.length > 0 && (
@@ -147,13 +225,14 @@ export default function SeccionAForm() {
   const navigate       = useNavigate()
   const isEdit         = Boolean(proyectoId)
 
-  const [proyecto,   setProyecto]   = useState(null)
-  const [form,       setForm]       = useState(clone(EMPTY_FORM))
-  const [loading,    setLoading]    = useState(isEdit)
-  const [saving,     setSaving]     = useState(false)
-  const [toast,      setToast]      = useState(null)
-  const [errors,     setErrors]     = useState({})
-  const [saveError,  setSaveError]  = useState(null)
+  const [proyecto,      setProyecto]   = useState(null)
+  const [form,          setForm]       = useState(clone(EMPTY_FORM))
+  const [loading,       setLoading]    = useState(isEdit)
+  const [saving,        setSaving]     = useState(false)
+  const [toast,         setToast]      = useState(null)
+  const [errors,        setErrors]     = useState({})
+  const [saveError,     setSaveError]  = useState(null)
+  const [showErrPanel,  setShowErrPanel] = useState(false)
 
   // Load existing data in edit mode
   useEffect(() => {
@@ -162,7 +241,28 @@ export default function SeccionAForm() {
       .then(r => { if (!r.ok) throw new Error('Proyecto no encontrado'); return r.json() })
       .then(data => {
         setProyecto(data)
-        if (data.seccionA) setForm({ ...clone(EMPTY_FORM), ...data.seccionA })
+        if (data.seccionA) {
+          const secA = data.seccionA
+          // Migrate old lugar_realizacion model (tipo string → checkboxes)
+          if (secA.lugar_realizacion && !('animalario_cicbiogune' in secA.lugar_realizacion)) {
+            const oldTipo = secA.lugar_realizacion.tipo
+            secA.lugar_realizacion = {
+              animalario_cicbiogune: oldTipo === 'animalario_cicbiogune',
+              otro:                  oldTipo === 'otro',
+              descripcion:           secA.lugar_realizacion.descripcion ?? '',
+            }
+          }
+          // Migrate old condiciones_alojamiento model (tipo string → checkboxes)
+          if (secA.condiciones_alojamiento && !('estandar' in secA.condiciones_alojamiento)) {
+            const oldTipo = secA.condiciones_alojamiento.tipo
+            secA.condiciones_alojamiento = {
+              estandar:    oldTipo === 'estandar',
+              variaciones: oldTipo === 'variaciones' || oldTipo === 'especiales',
+              descripcion: secA.condiciones_alojamiento.descripcion ?? '',
+            }
+          }
+          setForm({ ...clone(EMPTY_FORM), ...secA })
+        }
         setLoading(false)
       })
       .catch(() => setLoading(false))
@@ -171,9 +271,9 @@ export default function SeccionAForm() {
   // Generic deep updater — supports dot-paths: update('responsable.email', val)
   function update(path, value) {
     setForm(prev => {
-      const next   = clone(prev)
-      const parts  = path.split('.')
-      let cursor   = next
+      const next  = clone(prev)
+      const parts = path.split('.')
+      let cursor  = next
       for (let i = 0; i < parts.length - 1; i++) cursor = cursor[parts[i]]
       cursor[parts[parts.length - 1]] = value
       return next
@@ -233,15 +333,21 @@ export default function SeccionAForm() {
     updateParticipante(i, 'funciones', next.join(','))
   }
 
-  // Validation
+  // Validation — returns map of field → message
   function validate() {
     const errs = {}
-    if (!form.titulo?.trim())                         errs.titulo           = 'El título es obligatorio'
-    if (!form.responsable.nombre_apellidos?.trim())   errs.responsable_nombre = 'El nombre del responsable es obligatorio'
-    if (!form.duracion.fecha_inicio)                  errs.fecha_inicio     = 'La fecha de inicio es obligatoria'
-    if (!form.duracion.fecha_fin)                     errs.fecha_fin        = 'La fecha de fin es obligatoria'
+    if (!form.titulo?.trim())
+      errs.titulo = 'Título del proyecto obligatorio'
+    if (!form.responsable.nombre_apellidos?.trim())
+      errs.responsable_nombre = 'Nombre y apellidos del responsable obligatorio'
+    if (!form.duracion.fecha_inicio)
+      errs.fecha_inicio = 'Fecha de inicio obligatoria'
+    if (!form.duracion.fecha_fin)
+      errs.fecha_fin = 'Fecha de fin obligatoria'
+    if (!form.lugar_realizacion.animalario_cicbiogune && !form.lugar_realizacion.otro)
+      errs.lugar = 'Debe indicarse al menos un lugar de realización'
     setErrors(errs)
-    return Object.keys(errs).length === 0
+    return errs
   }
 
   async function saveFrequent(campo, valor) {
@@ -257,10 +363,17 @@ export default function SeccionAForm() {
 
   async function doSave(andContinue = false) {
     setSaveError(null)
-    if (andContinue && !validate()) return
+    setShowErrPanel(false)
+    if (andContinue) {
+      const errs = validate()
+      if (Object.keys(errs).length > 0) {
+        setShowErrPanel(true)
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+        return
+      }
+    }
     setSaving(true)
     try {
-      // Persist frequent values
       await saveFrequent('fuente_financiacion', form.financiacion.entidad_programa)
       for (const c of form.cepas_cria) {
         await saveFrequent('cepa_linea', c.nomenclatura_internacional)
@@ -294,8 +407,8 @@ export default function SeccionAForm() {
 
   if (loading) return <p style={{ padding: '2rem', color: 'var(--muted-light)' }}>Cargando…</p>
 
-  const procedimientos  = proyecto?.procedimientos ?? []
-  const durWarn         = durationWarning(form.duracion.fecha_inicio, form.duracion.fecha_fin)
+  const procedimientos = proyecto?.procedimientos ?? []
+  const durWarn        = durationWarning(form.duracion.fecha_inicio, form.duracion.fecha_fin)
 
   return (
     <div>
@@ -308,6 +421,22 @@ export default function SeccionAForm() {
 
       {toast && <Toast message={toast} onDone={() => setToast(null)} />}
 
+      {/* ── Panel de errores de validación ──────────────────────────────── */}
+      {showErrPanel && Object.keys(errors).length > 0 && (
+        <div className={styles.errPanel}>
+          <strong>No se puede continuar. Corrige los siguientes campos:</strong>
+          <ul className={styles.errList}>
+            {Object.values(errors).map(msg => (
+              <li key={msg}>⚠ {msg}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {saveError && (
+        <p className="alert alert-error" style={{ marginTop: '1rem' }}>{saveError}</p>
+      )}
+
       {/* ── Bloque 1: Identificación ─────────────────────────────────────── */}
       <CollapsibleBlock title="1 · Identificación del proyecto">
         <div className={styles.grid2}>
@@ -318,6 +447,7 @@ export default function SeccionAForm() {
               value={form.titulo}
               onChange={e => update('titulo', e.target.value)}
               placeholder="Título completo del proyecto"
+              className={errors.titulo ? styles.inputError : undefined}
             />
             {errors.titulo && <span className={styles.error}>{errors.titulo}</span>}
           </div>
@@ -338,25 +468,39 @@ export default function SeccionAForm() {
         <div className={styles.grid2}>
           <div className="form-group">
             <label>NIF / Pasaporte</label>
-            <input type="text" value={form.responsable.nif_pasaporte}
-              onChange={e => update('responsable.nif_pasaporte', e.target.value)} />
+            <QuickFillInput
+              value={form.responsable.nif_pasaporte}
+              onChange={v => update('responsable.nif_pasaporte', v)}
+              presets={['16287336R', '74520022E']}
+            />
           </div>
           <div className="form-group">
             <label>Nombre y apellidos *</label>
-            <input type="text" value={form.responsable.nombre_apellidos}
-              onChange={e => update('responsable.nombre_apellidos', e.target.value)}
-              placeholder="Apellidos, Nombre" />
+            <QuickFillInput
+              value={form.responsable.nombre_apellidos}
+              onChange={v => update('responsable.nombre_apellidos', v)}
+              presets={['Castilla, Joaquín', 'Moreno, Jorge']}
+              placeholder="Apellidos, Nombre"
+            />
             {errors.responsable_nombre && <span className={styles.error}>{errors.responsable_nombre}</span>}
           </div>
           <div className="form-group">
             <label>Teléfono</label>
-            <input type="tel" value={form.responsable.telefono}
-              onChange={e => update('responsable.telefono', e.target.value)} />
+            <QuickFillInput
+              type="tel"
+              value={form.responsable.telefono}
+              onChange={v => update('responsable.telefono', v)}
+              presets={['+34 956 572 525', '+34 956 572 526']}
+            />
           </div>
           <div className="form-group">
             <label>Email</label>
-            <input type="email" value={form.responsable.email}
-              onChange={e => update('responsable.email', e.target.value)} />
+            <QuickFillInput
+              type="email"
+              value={form.responsable.email}
+              onChange={v => update('responsable.email', v)}
+              presets={['jcastilla@cicbiogune.es', 'jmoreno@cicbiogune.es']}
+            />
           </div>
           <div className="form-group">
             <label>Función según ECC/566/2015</label>
@@ -424,13 +568,15 @@ export default function SeccionAForm() {
           <div className="form-group">
             <label>Fecha de inicio *</label>
             <input type="date" value={form.duracion.fecha_inicio}
-              onChange={e => update('duracion.fecha_inicio', e.target.value)} />
+              onChange={e => update('duracion.fecha_inicio', e.target.value)}
+              className={errors.fecha_inicio ? styles.inputError : undefined} />
             {errors.fecha_inicio && <span className={styles.error}>{errors.fecha_inicio}</span>}
           </div>
           <div className="form-group">
             <label>Fecha de fin *</label>
             <input type="date" value={form.duracion.fecha_fin}
-              onChange={e => update('duracion.fecha_fin', e.target.value)} />
+              onChange={e => update('duracion.fecha_fin', e.target.value)}
+              className={errors.fecha_fin ? styles.inputError : undefined} />
             {errors.fecha_fin && <span className={styles.error}>{errors.fecha_fin}</span>}
             {durWarn && <span className={styles.warning}>{durWarn}</span>}
           </div>
@@ -442,6 +588,7 @@ export default function SeccionAForm() {
               value={form.financiacion.entidad_programa}
               onChange={v => update('financiacion.entidad_programa', v)}
               placeholder="Ej. Ministerio de Ciencia — PID2023-..."
+              presets={['Plan Nacional (P. of Concept)', 'Plan Nacional']}
             />
           </div>
 
@@ -462,9 +609,12 @@ export default function SeccionAForm() {
           {form.financiacion.estado === 'aprobada' && (
             <div className="form-group">
               <label>Número de proyecto</label>
-              <input type="text" value={form.financiacion.numero_proyecto}
-                onChange={e => update('financiacion.numero_proyecto', e.target.value)}
-                placeholder="Ej. PID2023-123456AB-I00" />
+              <QuickFillInput
+                value={form.financiacion.numero_proyecto}
+                onChange={v => update('financiacion.numero_proyecto', v)}
+                presets={['PDC2025-165940-I00', 'PID2024-160022OB-I00']}
+                placeholder="Ej. PID2023-123456AB-I00"
+              />
             </div>
           )}
 
@@ -488,28 +638,35 @@ export default function SeccionAForm() {
             )}
           </div>
 
+          {/* Lugar de realización — checkboxes */}
           <div className={`form-group ${styles.fullRow}`}>
             <label>Lugar de realización</label>
-            <div className={styles.radioGroup}>
-              <label className={styles.radioLabel}>
-                <input type="radio"
-                  checked={form.lugar_realizacion.tipo === 'animalario_cicbiogune'}
-                  onChange={() => update('lugar_realizacion.tipo', 'animalario_cicbiogune')} />
+            {errors.lugar && <span className={styles.error} style={{ display: 'block', marginBottom: '0.35rem' }}>{errors.lugar}</span>}
+            <div className={styles.checkboxGroup} style={{ flexDirection: 'column', gap: '0.6rem' }}>
+              <label className={styles.checkboxLabel}>
+                <input type="checkbox"
+                  checked={form.lugar_realizacion.animalario_cicbiogune}
+                  onChange={e => update('lugar_realizacion.animalario_cicbiogune', e.target.checked)} />
                 Animalario CIC bioGUNE
               </label>
-              <label className={styles.radioLabel}>
-                <input type="radio"
-                  checked={form.lugar_realizacion.tipo === 'otro'}
-                  onChange={() => update('lugar_realizacion.tipo', 'otro')} />
-                Otro
-              </label>
+              <div>
+                <label className={styles.checkboxLabel}>
+                  <input type="checkbox"
+                    checked={form.lugar_realizacion.otro}
+                    onChange={e => update('lugar_realizacion.otro', e.target.checked)} />
+                  Otro
+                </label>
+                {form.lugar_realizacion.otro && (
+                  <textarea
+                    rows={4}
+                    style={{ marginTop: '0.5rem', width: '100%' }}
+                    value={form.lugar_realizacion.descripcion}
+                    onChange={e => update('lugar_realizacion.descripcion', e.target.value)}
+                    placeholder="Describir el lugar de realización"
+                  />
+                )}
+              </div>
             </div>
-            {form.lugar_realizacion.tipo === 'otro' && (
-              <input type="text" style={{ marginTop: '0.5rem' }}
-                value={form.lugar_realizacion.descripcion}
-                onChange={e => update('lugar_realizacion.descripcion', e.target.value)}
-                placeholder="Describir el lugar de realización" />
-            )}
           </div>
         </div>
       </CollapsibleBlock>
@@ -527,7 +684,7 @@ export default function SeccionAForm() {
           <textarea rows={5} value={form.objetivos.resumen}
             onChange={e => update('objetivos.resumen', e.target.value)} />
           <span className={`${styles.wordCount} ${wordCount(form.objetivos.resumen) > 300 ? styles.wordCountOver : ''}`}>
-            {wordCount(form.objetivos.resumen)} / 300 palabras
+            {wordCount(form.objetivos.resumen)} palabras {wordCount(form.objetivos.resumen) > 300 ? '(supera las 300 recomendadas)' : '/ 300 recomendadas'}
           </span>
         </div>
 
@@ -536,7 +693,7 @@ export default function SeccionAForm() {
           <textarea rows={5} value={form.objetivos.dano_beneficio}
             onChange={e => update('objetivos.dano_beneficio', e.target.value)} />
           <span className={`${styles.wordCount} ${wordCount(form.objetivos.dano_beneficio) > 300 ? styles.wordCountOver : ''}`}>
-            {wordCount(form.objetivos.dano_beneficio)} / 300 palabras
+            {wordCount(form.objetivos.dano_beneficio)} palabras {wordCount(form.objetivos.dano_beneficio) > 300 ? '(supera las 300 recomendadas)' : '/ 300 recomendadas'}
           </span>
         </div>
 
@@ -618,10 +775,10 @@ export default function SeccionAForm() {
               {procedimientos.map((proc, i) => (
                 <tr key={proc.id || i}>
                   <td>{i + 1}</td>
-                  <td>{proc.titulo      ?? '—'}</td>
-                  <td>{proc.especie     ?? '—'}</td>
+                  <td>{proc.titulo       ?? '—'}</td>
+                  <td>{proc.especie      ?? '—'}</td>
                   <td>{proc.num_animales ?? '—'}</td>
-                  <td>{proc.severidad   ?? '—'}</td>
+                  <td>{proc.severidad    ?? '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -675,31 +832,33 @@ export default function SeccionAForm() {
         </div>
       </CollapsibleBlock>
 
-      {/* ── Bloque A.7: Condiciones de alojamiento ──────────────────────── */}
+      {/* ── Bloque A.7: Condiciones de alojamiento — checkboxes ─────────── */}
       <CollapsibleBlock title="A.7 · Condiciones de alojamiento">
         <div className="form-group">
-          <label>Condiciones</label>
-          <div className={styles.radioGroup} style={{ flexDirection: 'column', gap: '0.75rem' }}>
-            {[
-              { value: 'estandar',   label: 'Según condiciones estándar del CIC bioGUNE' },
-              { value: 'variaciones',label: 'Con las siguientes variaciones' },
-              { value: 'otras',      label: 'Otras condiciones' },
-            ].map(({ value, label }) => (
-              <div key={value}>
-                <label className={styles.radioLabel}>
-                  <input type="radio"
-                    checked={form.condiciones_alojamiento.tipo === value}
-                    onChange={() => update('condiciones_alojamiento.tipo', value)} />
-                  {label}
-                </label>
-                {form.condiciones_alojamiento.tipo === value && value !== 'estandar' && (
-                  <textarea rows={3} style={{ marginTop: '0.5rem', width: '100%' }}
-                    value={form.condiciones_alojamiento.descripcion}
-                    onChange={e => update('condiciones_alojamiento.descripcion', e.target.value)}
-                    placeholder="Describe las condiciones…" />
-                )}
-              </div>
-            ))}
+          <div className={styles.checkboxGroup} style={{ flexDirection: 'column', gap: '0.6rem' }}>
+            <label className={styles.checkboxLabel}>
+              <input type="checkbox"
+                checked={form.condiciones_alojamiento.estandar}
+                onChange={e => update('condiciones_alojamiento.estandar', e.target.checked)} />
+              Según condiciones estándar del CIC bioGUNE
+            </label>
+            <div>
+              <label className={styles.checkboxLabel}>
+                <input type="checkbox"
+                  checked={form.condiciones_alojamiento.variaciones}
+                  onChange={e => update('condiciones_alojamiento.variaciones', e.target.checked)} />
+                Con las siguientes variaciones
+              </label>
+              {form.condiciones_alojamiento.variaciones && (
+                <textarea
+                  rows={4}
+                  style={{ marginTop: '0.5rem', width: '100%' }}
+                  value={form.condiciones_alojamiento.descripcion}
+                  onChange={e => update('condiciones_alojamiento.descripcion', e.target.value)}
+                  placeholder="Describe las variaciones sobre las condiciones estándar…"
+                />
+              )}
+            </div>
           </div>
         </div>
       </CollapsibleBlock>
@@ -708,17 +867,16 @@ export default function SeccionAForm() {
       <CollapsibleBlock title="9 · Firma">
         <div className="form-group" style={{ maxWidth: '380px' }}>
           <label>Nombre del firmante</label>
-          <input type="text"
+          <QuickFillInput
             value={form.firmante}
-            onChange={e => update('firmante', e.target.value)}
-            placeholder="Nombre y apellidos del firmante" />
+            onChange={v => update('firmante', v)}
+            presets={['Joaquín Castilla', 'Jorge Moreno']}
+            placeholder="Nombre y apellidos del firmante"
+          />
         </div>
       </CollapsibleBlock>
 
       {/* ── Save actions ─────────────────────────────────────────────────── */}
-      {saveError && (
-        <p className="alert alert-error" style={{ marginTop: '1rem' }}>{saveError}</p>
-      )}
       <div className={styles.actions}>
         <button type="button" className="btn btn-ghost"
           disabled={saving} onClick={() => doSave(false)}>

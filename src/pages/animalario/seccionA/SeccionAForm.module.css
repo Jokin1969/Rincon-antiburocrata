@@ -220,6 +220,33 @@
   margin-top: 0.1rem;
 }
 
+.inputError {
+  border-color: #dc2626 !important;
+  outline-color: #dc2626;
+}
+
+/* ── Validation error panel ───────────────────────────────────────────────── */
+
+.errPanel {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-left: 4px solid #dc2626;
+  border-radius: var(--radius-sm);
+  padding: 0.9rem 1.1rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.875rem;
+  color: #991b1b;
+}
+
+.errList {
+  margin: 0.5rem 0 0;
+  padding-left: 0.25rem;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
 /* ── Procedures table ─────────────────────────────────────────────────────── */
 
 .table {

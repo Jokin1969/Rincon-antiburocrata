@@ -291,9 +291,18 @@ async function genSeccionA(proyectoId) {
       ...(a.financiacion?.ip_es_responsable === false
         ? [kvRow('IP / otro responsable', a.financiacion?.ip_responsable_otro)] : []),
       kvRow('Lugar de realización',
-        a.lugar_realizacion?.tipo === 'animalario_cicbiogune'
-          ? 'Animalario CIC bioGUNE'
-          : (a.lugar_realizacion?.descripcion ?? a.lugar_realizacion?.tipo)),
+        // New checkbox model: { animalario_cicbiogune, otro, descripcion }
+        // Old model fallback: { tipo, descripcion }
+        'animalario_cicbiogune' in (a.lugar_realizacion ?? {})
+          ? [
+              a.lugar_realizacion.animalario_cicbiogune ? '☑ Animalario CIC bioGUNE' : null,
+              a.lugar_realizacion.otro
+                ? `☑ Otro: ${a.lugar_realizacion.descripcion ?? ''}`
+                : null,
+            ].filter(Boolean).join('\n') || '—'
+          : (a.lugar_realizacion?.tipo === 'animalario_cicbiogune'
+              ? '☑ Animalario CIC bioGUNE'
+              : (a.lugar_realizacion?.descripcion ?? a.lugar_realizacion?.tipo ?? '—'))),
     ]),
     emptyLine(),
 
@@ -365,14 +374,26 @@ async function genSeccionA(proyectoId) {
 
     h2('A.7 — Condiciones de alojamiento'),
     tbl([
-      kvRow('Tipo',
-        a.condiciones_alojamiento?.tipo === 'estandar'
-          ? '☑ Estándar'
-          : a.condiciones_alojamiento?.tipo === 'especiales'
-          ? '☑ Condiciones especiales'
-          : (a.condiciones_alojamiento?.tipo ?? '—')),
-      ...(a.condiciones_alojamiento?.tipo !== 'estandar'
-        ? [kvRow('Descripción', a.condiciones_alojamiento?.descripcion)] : []),
+      kvRow('Condiciones',
+        // New checkbox model: { estandar, variaciones, descripcion }
+        // Old model fallback: { tipo, descripcion }
+        'estandar' in (a.condiciones_alojamiento ?? {})
+          ? [
+              a.condiciones_alojamiento.estandar    ? '☑ Según condiciones estándar del CIC bioGUNE' : null,
+              a.condiciones_alojamiento.variaciones ? '☑ Con las siguientes variaciones' : null,
+            ].filter(Boolean).join('\n') || '—'
+          : (a.condiciones_alojamiento?.tipo === 'estandar'
+              ? '☑ Estándar'
+              : a.condiciones_alojamiento?.tipo === 'especiales'
+              ? '☑ Condiciones especiales'
+              : (a.condiciones_alojamiento?.tipo ?? '—'))),
+      ...('estandar' in (a.condiciones_alojamiento ?? {})
+        ? (a.condiciones_alojamiento.variaciones
+            ? [kvRow('Descripción', a.condiciones_alojamiento.descripcion)]
+            : [])
+        : (a.condiciones_alojamiento?.tipo !== 'estandar'
+            ? [kvRow('Descripción', a.condiciones_alojamiento?.descripcion)]
+            : [])),
     ]),
     emptyLine(),
 
