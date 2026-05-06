@@ -15,6 +15,10 @@ const __dirname     = dirname(__filename)
 
 const DATA_DIR      = process.env.DATA_DIR ?? join(__dirname, '..', '..', 'data')
 const LOGOS_DIR     = join(__dirname, '..', '..', 'public', 'logos', 'animalario')
+const FIRMA_PATH    = join(__dirname, '..', '..', 'public', 'firmas', 'jokin.png')
+
+let _firmaBuf = null
+try { _firmaBuf = readFileSync(FIRMA_PATH) } catch { _firmaBuf = null }
 const PROYECTOS_DIR = join(DATA_DIR, 'animalario', 'proyectos')
 const PROC_DIR      = join(DATA_DIR, 'animalario', 'procedimientos')
 const CRIA_DIR      = join(DATA_DIR, 'animalario', 'crias')
@@ -163,6 +167,41 @@ function makeEstablishment() {
     kvRow('Responsable de bienestar animal', 'Juan Rodríguez Cuesta'),
     kvRow('Veterinario designado', 'Juan Rodríguez Cuesta'),
   ])
+}
+
+// ── Firma block ───────────────────────────────────────────────────────────────
+
+const FIRMA_TARGET_W = 132  // ≈ 3.5 cm a 96 dpi
+
+function makeFirmaBlock(nombre) {
+  let imgPar
+  if (_firmaBuf) {
+    let imgH = 50
+    try {
+      const oW = _firmaBuf.readUInt32BE(16)
+      const oH = _firmaBuf.readUInt32BE(20)
+      if (oW > 0) imgH = Math.round(FIRMA_TARGET_W * (oH / oW))
+    } catch {}
+    imgPar = new Paragraph({
+      children: [new ImageRun({ data: _firmaBuf, transformation: { width: FIRMA_TARGET_W, height: imgH }, type: 'png' })],
+      spacing: { before: 80, after: 60 },
+    })
+  } else {
+    imgPar = par([tx('(firma)', { color: 'AAAAAA' })], { before: 120, after: 120 })
+  }
+
+  return [
+    h2('F. Firma del responsable'),
+    tbl([tr(
+      gc([par([txB('F. FIRMA:')])], { w: w(20) }),
+      tc([
+        par([tx('El/La abajo firmante declara que conoce las directrices éticas y la legislación aplicables a la investigación con animales y que se compromete a cumplirlas.')], { before: 40, after: 60 }),
+        par([txB(nombre ?? '—')], { before: 20, after: 40 }),
+        imgPar,
+      ], { w: w(80) }),
+    )]),
+    emptyLine(),
+  ]
 }
 
 function buildDoc(children, footerLabel) {
@@ -337,12 +376,7 @@ async function genSeccionA(proyectoId) {
     ]),
     emptyLine(),
 
-    h2('Firma del responsable'),
-    tbl([
-      kvRow('Nombre y apellidos', a.firmante || res.nombre_apellidos),
-      kvRow('Fecha firma',        fmtDate(new Date().toISOString())),
-    ]),
-    emptyLine(),
+    ...makeFirmaBlock(a.firmante || res.nombre_apellidos),
 
     notesPar('1 El responsable del proyecto debe estar acreditado según RD 53/2013 y ECC/566/2015.'),
     notesPar('2 La duración máxima del proyecto es de 5 años.'),
@@ -502,13 +536,7 @@ async function genSeccionB(procId) {
     tbl([kvRow('Severidad', proc.clasificacion_severidad ?? 'none')]),
     emptyLine(),
 
-    h2('Firma del responsable'),
-    tbl([
-      kvRow('Nombre y apellidos', frm.nombre),
-      kvRow('Fecha',              fmtDate(frm.fecha)),
-      kvRow('Observaciones',      frm.observaciones),
-    ]),
-    emptyLine(),
+    ...makeFirmaBlock(frm.nombre),
 
     notesPar('1 Los protocolos de analgesia/anestesia deben estar validados por el Veterinario Designado.'),
     notesPar('2 Los métodos de eutanasia deben ajustarse al Anexo IV del RD 53/2013.'),
@@ -625,9 +653,7 @@ async function genSeccionC(criaId) {
   }
 
   children.push(
-    h2('Firma del responsable'),
-    tbl([kvRow('Nombre y apellidos', cria.firmante ?? '')]),
-    emptyLine(),
+    ...makeFirmaBlock(cria.firmante ?? ''),
     notesPar('1 Los OMGs deben tener autorización del Ministerio de Medio Ambiente antes del inicio de la actividad.'),
     notesPar('2 El mapa del vector debe adjuntarse como documento independiente.')
   )
@@ -695,9 +721,7 @@ async function genSeccionD(proyectoId) {
     agQuimTable(d.agentes_quimicos ?? []),
     emptyLine(),
 
-    h2('Firma del responsable'),
-    tbl([kvRow('Nombre y apellidos', d.firmante ?? '')]),
-    emptyLine(),
+    ...makeFirmaBlock(d.firmante ?? ''),
 
     notesPar('Recuerde adjuntar la ficha de seguridad de cada uno de los productos listados al exportar el proyecto.'),
     notesPar('Los agentes biológicos del grupo 2 o superior requieren medidas de contención adicionales (RD 664/1997).'),
@@ -875,9 +899,7 @@ async function genModificacion(modifId) {
     h2('Justificación general'),
     tbl([kvRow('Justificación', m.justificacion_general)]),
     emptyLine(),
-    h2('Firma del responsable'),
-    tbl([kvRow('Nombre y apellidos', m.firmante ?? '')]),
-    emptyLine(),
+    ...makeFirmaBlock(m.firmante ?? ''),
     notesPar('1 Un incremento del número de animales superior al 25% (severidad leve) o al 10% (severidad moderada) requiere nuevo proyecto.'),
     notesPar('2 El número de modificación se asigna correlativamente por el Comité de Ética.'),
   )
