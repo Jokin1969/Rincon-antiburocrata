@@ -17,7 +17,7 @@ export default function Header() {
         <Link to="/" className={styles.brand}>
           <span className={styles.eyebrow}>El Rincón del</span>
           <span className={styles.title}>
-            Anti<span className={styles.dash}>-</span>Burócrata
+            Adhócrata
           </span>
         </Link>
         <p className={styles.sub}>
