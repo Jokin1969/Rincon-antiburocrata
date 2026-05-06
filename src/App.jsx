@@ -43,8 +43,8 @@ export default function App() {
         <Route path="/animalario/proyecto/:proyectoId" element={<ProyectoHub />} />
         <Route path="/animalario/proyecto/:proyectoId/editar" element={<SeccionAForm />} />
         <Route path="/animalario/proyecto/:proyectoId/procedimientos" element={<ProcedimientosHub />} />
-        <Route path="/animalario/proyecto/:proyectoId/procedimiento/nuevo" element={<SeccionBForm />} />
-        <Route path="/animalario/proyecto/:proyectoId/procedimiento/:bId" element={<SeccionBForm />} />
+        <Route path="/animalario/proyecto/:proyectoId/procedimientos/nuevo" element={<SeccionBForm />} />
+        <Route path="/animalario/proyecto/:proyectoId/procedimientos/:procId" element={<SeccionBForm />} />
         <Route path="/animalario/proyecto/:proyectoId/cria/nueva" element={<SeccionCForm />} />
         <Route path="/animalario/proyecto/:proyectoId/cria/:cId" element={<SeccionCForm />} />
         <Route path="/animalario/proyecto/:proyectoId/productos" element={<SeccionDForm />} />

@@ -5,5 +5,19 @@
   "parametro_medido": [],
   "metodo_eutanasia": [],
   "fuente_financiacion": [],
-  "especie": []
+  "especie": [
+    "Mus musculus",
+    "Rattus norvegicus"
+  ],
+  "via_administracion": [
+    "oral",
+    "subcutánea",
+    "intraperitoneal",
+    "intravenosa",
+    "intracraneal",
+    "tópica",
+    "inhalatoria",
+    "otra"
+  ],
+  "frecuencia_tecnica": []
 }

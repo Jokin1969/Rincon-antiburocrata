@@ -234,3 +234,69 @@
   border: 1px solid rgba(22, 163, 74, 0.3);
   white-space: nowrap;
 }
+
+/* ── Severity badges ──────────────────────────────────────────────────────── */
+
+.severityBadge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.severityNone {
+  background: rgba(107, 114, 128, 0.1);
+  color: #4b5563;
+  border: 1px solid rgba(107, 114, 128, 0.3);
+}
+
+.severityLow {
+  background: rgba(22, 163, 74, 0.1);
+  color: #15803d;
+  border: 1px solid rgba(22, 163, 74, 0.3);
+}
+
+.severityMedium {
+  background: rgba(202, 138, 4, 0.1);
+  color: #92400e;
+  border: 1px solid rgba(202, 138, 4, 0.3);
+}
+
+.severityHigh {
+  background: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+}
+
+/* ── ProcedimientosHub summary bar ───────────────────────────────────────── */
+
+.summaryBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  padding: 0.9rem 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 1.75rem;
+  font-size: 0.82rem;
+  color: var(--muted-light);
+}
+
+.summaryBar strong {
+  color: var(--text);
+  font-size: 1.1rem;
+  display: block;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.summaryBarItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
