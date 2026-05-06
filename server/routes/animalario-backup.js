@@ -108,10 +108,10 @@ async function dbxUpload(filename, buffer) {
     body: buffer,
   })
   if (!resp.ok) {
-    // Content-API errors come in the Dropbox-API-Result header, not the body
     const errHeader = resp.headers.get('Dropbox-API-Result')
+    const wwwAuth   = resp.headers.get('WWW-Authenticate')
     const errBody   = await resp.text()
-    const detail    = errHeader || errBody || `HTTP ${resp.status}`
+    const detail    = errHeader || errBody || wwwAuth || `HTTP ${resp.status}`
     throw new Error(`[files/upload] ${detail}`)
   }
   return safeJson(resp, 'files/upload')
@@ -335,6 +335,46 @@ router.delete('/backup/:filename', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
+})
+
+// GET /backup/test  — diagnostics: token → list_folder → tiny upload → delete
+router.get('/backup/test', async (_req, res) => {
+  if (requireDropbox(res)) return
+  const steps = []
+  const step  = (name, fn) => fn()
+    .then(v  => { steps.push({ step: name, ok: true,  detail: v ?? 'ok' }) })
+    .catch(e => { steps.push({ step: name, ok: false, detail: e.message }) })
+
+  // 1. Token
+  let token
+  await step('1_oauth2_token', async () => {
+    token = await getToken()
+    return `access_token obtenido (${token.slice(0, 8)}…)`
+  })
+  if (!token) return res.json({ ok: false, steps })
+
+  // 2. list_folder
+  await step('2_list_folder', async () => {
+    const entries = await dbxListFolder()
+    return `${entries.length} archivos en "${DBX_FOLDER || '/'}"`
+  })
+
+  // 3. Tiny upload (1 byte test file)
+  const testFile = `_test_${Date.now()}.tmp`
+  let uploaded = false
+  await step('3_upload_test_file', async () => {
+    await dbxUpload(testFile, Buffer.from('x'))
+    uploaded = true
+    return `subido ${dbxPath(testFile)}`
+  })
+
+  // 4. Delete test file
+  if (uploaded) {
+    await step('4_delete_test_file', () => dbxDelete(testFile))
+  }
+
+  const allOk = steps.every(s => s.ok)
+  res.json({ ok: allOk, steps })
 })
 
 export default router
