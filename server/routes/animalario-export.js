@@ -53,7 +53,11 @@ const NON = {
   right:  { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
 }
 const CM = { top: 70, bottom: 70, left: 110, right: 110 }
-const GF = { type: ShadingType.CLEAR, color: 'auto', fill: 'D9D9D9' }
+const GF        = { type: ShadingType.CLEAR, color: 'auto', fill: 'D9D9D9' }
+const DARK_BLUE = { type: ShadingType.CLEAR, color: 'auto', fill: '1F4E79' }
+const LITE_BLUE = { type: ShadingType.CLEAR, color: 'auto', fill: 'DEEAF1' }
+const BS_THIN   = { style: BorderStyle.SINGLE, size: 2, color: 'BDD7EE' }
+const ALL_THIN  = { top: BS_THIN, bottom: BS_THIN, left: BS_THIN, right: BS_THIN }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -98,7 +102,12 @@ function tc(children, opts = {}) {
     margins:       CM,
   })
 }
-const gc = (children, opts = {}) => tc(children, { shading: GF, ...opts })
+const gc   = (children, opts = {}) => tc(children, { shading: GF,        ...opts })
+const dbc  = (children, opts = {}) => tc(children, { shading: DARK_BLUE,  ...opts })
+const lbc  = (children, opts = {}) => tc(children, { shading: LITE_BLUE, borders: ALL_THIN, ...opts })
+const tct  = (children, opts = {}) => tc(children, { borders: ALL_THIN,  ...opts })
+const txW  = (text, opts = {}) => tx(text,  { color: 'FFFFFF', ...opts })
+const txBW = (text, opts = {}) => txB(text, { color: 'FFFFFF', ...opts })
 
 const tr = (...cells) => new TableRow({ children: cells })
 
@@ -124,6 +133,25 @@ const yn  = v => (v === true || v === 'si' || v === 'sí') ? 'Sí' : (v === fals
 const chk = v => v ? '☑' : '☐'
 const dash = v => (v && String(v).trim()) ? String(v) : '—'
 
+// ── Image helpers ─────────────────────────────────────────────────────────────
+
+function scaledImgRun(buf, targetW, type = 'png') {
+  let h = Math.round(targetW * 0.4)
+  try {
+    const oW = buf.readUInt32BE(16)
+    const oH = buf.readUInt32BE(20)
+    if (oW > 0) h = Math.round(targetW * (oH / oW))
+  } catch {}
+  return new ImageRun({ data: buf, transformation: { width: targetW, height: h }, type })
+}
+
+function fmtFunciones(str) {
+  const codes = (str ?? '').split(',').map(f => f.trim()).filter(Boolean)
+  if (!codes.length) return ''
+  if (codes.length === 1) return codes[0]
+  return codes.slice(0, -1).join(', ') + ' y ' + codes[codes.length - 1]
+}
+
 // ── Logo caching ──────────────────────────────────────────────────────────────
 
 let _cic = null, _aaa = null
@@ -136,9 +164,9 @@ function makeHeader() {
   const cic = cicLogo()
   const aaa = aaaLogo()
   return tbl([tr(
-    tc([new Paragraph({ children: cic ? [new ImageRun({ data: cic, transformation: { width: 130, height: 47 }, type: 'png' })] : [tx('CIC bioGUNE')], spacing: { before: 40, after: 40 } })], { borders: NON, w: w(25) }),
+    tc([new Paragraph({ children: aaa ? [scaledImgRun(aaa, 110)] : [tx('AAALAC')],     spacing: { before: 40, after: 40 } })],                              { borders: NON, w: w(25) }),
     tc([], { borders: NON, w: w(50) }),
-    tc([new Paragraph({ children: aaa ? [new ImageRun({ data: aaa, transformation: { width: 110, height: 47 }, type: 'png' })] : [tx('AAALAC')], alignment: AlignmentType.RIGHT, spacing: { before: 40, after: 40 } })], { borders: NON, w: w(25) }),
+    tc([new Paragraph({ children: cic ? [scaledImgRun(cic, 130)] : [tx('CIC bioGUNE')], alignment: AlignmentType.RIGHT, spacing: { before: 40, after: 40 } })], { borders: NON, w: w(25) }),
   )])
 }
 
@@ -266,23 +294,16 @@ async function genSeccionA(proyectoId) {
 
   // ── Lugar de realización ──────────────────────────────────────────────────
   function lugarRows() {
-    // New model: { animalario_cicbiogune, otro, descripcion }
     if ('animalario_cicbiogune' in lr) {
-      const rows = [
+      return [
         par([tx(chk(lr.animalario_cicbiogune)), tx(' Animalario CIC bioGUNE')]),
+        par([tx(chk(lr.otro)), tx(' Otro. '), txB('Indicar: '), tx(lr.otro ? (lr.descripcion ?? '') : '')]),
       ]
-      if (lr.otro && lr.descripcion) {
-        rows.push(par([tx('☑ Otro. Indicar: '), tx(lr.descripcion)]))
-      } else {
-        rows.push(par([tx(chk(lr.otro)), tx(' Otro. Indicar: '), tx(lr.otro ? (lr.descripcion ?? '') : '')]))
-      }
-      return rows
     }
-    // Old model fallback
     const tipo = lr.tipo ?? ''
     return [
       par([tx(chk(tipo === 'animalario_cicbiogune')), tx(' Animalario CIC bioGUNE')]),
-      par([tx(chk(tipo === 'otro')), tx(' Otro. Indicar: '), tx(tipo === 'otro' ? (lr.descripcion ?? '') : '')]),
+      par([tx(chk(tipo === 'otro')), tx(' Otro. '), txB('Indicar: '), tx(tipo === 'otro' ? (lr.descripcion ?? '') : '')]),
     ]
   }
 
@@ -312,24 +333,24 @@ async function genSeccionA(proyectoId) {
     makeHeader(),
     emptyLine(),
 
-    // ── Título principal ────────────────────────────────────────────────────
+    // ── Título principal (Calibri 16pt) ─────────────────────────────────────
     new Paragraph({
       children: [new TextRun({
         text: 'SOLICITUD DE EVALUACIÓN ÉTICA DE UN PROYECTO DE INVESTIGACIÓN CON ANIMALES DE INVESTIGACIÓN',
-        font: FONT, size: SZ, bold: true,
+        font: FONT, size: 32, bold: true,
       })],
       alignment: AlignmentType.CENTER,
       spacing: { before: 100, after: 100 },
     }),
 
-    // ── Título proyecto + CBBA ──────────────────────────────────────────────
+    // ── Título proyecto + CBBA (dark blue header, white text) ──────────────
     tbl([
       tr(
-        gc([par([txB('Título del proyecto:')])], { w: w(35) }),
-        tc([par(a.titulo ?? proyecto.titulo ?? '')], { w: w(65) }),
+        dbc([par([txBW('Título del proyecto:')])],           { w: w(35) }),
+        tc([par(a.titulo ?? proyecto.titulo ?? '')],         { w: w(65) }),
       ),
       tr(
-        gc([par([txB('Registro de referencia (CBBA):')])], { w: w(35) }),
+        dbc([par([txBW('Registro de referencia (CBBA):')])], { w: w(35) }),
         tc([par(
           (a.referencia_cbba ?? proyecto.referencia_cbba)
             ? `P-CBG-CBBA-${(a.referencia_cbba ?? proyecto.referencia_cbba ?? '').replace(/^P-CBG-CBBA-/, '')}`
@@ -341,131 +362,124 @@ async function genSeccionA(proyectoId) {
 
     // ── Establecimiento usuario ─────────────────────────────────────────────
     tbl([
-      tr(tc([
-        par([txB('Identificación del establecimiento usuario (EU)')]),
-        par([new TextRun({ text: '(Indicar dónde se va a llevar a cabo la experimentación)', font: FONT, size: SZ_SM, italics: true })]),
+      tr(lbc([
+        par([txB('Identificación del establecimiento usuario (EU)')], { align: AlignmentType.CENTER }),
+        par([new TextRun({ text: '(Indicar dónde se va a llevar a cabo la experimentación)', font: FONT, size: SZ_SM, italics: true })], { align: AlignmentType.CENTER }),
       ], { w: w(100) })),
-      tr(tc([par([
-        txB('Nombre: '), tx('CIC bioGUNE'),
-        tx('     '),
-        txB('Número de registro (REGA): '), tx('ES489010006106'),
-        tx('     '),
-        txB('Fecha de registro: '), tx('4/3/2011'),
-      ])], { w: w(100) })),
-      tr(tc([par([
-        txB('Nombre y apellidos del responsable del EU: '), tx('Juan Anguita Castillo'),
-        tx('     '),
-        txB('E-mail: '), tx('janguita@cicbiogune.es'),
-      ])], { w: w(100) })),
-      tr(tc([par([
-        txB('Nombre y apellidos del responsable de bienestar animal: '), tx('Juan Rodríguez Cuesta'),
-        tx('     '),
-        txB('E-mail: '), tx('juanrodriguezcuesta@gmail.com'),
-      ])], { w: w(100) })),
-      tr(tc([par([
-        txB('Nombre y apellidos del veterinario designado: '), tx('Juan Rodríguez Cuesta'),
-        tx('     '),
-        txB('E-mail: '), tx('juanrodriguezcuesta@gmail.com'),
-      ])], { w: w(100) })),
+      tr(tc([
+        par([txB('Nombre: '), tx('CIC bioGUNE')]),
+        par([txB('Número de registro (REGA): '), tx('ES489010006106')]),
+        par([txB('Fecha de registro: '), tx('4/3/2011')]),
+      ], { w: w(100) })),
+      tr(tc([
+        par([txB('Nombre y apellidos del responsable del EU: '), tx('Juan Anguita Castillo')]),
+        par([txB('E-mail: '), tx('janguita@cicbiogune.es')]),
+      ], { w: w(100) })),
+      tr(tc([
+        par([txB('Nombre y apellidos del responsable de bienestar animal: '), tx('Juan Rodríguez Cuesta')]),
+        par([txB('E-mail: '), tx('juanrodriguezcuesta@gmail.com')]),
+      ], { w: w(100) })),
+      tr(tc([
+        par([txB('Nombre y apellidos del veterinario designado: '), tx('Juan Rodríguez Cuesta')]),
+        par([txB('E-mail: '), tx('juanrodriguezcuesta@gmail.com')]),
+      ], { w: w(100) })),
     ]),
     emptyLine(),
 
-    // ── INFORMACIÓN GENERAL ─────────────────────────────────────────────────
+    // ── A. INFORMACIÓN GENERAL ──────────────────────────────────────────────
     new Paragraph({
-      children: [new TextRun({ text: 'INFORMACIÓN GENERAL DEL PROYECTO', font: FONT, size: SZ, bold: true })],
+      children: [new TextRun({ text: 'A. INFORMACIÓN GENERAL DEL PROYECTO', font: FONT, size: SZ, bold: true })],
       spacing: { before: 140, after: 80 },
     }),
 
-    // ── A.1 Responsable ─────────────────────────────────────────────────────
+    // ── A.1 Responsable (light blue, thin borders, ECC superscript) ─────────
     new Paragraph({ children: [txB('A.1 RESPONSABLE DEL PROYECTO')], spacing: { before: 80, after: 40 } }),
     tbl([
       tr(
-        gc([par([txB('NIF/ Pasaporte')])],    { w: w(50) }),
-        gc([par([txB('Nombre y apellidos')])], { w: w(50) }),
+        lbc([par([txB('NIF/ Pasaporte')])],    { w: w(50) }),
+        lbc([par([txB('Nombre y apellidos')])], { w: w(50) }),
       ),
       tr(
-        tc([par(dash(res.nif_pasaporte))],    { w: w(50) }),
-        tc([par(dash(res.nombre_apellidos))], { w: w(50) }),
+        tct([par(dash(res.nif_pasaporte))],    { w: w(50) }),
+        tct([par(dash(res.nombre_apellidos))], { w: w(50) }),
       ),
       tr(
-        gc([par([txB('Teléfono')])],          { w: w(50) }),
-        gc([par([txB('Correo electrónico')])], { w: w(50) }),
+        lbc([par([txB('Teléfono')])],           { w: w(50) }),
+        lbc([par([txB('Correo electrónico')])], { w: w(50) }),
       ),
       tr(
-        tc([par(dash(res.telefono))],         { w: w(50) }),
-        tc([par(dash(res.email))],            { w: w(50) }),
+        tct([par(dash(res.telefono))], { w: w(50) }),
+        tct([par(dash(res.email))],    { w: w(50) }),
       ),
-      secRow('Función en experimentación animal según ECC/566/2015', 2),
-      fullTc([par(
+      tr(lbc([par([
+        txB('Función en experimentación animal según ECC/566/2015'),
+        new TextRun({ text: '1', font: FONT, size: 14, superScript: true }),
+      ])], { w: w(100), span: 2 })),
+      tr(tct([par(
         res.funcion_ecc566
           ? (FUNCION_LABELS[res.funcion_ecc566] ?? res.funcion_ecc566)
           : '—'
-      )], 2),
+      )], { w: w(100), span: 2 })),
       tr(
-        gc([par([txB('Autoridad Competente')])],                            { w: w(50) }),
-        gc([par([txB('Última fecha de acreditación o mantenimiento')])],    { w: w(50) }),
+        lbc([par([txB('Autoridad Competente')])],                          { w: w(50) }),
+        lbc([par([txB('Última fecha de acreditación o mantenimiento')])],  { w: w(50) }),
       ),
       tr(
-        tc([par(dash(res.autoridad_competente))],      { w: w(50) }),
-        tc([par(fmtDate(res.fecha_acreditacion))],     { w: w(50) }),
+        tct([par(dash(res.autoridad_competente))],  { w: w(50) }),
+        tct([par(fmtDate(res.fecha_acreditacion))], { w: w(50) }),
       ),
     ]),
     emptyLine(),
 
-    // ── A.2 Participantes ───────────────────────────────────────────────────
+    // ── A.2 Participantes (light blue, thin borders, abbreviated functions) ─
     new Paragraph({ children: [txB('A.2 CAPACITACIÓN DE LAS PERSONAS QUE PARTICIPAN EN EL PROYECTO')], spacing: { before: 80, after: 40 } }),
     tbl([
       tr(
-        gc([par([txB('Nombre y apellidos')])], { w: w(40) }),
-        gc([par([txB('Función/es')])],          { w: w(35) }),
-        gc([par([txB('NIF/ Pasaporte')])],      { w: w(25) }),
+        lbc([par([txB('Nombre y apellidos')])], { w: w(40) }),
+        lbc([par([txB('Función/es')])],          { w: w(35) }),
+        lbc([par([txB('NIF/ Pasaporte')])],      { w: w(25) }),
       ),
-      ...(a.participantes ?? []).map(pt => {
-        const funs = (pt.funciones ?? '').split(',').filter(Boolean)
-          .map(f => FUNCION_LABELS[f.trim()] ?? f.trim()).join(', ')
-        return tr(
-          tc([par(pt.nombre_apellidos ?? '')], { w: w(40) }),
-          tc([par(funs || (pt.funciones ?? ''))],            { w: w(35) }),
-          tc([par(pt.nif_pasaporte ?? '')],    { w: w(25) }),
-        )
-      }),
-      // Blank rows when no participants
+      ...(a.participantes ?? []).map(pt => tr(
+        tct([par(pt.nombre_apellidos ?? '')], { w: w(40) }),
+        tct([par(fmtFunciones(pt.funciones))], { w: w(35) }),
+        tct([par(pt.nif_pasaporte ?? '')],    { w: w(25) }),
+      )),
       ...((a.participantes ?? []).length === 0
         ? Array(3).fill(null).map(() => tr(
-            tc([par('')], { w: w(40) }),
-            tc([par('')], { w: w(35) }),
-            tc([par('')], { w: w(25) }),
+            tct([par('')], { w: w(40) }),
+            tct([par('')], { w: w(35) }),
+            tct([par('')], { w: w(25) }),
           ))
         : []),
     ]),
     emptyLine(),
 
-    // ── A.3 Duración, financiación y localización ───────────────────────────
+    // ── A.3 Duración, financiación y localización (light blue, thin borders) ─
     new Paragraph({ children: [txB('A.3 DURACIÓN, FINANCIACIÓN Y LOCALIZACIÓN')], spacing: { before: 80, after: 40 } }),
     tbl([
       tr(
-        gc([par([txB('Fecha prevista de inicio')])],       { w: w(50) }),
-        gc([par([txB('Fecha prevista de finalización')])], { w: w(50) }),
+        lbc([par([txB('Fecha prevista de inicio')])],       { w: w(50) }),
+        lbc([par([txB('Fecha prevista de finalización')])], { w: w(50) }),
       ),
       tr(
-        tc([par(fmtDate(a.duracion?.fecha_inicio))], { w: w(50) }),
-        tc([par(fmtDate(a.duracion?.fecha_fin))],    { w: w(50) }),
+        tct([par(fmtDate(a.duracion?.fecha_inicio))], { w: w(50) }),
+        tct([par(fmtDate(a.duracion?.fecha_fin))],    { w: w(50) }),
       ),
-      secRow('Fuente de financiación', 2),
-      fullTc([par([txB('Entidad financiadora y programa: '), tx(dash(fin.entidad_programa))])], 2),
-      fullTc([par([
-        tx(chk(fin.estado === 'solicitada')), tx(' Solicitada     '),
-        tx(chk(fin.estado === 'aprobada')),   tx(' Aprobada. (Número de proyecto: '),
-        tx(dash(fin.numero_proyecto)), tx(')'),
-      ])], 2),
-      secRow('¿Es el IP del proyecto el responsable de la financiación del mismo?', 2),
-      fullTc([par([
-        tx(chk(fin.ip_es_responsable === true)),  tx(' Sí     '),
-        tx(chk(fin.ip_es_responsable === false)), tx(' No. Indicar: '),
-        tx(fin.ip_es_responsable === false ? (fin.ip_responsable_otro ?? '') : ''),
-      ])], 2),
-      secRow('Lugar de realización del proyecto', 2),
-      fullTc(lugarRows(), 2),
+      tr(lbc([par([txB('Fuente de financiación')])], { w: w(100), span: 2 })),
+      tr(tct([par([txB('Entidad financiadora y programa: '), tx(dash(fin.entidad_programa))])], { w: w(100), span: 2 })),
+      tr(tct([
+        par([tx(chk(fin.estado === 'solicitada')), tx(' Solicitada')]),
+        par([tx(chk(fin.estado === 'aprobada')),   tx(' Aprobada. (Número de proyecto: '), tx(dash(fin.numero_proyecto)), tx(')')]),
+      ], { w: w(100), span: 2 })),
+      tr(lbc([par([txB('¿Es el IP del proyecto el responsable de la financiación del mismo?')])], { w: w(100), span: 2 })),
+      tr(tct([
+        par([tx(chk(fin.ip_es_responsable === true)),  tx(' Sí')]),
+        par([tx(chk(fin.ip_es_responsable === false)), tx(' No. '), txB('Indicar: '),
+          tx(fin.ip_es_responsable === false ? (fin.ip_responsable_otro ?? '') : ''),
+        ]),
+      ], { w: w(100), span: 2 })),
+      tr(lbc([par([txB('Lugar de realización del proyecto')])], { w: w(100), span: 2 })),
+      tr(tct(lugarRows(), { w: w(100), span: 2 })),
     ]),
     emptyLine(),
 
@@ -510,18 +524,18 @@ async function genSeccionA(proyectoId) {
     new Paragraph({ children: [txB('A.6 RESUMEN DE PROCEDIMIENTOS:')], spacing: { before: 80, after: 40 } }),
     tbl([
       tr(
-        gc([par([txB('Número')])],            { w: w(8)  }),
-        gc([par([txB('Título')])],            { w: w(34) }),
-        gc([par([txB('Especie animal')])],    { w: w(22) }),
-        gc([par([txB('Número de animales')])],{ w: w(18) }),
-        gc([par([txB('Severidad')])],         { w: w(18) }),
+        gc([par([txB('Número')])],             { w: w(8)  }),
+        gc([par([txB('Título')])],             { w: w(34) }),
+        gc([par([txB('Especie animal')])],     { w: w(22) }),
+        gc([par([txB('Número de animales')])], { w: w(18) }),
+        gc([par([txB('Severidad')])],          { w: w(18) }),
       ),
       ...(procs.length > 0
         ? procs.map((proc, idx) => tr(
-            tc([par(String(idx + 1))],                                           { w: w(8)  }),
-            tc([par(proc.datos_generales?.titulo_procedimiento ?? '')],          { w: w(34) }),
-            tc([par((proc.datos_generales?.especies ?? []).join(', '))],         { w: w(22) }),
-            tc([par(String(proc.datos_generales?.num_animales ?? ''))],          { w: w(18) }),
+            tc([par(String(idx + 1))],                                                                   { w: w(8)  }),
+            tc([par(proc.datos_generales?.titulo_procedimiento ?? '')],                                  { w: w(34) }),
+            tc([par((proc.datos_generales?.especies ?? []).join(', '))],                                 { w: w(22) }),
+            tc([par(String(proc.datos_generales?.num_animales ?? ''))],                                  { w: w(18) }),
             tc([par(SEV_LABELS[proc.clasificacion_severidad] ?? (proc.clasificacion_severidad ?? ''))], { w: w(18) }),
           ))
         : [tr(
@@ -535,7 +549,6 @@ async function genSeccionA(proyectoId) {
     ]),
     emptyLine(),
 
-    // Pregunta cría (fuera de la tabla, como en la plantilla)
     par([
       txB('¿Contempla un procedimiento de cría de animales? '),
       tx(chk(!a.hay_cria)), tx(' NO     '),
@@ -571,7 +584,15 @@ async function genSeccionA(proyectoId) {
     // ── Firma ───────────────────────────────────────────────────────────────
     ...makeFirmaBlock(a.firmante || res.nombre_apellidos),
 
-    notesPar('1 El responsable del proyecto debe estar acreditado según RD 53/2013 y ECC/566/2015.'),
+    // ── Nota al pie (ECC/566/2015) ──────────────────────────────────────────
+    new Paragraph({
+      children: [new TextRun({
+        text: '¹ Función según orden ECC/566/2015: A. Cuidado de los animales B. Eutanasia C. Realización de los procedimientos. D. Diseño de los proyectos y procedimientos. E. Responsabilidad de la supervisión in situ del bienestar y cuidados de los animales. F. Veterinario Designado. Ninguna función específica.',
+        font: FONT, size: 16,
+      })],
+      border: { top: { style: BorderStyle.SINGLE, size: 4, color: '000000', space: 3 } },
+      spacing: { before: 240, after: 40 },
+    }),
     notesPar('2 La duración máxima del proyecto es de 5 años.'),
     notesPar('3 El resumen no debe superar las 300 palabras.'),
   ]

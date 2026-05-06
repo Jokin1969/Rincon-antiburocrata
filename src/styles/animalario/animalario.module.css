@@ -224,6 +224,10 @@
 }
 
 .statusBadgeOk {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   font-size: 0.65rem;
   font-weight: 700;
   text-transform: uppercase;
