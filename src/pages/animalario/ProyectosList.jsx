@@ -13,7 +13,18 @@ export default function ProyectosList() {
   const [loading, setLoading]     = useState(true)
   const [error, setError]         = useState(null)
   const [search, setSearch]       = useState('')
+  const [deletingId, setDeletingId] = useState(null)
   const navigate = useNavigate()
+
+  function handleDelete(p) {
+    if (!window.confirm(`¿Eliminar el proyecto "${p.titulo}"? Esta acción no se puede deshacer.`)) return
+    setDeletingId(p.id)
+    fetch(`/api/animalario/proyectos/${p.id}`, { method: 'DELETE' })
+      .then(r => { if (!r.ok) throw new Error('Error al eliminar'); return r.json() })
+      .then(() => setProyectos(prev => prev.filter(x => x.id !== p.id)))
+      .catch(err => alert(err.message))
+      .finally(() => setDeletingId(null))
+  }
 
   useEffect(() => {
     fetch('/api/animalario/proyectos')
@@ -104,6 +115,14 @@ export default function ProyectosList() {
                   title="Próximamente"
                 >
                   Exportar
+                </button>
+                <button
+                  className="btn btn-danger"
+                  onClick={() => handleDelete(p)}
+                  disabled={deletingId === p.id}
+                  title="Eliminar proyecto"
+                >
+                  {deletingId === p.id ? 'Eliminando…' : 'Borrar'}
                 </button>
               </div>
             </div>

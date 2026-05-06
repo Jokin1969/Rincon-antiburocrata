@@ -245,20 +245,18 @@ export default function SeccionAForm() {
           const secA = data.seccionA
           // Migrate old lugar_realizacion model (tipo string → checkboxes)
           if (secA.lugar_realizacion && !('animalario_cicbiogune' in secA.lugar_realizacion)) {
-            const oldTipo = secA.lugar_realizacion.tipo
             secA.lugar_realizacion = {
-              animalario_cicbiogune: oldTipo === 'animalario_cicbiogune',
-              otro:                  oldTipo === 'otro',
-              descripcion:           secA.lugar_realizacion.descripcion ?? '',
+              animalario_cicbiogune: true,
+              otro:                  true,
+              descripcion:           secA.lugar_realizacion.descripcion ?? EMPTY_FORM.lugar_realizacion.descripcion,
             }
           }
           // Migrate old condiciones_alojamiento model (tipo string → checkboxes)
           if (secA.condiciones_alojamiento && !('estandar' in secA.condiciones_alojamiento)) {
-            const oldTipo = secA.condiciones_alojamiento.tipo
             secA.condiciones_alojamiento = {
-              estandar:    oldTipo === 'estandar',
-              variaciones: oldTipo === 'variaciones' || oldTipo === 'especiales',
-              descripcion: secA.condiciones_alojamiento.descripcion ?? '',
+              estandar:    true,
+              variaciones: true,
+              descripcion: secA.condiciones_alojamiento.descripcion ?? EMPTY_FORM.condiciones_alojamiento.descripcion,
             }
           }
           setForm({ ...clone(EMPTY_FORM), ...secA })

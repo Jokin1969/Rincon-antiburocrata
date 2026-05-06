@@ -209,6 +209,18 @@ router.put('/proyectos/:id', (req, res) => {
   }
 })
 
+// DELETE /api/animalario/proyectos/:id
+router.delete('/proyectos/:id', (req, res) => {
+  try {
+    const path = join(PROYECTOS_DIR, `proyecto_${req.params.id}.json`)
+    if (!existsSync(path)) return res.status(404).json({ error: 'Proyecto no encontrado' })
+    unlinkSync(path)
+    res.json({ ok: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // ── Procedimientos ────────────────────────────────────────────────────────────
 
 // GET /api/animalario/proyectos/:proyectoId/procedimientos
