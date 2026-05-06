@@ -48,8 +48,16 @@
   color: var(--accent);
 }
 
+.tagline {
+  margin-top: 0.6rem;
+  font-size: 0.78rem;
+  font-style: italic;
+  color: var(--accent);
+  letter-spacing: 0.01em;
+}
+
 .sub {
-  margin-top: 0.75rem;
+  margin-top: 0.25rem;
   font-size: 0.8rem;
   color: var(--muted);
   letter-spacing: 0.02em;

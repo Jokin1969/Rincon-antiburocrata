@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { href: '/logos',          label: 'Logos',            icon: '🖼', end: false },
   { href: '/contrato-menor', label: 'Contrato Menor',  icon: '📄', end: false },
   { href: '/aduanas',        label: 'Aduanas',          icon: '📦', end: false },
+  { href: '/animalario',    label: 'Animalario',       icon: '🐭', end: false },
 ]
 
 export default function Header() {
@@ -20,6 +21,7 @@ export default function Header() {
             Adhócrata
           </span>
         </Link>
+        <p className={styles.tagline}>Código vibrante, burocracia menguante</p>
         <p className={styles.sub}>
           Grupo de Enfermedades Priónicas · CIC bioGUNE
         </p>
