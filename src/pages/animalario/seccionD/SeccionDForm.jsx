@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import PageHeader from '../../../components/PageHeader'
 import s from './SeccionDForm.module.css'
 import ExportButton from '../../../components/animalario/ExportButton'
+import CollapsibleBlock from '../../../components/animalario/CollapsibleBlock'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -26,19 +27,6 @@ const EMPTY_QUIMICO = {
 const EMPTY_D = { agentes_biologicos: [], agentes_quimicos: [], firmante: '' }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
-
-function CollapsibleBlock({ title, children, defaultOpen = true }) {
-  const [open, setOpen] = useState(defaultOpen)
-  return (
-    <div className={s.block}>
-      <button type="button" className={s.blockHeader} onClick={() => setOpen(o => !o)}>
-        {title}
-        <span className={s.chevron} style={{ transform: open ? 'rotate(180deg)' : 'none' }}>▼</span>
-      </button>
-      {open && <div className={s.blockBody}>{children}</div>}
-    </div>
-  )
-}
 
 function AutocompleteInput({ campo, value, onChange, placeholder }) {
   const [suggestions, setSuggestions] = useState([])
@@ -223,7 +211,7 @@ export default function SeccionDForm() {
       )}
 
       {/* ── D.1 Agentes biológicos ──────────────────────────────── */}
-      <CollapsibleBlock title="D.1 · Agentes biológicos">
+      <CollapsibleBlock title="D.1 · Agentes biológicos" storageKey="secD:bio">
         {form.agentes_biologicos.length === 0 && (
           <p className={s.emptyNote}>No se han declarado agentes biológicos.</p>
         )}
@@ -303,7 +291,7 @@ export default function SeccionDForm() {
       </CollapsibleBlock>
 
       {/* ── D.2 Agentes químicos ────────────────────────────────── */}
-      <CollapsibleBlock title="D.2 · Agentes químicos">
+      <CollapsibleBlock title="D.2 · Agentes químicos" storageKey="secD:quim">
         {form.agentes_quimicos.length === 0 && (
           <p className={s.emptyNote}>No se han declarado agentes químicos.</p>
         )}
@@ -370,7 +358,7 @@ export default function SeccionDForm() {
       </CollapsibleBlock>
 
       {/* ── Firma ──────────────────────────────────────────────── */}
-      <CollapsibleBlock title="Firma del responsable" defaultOpen={false}>
+      <CollapsibleBlock title="Firma del responsable" storageKey="secD:firma" defaultOpen={false}>
         <div className={s.grid2}>
           <div className="form-group">
             <label>Nombre y apellidos</label>

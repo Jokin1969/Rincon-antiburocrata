@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import PageHeader from '../../../components/PageHeader'
 import s from './SeccionBForm.module.css'
 import ExportButton from '../../../components/animalario/ExportButton'
+import CollapsibleBlock from '../../../components/animalario/CollapsibleBlock'
+import AutoExpandTextarea from '../../../components/animalario/AutoExpandTextarea'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -82,19 +84,6 @@ const EMPTY_PARAMETRO = { parametro: '', metodo_medida: '', frecuencia: '', unid
 const EMPTY_MUESTRA   = { tipo: '', volumen_cantidad: '', frecuencia: '', procedimiento: '' }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
-
-function CollapsibleBlock({ title, children, defaultOpen = true }) {
-  const [open, setOpen] = useState(defaultOpen)
-  return (
-    <div className={s.block}>
-      <button type="button" className={s.blockHeader} onClick={() => setOpen(o => !o)}>
-        {title}
-        <span className={s.chevron} style={{ transform: open ? 'rotate(180deg)' : 'none' }}>▼</span>
-      </button>
-      {open && <div className={s.blockBody}>{children}</div>}
-    </div>
-  )
-}
 
 function AutocompleteInput({ campo, value, onChange, placeholder, initialSuggestions = [] }) {
   const [suggestions, setSuggestions] = useState([])
@@ -205,167 +194,6 @@ function Toast({ message, onDone }) {
   return <div className={s.toast}>{message}</div>
 }
 
-const ExpandIcon = () => (
-  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M1 4.5V1h3.5M11 4.5V1H7.5M1 7.5V11h3.5M11 7.5V11H7.5"/>
-  </svg>
-)
-const CollapseIcon = () => (
-  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M4.5 1v3.5H1M7.5 1v3.5H11M4.5 11V7.5H1M7.5 11V7.5H11"/>
-  </svg>
-)
-const CopyFromIcon = () => (
-  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="1" y="4" width="7" height="7" rx="1"/>
-    <path d="M4 4V3a1 1 0 011-1h5a1 1 0 011 1v5a1 1 0 01-1 1H9"/>
-  </svg>
-)
-
-function getByPath(obj, path) {
-  return path.split('.').reduce((o, k) => o?.[k], obj) ?? ''
-}
-
-function AutoExpandTextarea({ value, onChange, rows = 3, placeholder, storageKey }) {
-  const ref      = useRef(null)
-  const wrapRef  = useRef(null)
-  const hasCopy  = rows >= 3
-
-  const [expanded,    setExpanded]    = useState(() => {
-    try { return localStorage.getItem(`ta-exp:${storageKey}`) === '1' } catch { return false }
-  })
-  const [showCopy,    setShowCopy]    = useState(false)
-  const [copyProcs,   setCopyProcs]   = useState(null)   // null = not loaded yet
-  const [copyLoading, setCopyLoading] = useState(false)
-  const [selecting,   setSelecting]   = useState(null)   // id being fetched
-  const [openUp,      setOpenUp]      = useState(false)
-
-  // Auto-height when expanded
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    if (expanded) {
-      el.style.height = 'auto'
-      el.style.height = el.scrollHeight + 'px'
-    } else {
-      el.style.height = ''
-    }
-  }, [expanded, value])
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    if (!showCopy) return
-    function onDown(e) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target)) setShowCopy(false)
-    }
-    document.addEventListener('mousedown', onDown)
-    return () => document.removeEventListener('mousedown', onDown)
-  }, [showCopy])
-
-  function toggleExpand() {
-    const next = !expanded
-    setExpanded(next)
-    try { localStorage.setItem(`ta-exp:${storageKey}`, next ? '1' : '0') } catch {}
-  }
-
-  async function openCopyDropdown() {
-    if (showCopy) { setShowCopy(false); return }
-
-    // Decide flip direction
-    if (wrapRef.current) {
-      const rect = wrapRef.current.getBoundingClientRect()
-      setOpenUp(window.innerHeight - rect.bottom < 240)
-    }
-
-    setShowCopy(true)
-    if (copyProcs !== null) return   // already loaded
-
-    setCopyLoading(true)
-    try {
-      const r = await fetch('/api/animalario/procedimientos')
-      setCopyProcs(r.ok ? await r.json() : [])
-    } catch {
-      setCopyProcs([])
-    } finally {
-      setCopyLoading(false)
-    }
-  }
-
-  async function selectProc(proc) {
-    setSelecting(proc.id)
-    try {
-      const r    = await fetch(`/api/animalario/procedimientos/${proc.id}`)
-      const data = await r.json()
-      const val  = getByPath(data, storageKey)
-      if (val) onChange({ target: { value: val } })
-    } catch {}
-    setSelecting(null)
-    setShowCopy(false)
-  }
-
-  const prPad = hasCopy ? '3.6rem' : '1.8rem'
-
-  return (
-    <div className={s.taWrap} ref={wrapRef}>
-      <textarea
-        ref={ref}
-        className="form-group input"
-        rows={rows}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        style={{ width: '100%', paddingRight: prPad, resize: 'none' }}
-      />
-
-      <div className={s.taBtns}>
-        {hasCopy && (
-          <button
-            type="button"
-            aria-label="Copiar de otro procedimiento"
-            title="Copiar de otro procedimiento"
-            onClick={openCopyDropdown}
-            className={`${s.taBtn} ${showCopy ? s.taBtnActive : ''}`}
-          >
-            <CopyFromIcon />
-          </button>
-        )}
-        <button
-          type="button"
-          aria-label={expanded ? 'Contraer' : 'Expandir'}
-          title={expanded ? 'Contraer' : 'Expandir para ver todo el contenido'}
-          onClick={toggleExpand}
-          className={`${s.taBtn} ${expanded ? s.taBtnActive : ''}`}
-        >
-          {expanded ? <CollapseIcon /> : <ExpandIcon />}
-        </button>
-      </div>
-
-      {showCopy && (
-        <div className={`${s.copyDropdown} ${openUp ? s.copyDropdownUp : ''}`}>
-          {copyLoading && <div className={s.copyEmpty}>Cargando…</div>}
-          {!copyLoading && copyProcs?.length === 0 && (
-            <div className={s.copyEmpty}>No hay procedimientos guardados.</div>
-          )}
-          {!copyLoading && copyProcs?.map(p => (
-            <button
-              key={p.id}
-              type="button"
-              className={s.copyItem}
-              onClick={() => selectProc(p)}
-              disabled={selecting === p.id}
-            >
-              <span className={s.copyItemTitle}>
-                {selecting === p.id ? 'Cargando…' : (p.titulo || '(Sin título)')}
-              </span>
-              <span className={s.copyItemProject}>{p.proyecto_titulo}</span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
 // ── Main form ─────────────────────────────────────────────────────────────────
 
 export default function SeccionBForm() {
@@ -422,17 +250,13 @@ export default function SeccionBForm() {
   }
 
   const tecnicaOps    = makeOps('tecnicas',           EMPTY_TECNICA)
-  const sustanciaOps  = makeOps('otras_sustancias.sustancias', null) // handled manually
   const parametroOps  = makeOps('parametros',          EMPTY_PARAMETRO)
   const muestraOps    = makeOps('muestras_antemortem', EMPTY_MUESTRA)
-  const grupoOps      = makeOps('tamano_muestral.grupos', EMPTY_GRUPO)
 
-  // otras_sustancias.sustancias needs special ops since it's nested
   function addSustancia()       { setForm(p => { const n = clone(p); n.otras_sustancias.sustancias.push(clone(EMPTY_SUSTANCIA)); return n }) }
   function removeSustancia(i)   { setForm(p => { const n = clone(p); n.otras_sustancias.sustancias = n.otras_sustancias.sustancias.filter((_,j)=>j!==i); return n }) }
   function updSustancia(i,k,v)  { setForm(p => { const n = clone(p); n.otras_sustancias.sustancias[i][k] = v; return n }) }
 
-  // tamano_muestral.grupos ops
   function addGrupo()      { setForm(p => { const n = clone(p); n.tamano_muestral.grupos.push(clone(EMPTY_GRUPO)); return n }) }
   function removeGrupo(i)  { setForm(p => { const n = clone(p); n.tamano_muestral.grupos = n.tamano_muestral.grupos.filter((_,j)=>j!==i); return n }) }
   function updGrupo(i,k,v) { setForm(p => { const n = clone(p); n.tamano_muestral.grupos[i][k] = v; return n }) }
@@ -463,7 +287,6 @@ export default function SeccionBForm() {
     setSaving(true)
     setError(null)
     try {
-      // Save frequent values
       if (form.datos_generales.cepa_linea) await saveToRepo('cepa_linea', form.datos_generales.cepa_linea)
       for (const t of form.tecnicas) {
         if (t.nombre) await saveToRepo('tecnica_experimental', t.nombre)
@@ -480,7 +303,6 @@ export default function SeccionBForm() {
         for (const m of form.finalizacion.metodos_eutanasia) await saveToRepo('metodo_eutanasia', m)
       }
 
-      // Persist
       let savedProc
       if (isEdit) {
         const r = await fetch(`/api/animalario/procedimientos/${procId}`, {
@@ -531,7 +353,15 @@ export default function SeccionBForm() {
       {error && <div className="alert alert-error" style={{ marginBottom: '1rem' }}>{error}</div>}
 
       {/* ── B.1. Datos generales ────────────────────────────────── */}
-      <CollapsibleBlock title="B.1 DATOS GENERALES DEL PROCEDIMIENTO">
+      <CollapsibleBlock
+        title="B.1 DATOS GENERALES DEL PROCEDIMIENTO"
+        storageKey="secB:B1"
+        requiredFields={[
+          form.datos_generales.titulo_procedimiento,
+          form.datos_generales.especies,
+          form.datos_generales.sexo,
+        ]}
+      >
         <div className={s.grid2}>
           <div className={`form-group ${s.fullRow}`}>
             <label>Título del procedimiento</label>
@@ -615,6 +445,7 @@ export default function SeccionBForm() {
             <AutoExpandTextarea
               storageKey="datos_generales.severidad"
               rows={3}
+              copyFrom={true}
               value={form.datos_generales.severidad}
               onChange={e => update('datos_generales.severidad', e.target.value)}
               placeholder="Indicar la severidad del procedimiento"
@@ -626,6 +457,7 @@ export default function SeccionBForm() {
             <AutoExpandTextarea
               storageKey="datos_generales.duracion"
               rows={3}
+              copyFrom={true}
               value={form.datos_generales.duracion}
               onChange={e => update('datos_generales.duracion', e.target.value)}
               placeholder="Describir la duración total del procedimiento"
@@ -635,12 +467,17 @@ export default function SeccionBForm() {
       </CollapsibleBlock>
 
       {/* ── B.2. Metodología ────────────────────────────────────── */}
-      <CollapsibleBlock title="B.2 METODOLOGÍA Y FASES DEL PROCEDIMIENTO">
+      <CollapsibleBlock
+        title="B.2 METODOLOGÍA Y FASES DEL PROCEDIMIENTO"
+        storageKey="secB:B2"
+        requiredFields={[form.metodologia.descripcion]}
+      >
         <div className="form-group">
           <label>Fases del procedimiento<sup style={{ fontSize: 'inherit', verticalAlign: 'super', lineHeight: 0 }}>2</sup></label>
           <AutoExpandTextarea
             storageKey="metodologia.descripcion"
             rows={5}
+            copyFrom={true}
             value={form.metodologia.descripcion}
             onChange={e => update('metodologia.descripcion', e.target.value)}
             placeholder="Descripción detallada paso a paso del procedimiento experimental"
@@ -651,6 +488,7 @@ export default function SeccionBForm() {
           <AutoExpandTextarea
             storageKey="metodologia.justificacion_procedimiento"
             rows={3}
+            copyFrom={true}
             value={form.metodologia.justificacion_procedimiento}
             onChange={e => update('metodologia.justificacion_procedimiento', e.target.value)}
             placeholder="Indicar las fases con posible impacto en el bienestar animal"
@@ -659,7 +497,11 @@ export default function SeccionBForm() {
       </CollapsibleBlock>
 
       {/* ── 3. Tamaño muestral ─────────────────────────────────── */}
-      <CollapsibleBlock title="3. Tamaño muestral">
+      <CollapsibleBlock
+        title="3. Tamaño muestral"
+        storageKey="secB:B3"
+        requiredFields={[form.tamano_muestral.metodo, form.tamano_muestral.justificacion]}
+      >
         <div className="form-group">
           <label>Método de cálculo del tamaño muestral</label>
           <div className={s.radioGroup}>
@@ -682,6 +524,7 @@ export default function SeccionBForm() {
           <AutoExpandTextarea
             storageKey="tamano_muestral.justificacion"
             rows={3}
+            copyFrom={true}
             value={form.tamano_muestral.justificacion}
             onChange={e => update('tamano_muestral.justificacion', e.target.value)}
             placeholder="Explicar por qué el número de animales es el mínimo necesario (3Rs — Reducción)"
@@ -705,7 +548,12 @@ export default function SeccionBForm() {
       </CollapsibleBlock>
 
       {/* ── 4. Aislamiento / ayuno ──────────────────────────────── */}
-      <CollapsibleBlock title="4. Aislamiento y ayuno" defaultOpen={false}>
+      <CollapsibleBlock
+        title="4. Aislamiento y ayuno"
+        storageKey="secB:B4"
+        defaultOpen={false}
+        requiredFields={[form.aislamiento_ayuno.hay_aislamiento, form.aislamiento_ayuno.hay_ayuno]}
+      >
         <div className={s.grid2}>
           <div className="form-group">
             <label>¿Hay aislamiento previo?</label>
@@ -783,7 +631,11 @@ export default function SeccionBForm() {
       </CollapsibleBlock>
 
       {/* ── 5. Técnicas experimentales ─────────────────────────── */}
-      <CollapsibleBlock title="5. Técnicas experimentales y administración">
+      <CollapsibleBlock
+        title="5. Técnicas experimentales y administración"
+        storageKey="secB:B5"
+        requiredFields={[form.tecnicas]}
+      >
         <DynTable
           columns={[
             { key: 'nombre',       label: 'Técnica / sustancia',  flex: 2, tipo: 'autocomplete', campo: 'tecnica_experimental', ph: 'Nombre de la técnica' },
@@ -805,7 +657,12 @@ export default function SeccionBForm() {
       </CollapsibleBlock>
 
       {/* ── 6. Analgesia / anestesia ───────────────────────────── */}
-      <CollapsibleBlock title="6. Analgesia y anestesia" defaultOpen={false}>
+      <CollapsibleBlock
+        title="6. Analgesia y anestesia"
+        storageKey="secB:B6"
+        defaultOpen={false}
+        requiredFields={[form.analgesia_anestesia.hay_analgesia, form.analgesia_anestesia.hay_anestesia]}
+      >
         <div className={s.grid2}>
           <div className="form-group">
             <label>¿Se utiliza analgesia?</label>
@@ -897,7 +754,11 @@ export default function SeccionBForm() {
       </CollapsibleBlock>
 
       {/* ── 7. Otras sustancias / productos con riesgo ─────────── */}
-      <CollapsibleBlock title="7. Otras sustancias y productos con riesgo" defaultOpen={false}>
+      <CollapsibleBlock
+        title="7. Otras sustancias y productos con riesgo"
+        storageKey="secB:B7"
+        defaultOpen={false}
+      >
         <div className="form-group">
           <label className={s.checkboxLabel}>
             <input
@@ -935,7 +796,11 @@ export default function SeccionBForm() {
       </CollapsibleBlock>
 
       {/* ── 8. Parámetros medidos ──────────────────────────────── */}
-      <CollapsibleBlock title="8. Parámetros medidos" defaultOpen={false}>
+      <CollapsibleBlock
+        title="8. Parámetros medidos"
+        storageKey="secB:B8"
+        defaultOpen={false}
+      >
         <DynTable
           columns={[
             { key: 'parametro',    label: 'Parámetro',           flex: 2, tipo: 'autocomplete', campo: 'parametro_medido', ph: 'Ej. peso corporal, glucemia…' },
@@ -956,7 +821,11 @@ export default function SeccionBForm() {
       </CollapsibleBlock>
 
       {/* ── 9. Muestras ante mortem ────────────────────────────── */}
-      <CollapsibleBlock title="9. Muestras ante mortem" defaultOpen={false}>
+      <CollapsibleBlock
+        title="9. Muestras ante mortem"
+        storageKey="secB:B9"
+        defaultOpen={false}
+      >
         <DynTable
           columns={[
             { key: 'tipo',              label: 'Tipo de muestra',   flex: 2, ph: 'Ej. sangre, orina, LCR…' },
@@ -973,12 +842,17 @@ export default function SeccionBForm() {
       </CollapsibleBlock>
 
       {/* ── 10. Finalización ───────────────────────────────────── */}
-      <CollapsibleBlock title="10. Finalización y eutanasia">
+      <CollapsibleBlock
+        title="10. Finalización y eutanasia"
+        storageKey="secB:B10"
+        requiredFields={[form.finalizacion.criterios_humanos, form.finalizacion.metodos_eutanasia]}
+      >
         <div className="form-group">
           <label>Criterios humanitarios de finalización</label>
           <AutoExpandTextarea
             storageKey="finalizacion.criterios_humanos"
             rows={3}
+            copyFrom={true}
             value={form.finalizacion.criterios_humanos}
             onChange={e => update('finalizacion.criterios_humanos', e.target.value)}
             placeholder="Criterios clínicos o de bienestar que determinarán la finalización anticipada del experimento"
@@ -1022,7 +896,12 @@ export default function SeccionBForm() {
       </CollapsibleBlock>
 
       {/* ── 11. Reutilización ──────────────────────────────────── */}
-      <CollapsibleBlock title="11. Reutilización de animales" defaultOpen={false}>
+      <CollapsibleBlock
+        title="11. Reutilización de animales"
+        storageKey="secB:B11"
+        defaultOpen={false}
+        requiredFields={[form.reutilizacion.hay_reutilizacion]}
+      >
         <div className="form-group">
           <label>¿Se reutilizan animales de otro procedimiento?</label>
           <div className={s.radioGroup}>
@@ -1067,7 +946,11 @@ export default function SeccionBForm() {
       </CollapsibleBlock>
 
       {/* ── 12. Clasificación de severidad ─────────────────────── */}
-      <CollapsibleBlock title="12. Clasificación de severidad">
+      <CollapsibleBlock
+        title="12. Clasificación de severidad"
+        storageKey="secB:B12"
+        requiredFields={[form.clasificacion_severidad !== 'none' ? 'ok' : '']}
+      >
         <div className="form-group">
           <label>Severidad del procedimiento según la Directiva 2010/63/UE</label>
           <div className={s.severityRow}>
@@ -1094,7 +977,12 @@ export default function SeccionBForm() {
       </CollapsibleBlock>
 
       {/* ── 13. Firma ──────────────────────────────────────────── */}
-      <CollapsibleBlock title="13. Firma del responsable" defaultOpen={false}>
+      <CollapsibleBlock
+        title="13. Firma del responsable"
+        storageKey="secB:B13"
+        defaultOpen={false}
+        requiredFields={[form.firma.nombre, form.firma.fecha]}
+      >
         <div className={s.grid2}>
           <div className="form-group">
             <label>Nombre y apellidos</label>
