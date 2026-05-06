@@ -3,6 +3,7 @@ import { existsSync, readFileSync }                            from 'fs'
 import { join, dirname }                                       from 'path'
 import { fileURLToPath }                                       from 'url'
 import archiver                                                from 'archiver'
+import JSZip                                                   from 'jszip'
 import {
   AlignmentType, BorderStyle, Document, Footer, ImageRun,
   Packer, PageNumber, Paragraph, ShadingType, Table, TableCell,
@@ -15,7 +16,7 @@ const __dirname     = dirname(__filename)
 
 const DATA_DIR      = process.env.DATA_DIR ?? join(__dirname, '..', '..', 'data')
 const LOGOS_DIR     = join(__dirname, '..', '..', 'public', 'logos', 'animalario')
-const FIRMA_PATH    = join(__dirname, '..', '..', 'public', 'firmas', 'jokin.png')
+const FIRMA_PATH    = join(__dirname, '..', '..', 'public', 'firmas', 'Jokin.png')
 
 let _firmaBuf = null
 try { _firmaBuf = readFileSync(FIRMA_PATH) } catch { _firmaBuf = null }
@@ -223,8 +224,8 @@ function makeFirmaBlock(nombre) {
       txB('F. FIRMA: '),
       tx('El/La abajo firmante declara que conoce las directrices éticas y la legislación aplicables a la investigación con animales y que se compromete a cumplirlas.'),
     ], { before: 80, after: 40 }),
-    par([txB(nombre ?? '—')], { before: 20, after: 20 }),
     imgPar,
+    par([txB(nombre ?? '—')], { before: 10, after: 20 }),
     emptyLine(),
   ]
 }
@@ -241,6 +242,63 @@ function buildDoc(children, footerLabel) {
 
 function notesPar(text) {
   return new Paragraph({ children: [txS(text)], spacing: { before: 40, after: 40 } })
+}
+
+// ── Real Word footnotes via zip post-processing ───────────────────────────────
+
+function xmlEsc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+}
+
+function buildFootnotesXml(entries) {
+  const ns = `xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"`
+  const sep = [
+    `<w:footnote w:type="separator" w:id="-1"><w:p><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr><w:r><w:separator/></w:r></w:p></w:footnote>`,
+    `<w:footnote w:type="continuationSeparator" w:id="0"><w:p><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr><w:r><w:continuationSeparator/></w:r></w:p></w:footnote>`,
+  ].join('')
+  const notes = entries.map(({ id, text }) =>
+    `<w:footnote w:id="${id}"><w:p><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr>` +
+    `<w:r><w:rPr><w:vertAlign w:val="superscript"/><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>${id}</w:t></w:r>` +
+    `<w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t xml:space="preserve"> ${xmlEsc(text)}</w:t></w:r>` +
+    `</w:p></w:footnote>`
+  ).join('')
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:footnotes ${ns}>${sep}${notes}</w:footnotes>`
+}
+
+async function addDocxFootnotes(docxBuf, entries) {
+  if (!entries || entries.length === 0) return docxBuf
+  const zip = await new JSZip().loadAsync(docxBuf)
+
+  // Patch document.xml: replace each FN marker run with a footnoteReference run
+  let docXml = await zip.file('word/document.xml').async('string')
+  for (const { id } of entries) {
+    const marker = FN_MARKER(id)
+    const refXml = `<w:r><w:rPr><w:vertAlign w:val="superscript"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:footnoteReference w:id="${id}"/></w:r>`
+    docXml = docXml.replace(
+      new RegExp(`<w:r>[\\s\\S]*?<w:t[^>]*>${marker}<\\/w:t><\\/w:r>`, 'g'),
+      refXml
+    )
+  }
+  zip.file('word/document.xml', docXml)
+
+  // Add footnotes.xml
+  zip.file('word/footnotes.xml', buildFootnotesXml(entries))
+
+  // Register content type
+  let ct = await zip.file('[Content_Types].xml').async('string')
+  if (!ct.includes('footnotes')) {
+    ct = ct.replace('</Types>', '<Override PartName="/word/footnotes.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml"/></Types>')
+    zip.file('[Content_Types].xml', ct)
+  }
+
+  // Register relationship
+  let rels = await zip.file('word/_rels/document.xml.rels').async('string')
+  if (!rels.includes('footnotes')) {
+    rels = rels.replace('</Relationships>', '<Relationship Id="rIdFootnotes" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes" Target="footnotes.xml"/></Relationships>')
+    zip.file('word/_rels/document.xml.rels', rels)
+  }
+
+  return zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE', compressionOptions: { level: 6 } })
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -289,8 +347,9 @@ function fullTcThin(children, span = 1) {
   if (typeof children === 'string') children = [par(children)]
   return tr(tct(children, { w: w(100), span }))
 }
-// Superscript number helper
-const sup = n => new TextRun({ text: String(n), font: FONT, size: 14, superScript: true })
+// Footnote reference marker — replaced post-generation with real Word footnoteRef XML
+const FN_MARKER = id => `FN${id}`
+const sup = n => new TextRun({ text: FN_MARKER(n), font: FONT, size: 20 })
 
 async function genSeccionA(proyectoId) {
   const proyecto = readProyecto(proyectoId)
@@ -594,25 +653,23 @@ async function genSeccionA(proyectoId) {
 
     // ── Firma ───────────────────────────────────────────────────────────────
     ...makeFirmaBlock(a.firmante || res.nombre_apellidos),
-
-    // ── Notas al pie ────────────────────────────────────────────────────────
-    new Paragraph({
-      children: [new TextRun({ text: '¹ Función según orden ECC/566/2015: A. Cuidado de los animales B. Eutanasia C. Realización de los procedimientos. D. Diseño de los proyectos y procedimientos. E. Responsabilidad de la supervisión in situ del bienestar y cuidados de los animales. F. Veterinario Designado. Ninguna función específica.', font: FONT, size: 16 })],
-      border: { top: { style: BorderStyle.SINGLE, size: 4, color: '000000', space: 3 } },
-      spacing: { before: 240, after: 40 },
-    }),
-    notesPar('² Máximo 5 años.'),
-    notesPar('³ ¿Por qué no es posible alcanzar los objetivos de su proyecto sin usar animales? ¿Qué alternativas ha considerado y por qué no son posibles? ¿Qué alternativas usará para alcanzar sus objetivos?'),
-    notesPar('⁴ ¿Qué medidas se han tomado o se tomarán para asegurar que se utiliza el menor número posible de animales? ¿Existe la posibilidad de que este procedimiento ya se haya realizado? ¿Contempla alguna medida para evitar la repetición injustificada de procedimientos?'),
-    notesPar('⁵ Explique su elección de especie(s), cepa(s) o raza(s), modelo(s) y método(s). Explique por qué son los más adecuados para sus objetivos.'),
-    ...(a.hay_cria ? [
-      notesPar('⁶ Nomenclature for Mouse Strains. Jackson Laboratories.'),
-      notesPar('⁷ Nombre con el que se referirá a la cepa/línea a lo largo del Proyecto y en el animalario de CIC bioGUNE.'),
-    ] : []),
-    notesPar('⁸ Las condiciones estándar del CIC bioGUNE consisten en el alojamiento de los animales en jaulas de policarbonato con lecho de viruta de madera. La densidad animal en cada jaula no excede en ningún momento la densidad máxima descrita en el Anexo II del RD 53/2013. Las salas de estabulación se mantienen dentro de los rangos de temperatura y humedad relativa apropiados para roedores (20-24ºC y 50-65%, respectivamente). La iluminación de las salas consiste en un ciclo de luz-oscuridad de 12:12 horas (luz de 08:00h a 20:00h). Los animales se alimentan con dieta de mantenimiento o cría específica para roedores y se les suministra agua de bebida ad libitum, mediante el empleo de biberón o de un sistema de bebida automática, según proceda.'),
   ]
 
-  return Packer.toBuffer(buildDoc(children, 'Sección A'))
+  const footnoteEntries = [
+    { id: 1, text: 'Función según orden ECC/566/2015: A. Cuidado de los animales B. Eutanasia C. Realización de los procedimientos. D. Diseño de los proyectos y procedimientos. E. Responsabilidad de la supervisión in situ del bienestar y cuidados de los animales. F. Veterinario Designado. Ninguna función específica.' },
+    { id: 2, text: 'Máximo 5 años.' },
+    { id: 3, text: '¿Por qué no es posible alcanzar los objetivos de su proyecto sin usar animales? ¿Qué alternativas ha considerado y por qué no son posibles? ¿Qué alternativas usará para alcanzar sus objetivos?' },
+    { id: 4, text: '¿Qué medidas se han tomado o se tomarán para asegurar que se utiliza el menor número posible de animales? ¿Existe la posibilidad de que este procedimiento ya se haya realizado? ¿Contempla alguna medida para evitar la repetición injustificada de procedimientos?' },
+    { id: 5, text: 'Explique su elección de especie(s), cepa(s) o raza(s), modelo(s) y método(s). Explique por qué son los más adecuados para sus objetivos.' },
+    ...(a.hay_cria ? [
+      { id: 6, text: 'Nomenclature for Mouse Strains. Jackson Laboratories.' },
+      { id: 7, text: 'Nombre con el que se referirá a la cepa/línea a lo largo del Proyecto y en el animalario de CIC bioGUNE.' },
+    ] : []),
+    { id: 8, text: 'Las condiciones estándar del CIC bioGUNE consisten en el alojamiento de los animales en jaulas de policarbonato con lecho de viruta de madera. La densidad animal en cada jaula no excede en ningún momento la densidad máxima descrita en el Anexo II del RD 53/2013. Las salas de estabulación se mantienen dentro de los rangos de temperatura y humedad relativa apropiados para roedores (20-24ºC y 50-65%, respectivamente). La iluminación de las salas consiste en un ciclo de luz-oscuridad de 12:12 horas (luz de 08:00h a 20:00h). Los animales se alimentan con dieta de mantenimiento o cría específica para roedores y se les suministra agua de bebida ad libitum, mediante el empleo de biberón o de un sistema de bebida automática, según proceda.' },
+  ]
+
+  const rawBuf = await Packer.toBuffer(buildDoc(children, 'Sección A'))
+  return addDocxFootnotes(rawBuf, footnoteEntries)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
