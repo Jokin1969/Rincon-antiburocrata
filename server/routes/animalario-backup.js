@@ -32,6 +32,12 @@ function dbxPath(filename) {
   return DBX_FOLDER ? `${DBX_FOLDER}/${filename}` : `/${filename}`
 }
 
+// HTTP headers must be ASCII — escape non-ASCII chars to \uXXXX
+function asciiJson(obj) {
+  return JSON.stringify(obj).replace(/[^\x00-\x7F]/g, c =>
+    `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`)
+}
+
 // ── Dropbox OAuth2 token (cached, auto-refreshed) ─────────────────────────────
 
 let _token  = null
@@ -97,7 +103,7 @@ async function dbxUpload(filename, buffer) {
     method:  'POST',
     headers: {
       Authorization:     `Bearer ${token}`,
-      'Dropbox-API-Arg': JSON.stringify({
+      'Dropbox-API-Arg': asciiJson({
         path:       dbxPath(filename),
         mode:       'overwrite',
         autorename: false,
@@ -123,7 +129,7 @@ async function dbxDownload(filename) {
     method:  'POST',
     headers: {
       Authorization:     `Bearer ${token}`,
-      'Dropbox-API-Arg': JSON.stringify({ path: dbxPath(filename) }),
+      'Dropbox-API-Arg': asciiJson({ path: dbxPath(filename) }),
     },
   })
   if (!resp.ok) {
