@@ -16,9 +16,9 @@ const ANIMALARIO_DIR = join(DATA_DIR, 'animalario')
 const INTERVAL_HOURS = parseFloat(process.env.BACKUP_INTERVAL_HOURS ?? '2')
 const MAX_COUNT      = parseInt(process.env.BACKUP_MAX_COUNT ?? '100', 10)
 
-// Dropbox folder — default hardcoded, overridable via DROPBOX_FOLDER
-const _raw      = (process.env.DROPBOX_FOLDER ?? '/Rincón adhócrata/Animalario').trim().replace(/\/$/, '')
-const DBX_FOLDER = _raw.startsWith('/') ? _raw : `/${_raw}`
+// Dropbox folder from env var — leading slash ensured, trailing slash stripped
+const _raw       = (process.env.DROPBOX_FOLDER ?? '').trim().replace(/\/$/, '')
+const DBX_FOLDER = _raw === '' ? '' : (_raw.startsWith('/') ? _raw : `/${_raw}`)
 
 function dropboxConfigured() {
   return !!(
