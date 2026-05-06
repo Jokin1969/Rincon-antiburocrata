@@ -587,8 +587,7 @@ export default function SeccionAForm() {
 
           <div className={`form-group ${styles.fullRow}`}>
             <label>Entidad financiadora y programa</label>
-            <AutocompleteInput
-              campo="fuente_financiacion"
+            <QuickFillInput
               value={form.financiacion.entidad_programa}
               onChange={v => update('financiacion.entidad_programa', v)}
               placeholder="Ej. Ministerio de Ciencia — PID2023-..."
