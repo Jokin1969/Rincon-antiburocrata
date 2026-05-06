@@ -58,8 +58,8 @@ function EnhancePanel({ logo, provider, onAccept, onClose, fetchLogoData }) {
     setPhase('loading')
     setError(null)
     try {
-      const data   = await fetchLogoData(logo.id)
-      const base64 = arrayBufferToBase64(data)
+      const imgBuf = await fetchLogoData(logo.id)
+      const base64 = arrayBufferToBase64(imgBuf)
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
