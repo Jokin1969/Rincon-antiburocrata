@@ -107,9 +107,14 @@ async function dbxUpload(filename, buffer) {
     },
     body: buffer,
   })
-  const data = await safeJson(resp, 'files/upload')
-  if (!resp.ok) throw new Error(`[files/upload] ${data?.error_summary ?? JSON.stringify(data)}`)
-  return data
+  if (!resp.ok) {
+    // Content-API errors come in the Dropbox-API-Result header, not the body
+    const errHeader = resp.headers.get('Dropbox-API-Result')
+    const errBody   = await resp.text()
+    const detail    = errHeader || errBody || `HTTP ${resp.status}`
+    throw new Error(`[files/upload] ${detail}`)
+  }
+  return safeJson(resp, 'files/upload')
 }
 
 async function dbxDownload(filename) {
@@ -122,8 +127,10 @@ async function dbxDownload(filename) {
     },
   })
   if (!resp.ok) {
-    const err = await resp.text()
-    throw new Error(`[files/download] HTTP ${resp.status}: ${err.slice(0, 200)}`)
+    const errHeader = resp.headers.get('Dropbox-API-Result')
+    const errBody   = await resp.text()
+    const detail    = errHeader || errBody || `HTTP ${resp.status}`
+    throw new Error(`[files/download] ${detail}`)
   }
   return Buffer.from(await resp.arrayBuffer())
 }
