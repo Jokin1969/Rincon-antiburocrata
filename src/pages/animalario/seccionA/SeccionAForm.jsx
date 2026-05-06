@@ -437,7 +437,7 @@ export default function SeccionAForm() {
 
       {/* ── Bloque 1: Identificación ─────────────────────────────────────── */}
       <CollapsibleBlock
-        title="1 · Identificación del proyecto"
+        title="Identificación del proyecto"
         storageKey="secA:id"
         requiredFields={[form.titulo]}
       >
@@ -904,7 +904,7 @@ export default function SeccionAForm() {
       </CollapsibleBlock>
 
       {/* ── Bloque 9: Firma ──────────────────────────────────────────────── */}
-      <CollapsibleBlock title="9 · Firma" storageKey="secA:firma">
+      <CollapsibleBlock title="Firma" storageKey="secA:firma">
         <div className="form-group" style={{ maxWidth: '380px' }}>
           <label>Nombre del firmante</label>
           <QuickFillInput
