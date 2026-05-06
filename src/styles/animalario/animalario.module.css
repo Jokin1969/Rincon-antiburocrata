@@ -1,1 +1,236 @@
-/* Animalario — estilos pendientes de implementar */
+/* ── Logos bar (compartido entre AnimalarioHub y ProyectoHub) ─────────────── */
+
+.logosBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.25rem 1.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 2.5rem;
+}
+
+.logosBarCenter {
+  flex: 1;
+  text-align: center;
+}
+
+.logosBarTitle {
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  line-height: 1.1;
+}
+
+.logosBarSub {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+  letter-spacing: 0.04em;
+}
+
+.logoImg {
+  height: 52px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+/* ── Hub cards ────────────────────────────────────────────────────────────── */
+
+.hubGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.hint {
+  font-size: 0.82rem;
+  color: var(--muted-light);
+  text-align: center;
+  padding: 0.5rem 1rem;
+}
+
+/* ── ProyectosList toolbar ────────────────────────────────────────────────── */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+  flex-wrap: wrap;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 200px;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: 0.875rem;
+  color: var(--text);
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* ── Project list ─────────────────────────────────────────────────────────── */
+
+.projectList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.projectCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.75rem 1.5rem;
+  align-items: center;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.projectCard:hover {
+  border-color: rgba(123, 28, 46, 0.35);
+  box-shadow: 0 4px 14px rgba(123, 28, 46, 0.08);
+}
+
+.projectInfo {}
+
+.projectTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.35rem;
+}
+
+.projectMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  font-size: 0.78rem;
+  color: var(--muted-light);
+}
+
+.projectMetaItem {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.projectActions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--muted-light);
+  font-size: 0.9rem;
+}
+
+/* ── ProyectoHub sections ─────────────────────────────────────────────────── */
+
+.projectTitle2 {
+  font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.projectRef {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-top: 0.3rem;
+  margin-bottom: 2rem;
+}
+
+.sectionGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.sectionCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.sectionCard:hover {
+  border-color: rgba(123, 28, 46, 0.3);
+}
+
+.statusDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.statusDotOk       { background: #16a34a; }
+.statusDotPending  { background: var(--border); border: 1px solid var(--muted-light); }
+
+.sectionInfo {
+  flex: 1;
+}
+
+.sectionLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  margin-bottom: 0.15rem;
+}
+
+.sectionName {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.sectionDetail {
+  font-size: 0.78rem;
+  color: var(--muted-light);
+  margin-top: 0.15rem;
+}
+
+.sectionActions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.statusBadgeOk {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  background: rgba(22, 163, 74, 0.1);
+  color: #15803d;
+  border: 1px solid rgba(22, 163, 74, 0.3);
+  white-space: nowrap;
+}
