@@ -329,3 +329,104 @@
   flex-direction: column;
   gap: 0.1rem;
 }
+
+/* ── Modifications list in ProyectoHub ───────────────────────────────────── */
+
+.modifSection {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.modifSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.modifSectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.modifSectionLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+
+.modifSectionName {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 0.1rem;
+}
+
+.modifEmpty {
+  padding: 1rem 1.5rem;
+  font-size: 0.875rem;
+  color: var(--muted-light);
+  font-style: italic;
+}
+
+.modifItem {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.modifItem:last-child { border-bottom: none; }
+
+.modifItemInfo {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+}
+
+.modifItemNum {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.modifItemDate {
+  font-size: 0.75rem;
+  color: var(--muted-light);
+  white-space: nowrap;
+}
+
+.modifBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.modifBadge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 0.15rem 0.45rem;
+  border-radius: 3px;
+  background: rgba(123, 28, 46, 0.07);
+  color: var(--accent);
+  border: 1px solid rgba(123, 28, 46, 0.18);
+  white-space: nowrap;
+}
+
+.modifItemActions {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}

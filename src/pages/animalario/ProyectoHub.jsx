@@ -1,6 +1,21 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import styles from '../../styles/animalario/animalario.module.css'
+
+const TIPO_LABELS = {
+  alta_baja_investigadores:  'Investigadores',
+  adicion_animales:          '+ Animales',
+  adicion_procedimientos:    '+ Procedimientos',
+  cambios_procedimientos:    'Cambios proced.',
+  adicion_linea_animal:      '+ Línea animal',
+  adicion_lugar:             '+ Lugar',
+  cambio_alojamiento:        'Alojamiento',
+}
+
+function formatDate(iso) {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
 
 function StatusDot({ ok, warn }) {
   let cls = styles.statusDotPending
@@ -27,6 +42,69 @@ function SectionCard({ label, name, detail, ok, warn, actions }) {
   )
 }
 
+function ModificacionesSection({ proyectoId, modificaciones, navigate, onDelete }) {
+  return (
+    <div className={styles.modifSection}>
+      <div className={styles.modifSectionHeader}>
+        <div className={styles.modifSectionTitle}>
+          <StatusDot ok={modificaciones.length > 0} />
+          <div>
+            <div className={styles.modifSectionLabel}>Modificaciones</div>
+            <div className={styles.modifSectionName}>Modificaciones del proyecto</div>
+          </div>
+        </div>
+        <button
+          className="btn btn-ghost"
+          onClick={() => navigate(`/animalario/proyecto/${proyectoId}/modificacion/nueva`)}
+        >
+          ＋ Nueva modificación
+        </button>
+      </div>
+
+      {modificaciones.length === 0 && (
+        <div className={styles.modifEmpty}>
+          Este proyecto no tiene modificaciones registradas.
+        </div>
+      )}
+
+      {modificaciones.map(m => {
+        const tipos = Object.entries(m.tipos_cambio ?? {})
+          .filter(([, v]) => v === true)
+          .map(([k]) => TIPO_LABELS[k] ?? k)
+
+        return (
+          <div key={m.id} className={styles.modifItem}>
+            <div className={styles.modifItemInfo}>
+              <span className={styles.modifItemNum}>Mod. {m.numero_modificacion}</span>
+              <span className={styles.modifItemDate}>{formatDate(m.fecha_creacion)}</span>
+              {tipos.length > 0 && (
+                <div className={styles.modifBadges}>
+                  {tipos.map(t => <span key={t} className={styles.modifBadge}>{t}</span>)}
+                </div>
+              )}
+            </div>
+            <div className={styles.modifItemActions}>
+              <button
+                className="btn btn-primary"
+                onClick={() => navigate(`/animalario/proyecto/${proyectoId}/modificacion/${m.id}`)}
+              >
+                Editar
+              </button>
+              <button
+                className="btn btn-ghost"
+                onClick={() => onDelete(m.id)}
+                style={{ color: 'var(--accent)' }}
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export default function ProyectoHub() {
   const { proyectoId } = useParams()
   const navigate       = useNavigate()
@@ -34,12 +112,25 @@ export default function ProyectoHub() {
   const [loading, setLoading]   = useState(true)
   const [error, setError]       = useState(null)
 
-  useEffect(() => {
+  const load = useCallback(() => {
     fetch(`/api/animalario/proyectos/${proyectoId}`)
       .then(r => { if (!r.ok) throw new Error('Proyecto no encontrado'); return r.json() })
       .then(data => { setProyecto(data); setLoading(false) })
       .catch(err => { setError(err.message); setLoading(false) })
   }, [proyectoId])
+
+  useEffect(() => { load() }, [load])
+
+  async function handleDeleteModif(mId) {
+    if (!confirm('¿Eliminar esta modificación? Esta acción no se puede deshacer.')) return
+    try {
+      const r = await fetch(`/api/animalario/modificaciones/${mId}`, { method: 'DELETE' })
+      if (!r.ok) throw new Error('Error al eliminar')
+      load()
+    } catch (e) {
+      alert(e.message)
+    }
+  }
 
   if (loading) return <p className={styles.empty}>Cargando proyecto…</p>
   if (error)   return <p className={`alert alert-error ${styles.empty}`}>{error}</p>
@@ -103,7 +194,7 @@ export default function ProyectoHub() {
           }
         />
 
-        {/* Sección B — Procedimientos */}
+        {/* Sección B */}
         <SectionCard
           label="Sección B"
           name="Procedimientos"
@@ -142,7 +233,6 @@ export default function ProyectoHub() {
           const detalle = cepa.acronimo && cepa.nomenclatura_internacional && cepa.acronimo !== cepa.nomenclatura_internacional
             ? cepa.nomenclatura_internacional
             : null
-
           return (
             <SectionCard
               key={idx}
@@ -166,7 +256,7 @@ export default function ProyectoHub() {
           )
         })}
 
-        {/* Sección D — Productos con riesgo */}
+        {/* Sección D */}
         {hasProductos && (
           <SectionCard
             label="Sección D"
@@ -184,24 +274,12 @@ export default function ProyectoHub() {
           />
         )}
 
-        {/* Modificaciones */}
-        <SectionCard
-          label="Modificaciones"
-          name="Modificaciones del proyecto"
-          detail={
-            modificaciones.length === 0
-              ? 'Sin modificaciones registradas'
-              : `${modificaciones.length} modificación${modificaciones.length !== 1 ? 'es' : ''}`
-          }
-          ok={modificaciones.length > 0}
-          actions={
-            <button
-              className="btn btn-ghost"
-              onClick={() => navigate(`/animalario/proyecto/${proyectoId}/modificacion/nueva`)}
-            >
-              Nueva modificación
-            </button>
-          }
+        {/* Modificaciones — expanded list */}
+        <ModificacionesSection
+          proyectoId={proyectoId}
+          modificaciones={modificaciones}
+          navigate={navigate}
+          onDelete={handleDeleteModif}
         />
 
       </div>

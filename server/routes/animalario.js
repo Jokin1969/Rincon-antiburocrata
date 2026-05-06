@@ -12,6 +12,7 @@ const PROYECTOS_DIR   = join(DATA_DIR, 'animalario', 'proyectos')
 const PROC_DIR        = join(DATA_DIR, 'animalario', 'procedimientos')
 const CRIA_DIR        = join(DATA_DIR, 'animalario', 'crias')
 const PRODUCTOS_DIR   = join(DATA_DIR, 'animalario', 'productos')
+const MODIF_DIR       = join(DATA_DIR, 'animalario', 'modificaciones')
 const REPO_FILE       = join(DATA_DIR, 'animalario', 'repositorio', 'campos_frecuentes.json')
 
 const router = Router()
@@ -246,6 +247,21 @@ router.post('/proyectos/:proyectoId/procedimientos', (req, res) => {
     proyecto.fecha_actualizacion = now
     syncProyectoRiesgo(proyecto)
     writeProyecto(proyecto)
+
+    // If linked to a modificación, register the procedure there too
+    const modificacionId = req.query.modificacion_id
+    if (modificacionId) {
+      const modif = readModificacion(modificacionId)
+      if (modif) {
+        if (!Array.isArray(modif.modificacion?.procedimientos_nuevos)) {
+          modif.modificacion = modif.modificacion ?? {}
+          modif.modificacion.procedimientos_nuevos = []
+        }
+        modif.modificacion.procedimientos_nuevos.push(proc.id)
+        modif.fecha_actualizacion = now
+        writeModificacion(modif)
+      }
+    }
 
     res.status(201).json(proc)
   } catch (err) {
@@ -520,6 +536,146 @@ router.put('/proyectos/:proyectoId/productos', (req, res) => {
     writeProyecto(proyecto)
 
     res.json(doc)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// ── Modificaciones ───────────────────────────────────────────────────────────
+
+function readModificacion(id) {
+  const path = join(MODIF_DIR, `modificacion_${id}.json`)
+  if (!existsSync(path)) return null
+  return JSON.parse(readFileSync(path, 'utf-8'))
+}
+
+function writeModificacion(m) {
+  ensureDir(MODIF_DIR)
+  writeFileSync(
+    join(MODIF_DIR, `modificacion_${m.id}.json`),
+    JSON.stringify(m, null, 2),
+    'utf-8'
+  )
+}
+
+// GET /api/animalario/proyectos/:proyectoId/modificaciones
+router.get('/proyectos/:proyectoId/modificaciones', (req, res) => {
+  try {
+    const proyecto = readProyecto(req.params.proyectoId)
+    if (!proyecto) return res.status(404).json({ error: 'Proyecto no encontrado' })
+
+    const refs = Array.isArray(proyecto.modificaciones) ? proyecto.modificaciones : []
+    const docs = refs
+      .map(r => readModificacion(r.id))
+      .filter(Boolean)
+      .sort((a, b) => (a.numero_modificacion ?? 0) - (b.numero_modificacion ?? 0))
+
+    res.json(docs)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /api/animalario/proyectos/:proyectoId/modificaciones  (crear)
+router.post('/proyectos/:proyectoId/modificaciones', (req, res) => {
+  try {
+    const proyecto = readProyecto(req.params.proyectoId)
+    if (!proyecto) return res.status(404).json({ error: 'Proyecto no encontrado' })
+
+    const existentes      = Array.isArray(proyecto.modificaciones) ? proyecto.modificaciones : []
+    const numeroMax       = existentes.reduce((m, r) => Math.max(m, r.numero_modificacion ?? 0), 0)
+    const numeroMod       = numeroMax + 1
+    const now             = new Date().toISOString()
+
+    const m = {
+      ...req.body,
+      id:                  randomUUID(),
+      proyecto_id:         req.params.proyectoId,
+      numero_modificacion: numeroMod,
+      fecha_creacion:      now,
+      fecha_actualizacion: now,
+    }
+    writeModificacion(m)
+
+    const ref = {
+      id:                  m.id,
+      numero_modificacion: numeroMod,
+      fecha_creacion:      now,
+      tipos_cambio:        m.modificacion?.tipos_cambio ?? {},
+    }
+    proyecto.modificaciones      = [...existentes, ref]
+    proyecto.fecha_actualizacion = now
+    writeProyecto(proyecto)
+
+    res.status(201).json(m)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// GET /api/animalario/modificaciones/:id
+router.get('/modificaciones/:id', (req, res) => {
+  try {
+    const m = readModificacion(req.params.id)
+    if (!m) return res.status(404).json({ error: 'Modificación no encontrada' })
+    res.json(m)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// PUT /api/animalario/modificaciones/:id
+router.put('/modificaciones/:id', (req, res) => {
+  try {
+    const existing = readModificacion(req.params.id)
+    if (!existing) return res.status(404).json({ error: 'Modificación no encontrada' })
+
+    const updated = {
+      ...existing,
+      ...req.body,
+      id:                  existing.id,
+      proyecto_id:         existing.proyecto_id,
+      numero_modificacion: existing.numero_modificacion,
+      fecha_creacion:      existing.fecha_creacion,
+      fecha_actualizacion: new Date().toISOString(),
+    }
+    writeModificacion(updated)
+
+    // Update reference in proyecto
+    const proyecto = readProyecto(existing.proyecto_id)
+    if (proyecto) {
+      proyecto.modificaciones = (proyecto.modificaciones ?? []).map(r =>
+        r.id === updated.id
+          ? { ...r, tipos_cambio: updated.modificacion?.tipos_cambio ?? r.tipos_cambio }
+          : r
+      )
+      proyecto.fecha_actualizacion = updated.fecha_actualizacion
+      writeProyecto(proyecto)
+    }
+
+    res.json(updated)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// DELETE /api/animalario/modificaciones/:id
+router.delete('/modificaciones/:id', (req, res) => {
+  try {
+    const m = readModificacion(req.params.id)
+    if (!m) return res.status(404).json({ error: 'Modificación no encontrada' })
+
+    const proyecto = readProyecto(m.proyecto_id)
+    if (proyecto) {
+      proyecto.modificaciones      = (proyecto.modificaciones ?? []).filter(r => r.id !== m.id)
+      proyecto.fecha_actualizacion = new Date().toISOString()
+      writeProyecto(proyecto)
+    }
+
+    const path = join(MODIF_DIR, `modificacion_${m.id}.json`)
+    if (existsSync(path)) unlinkSync(path)
+
+    res.json({ ok: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
