@@ -281,6 +281,51 @@ router.post('/proyectos/:proyectoId/procedimientos', (req, res) => {
   }
 })
 
+// GET /api/animalario/procedimientos  (all, across all projects — for copy-from feature)
+router.get('/procedimientos', (_req, res) => {
+  try {
+    if (!existsSync(PROC_DIR)) return res.json([])
+
+    // Build proyecto title map
+    const proyTitles = {}
+    if (existsSync(PROYECTOS_DIR)) {
+      readdirSync(PROYECTOS_DIR)
+        .filter(f => /^proyecto_.+\.json$/.test(f))
+        .forEach(f => {
+          try {
+            const p = JSON.parse(readFileSync(join(PROYECTOS_DIR, f), 'utf-8'))
+            proyTitles[p.id] = p.seccionA?.titulo ?? '(Sin título)'
+          } catch {}
+        })
+    }
+
+    const procs = readdirSync(PROC_DIR)
+      .filter(f => /^procedimiento_.+\.json$/.test(f))
+      .map(f => {
+        try {
+          const p = JSON.parse(readFileSync(join(PROC_DIR, f), 'utf-8'))
+          return {
+            id:              p.id,
+            titulo:          p.datos_generales?.titulo_procedimiento || '(Sin título)',
+            proyecto_id:     p.proyecto_id,
+            proyecto_titulo: proyTitles[p.proyecto_id] ?? '(Proyecto desconocido)',
+            fecha_actualizacion: p.fecha_actualizacion ?? p.fecha_creacion ?? null,
+          }
+        } catch { return null }
+      })
+      .filter(Boolean)
+      .sort((a, b) => {
+        const da = a.fecha_actualizacion ? new Date(a.fecha_actualizacion).getTime() : 0
+        const db = b.fecha_actualizacion ? new Date(b.fecha_actualizacion).getTime() : 0
+        return db - da
+      })
+
+    res.json(procs)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // GET /api/animalario/procedimientos/:id
 router.get('/procedimientos/:id', (req, res) => {
   try {

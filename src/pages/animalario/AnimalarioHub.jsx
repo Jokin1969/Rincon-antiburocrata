@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import ModuleCard from '../../components/ModuleCard'
+import BackupManager from './BackupManager'
 import styles from '../../styles/animalario/animalario.module.css'
 
 const CARDS = [
@@ -48,6 +49,8 @@ export default function AnimalarioHub() {
       <p className={styles.hint}>
         Para gestionar procedimientos, primero selecciona o crea un proyecto.
       </p>
+
+      <BackupManager />
     </div>
   )
 }

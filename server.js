@@ -1,6 +1,7 @@
 import express from 'express'
 import animalarioRouter       from './server/routes/animalario.js'
 import animalarioExportRouter from './server/routes/animalario-export.js'
+import animalarioBackupRouter, { initAutoBackup } from './server/routes/animalario-backup.js'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'fs'
@@ -678,6 +679,8 @@ app.delete('/api/store/:col/:id', (req, res) => {
 // ── Animalario ────────────────────────────────────────────────────────────────
 app.use('/api/animalario', animalarioRouter)
 app.use('/api/animalario', animalarioExportRouter)
+app.use('/api/animalario', animalarioBackupRouter)
+initAutoBackup()
 
 // ── SPA fallback ─────────────────────────────────────────────────────────────
 app.get('*', (_req, res) => {
