@@ -212,22 +212,19 @@ function makeFirmaBlock(nombre) {
     } catch {}
     imgPar = new Paragraph({
       children: [new ImageRun({ data: _firmaBuf, transformation: { width: FIRMA_TARGET_W, height: imgH }, type: 'png' })],
-      spacing: { before: 80, after: 60 },
+      spacing: { before: 60, after: 60 },
     })
   } else {
-    imgPar = par([tx('(firma)', { color: 'AAAAAA' })], { before: 120, after: 120 })
+    imgPar = par([tx('(firma)', { color: 'AAAAAA' })], { before: 80, after: 80 })
   }
 
   return [
-    h2('F. Firma del responsable'),
-    tbl([tr(
-      gc([par([txB('F. FIRMA:')])], { w: w(20) }),
-      tc([
-        par([tx('El/La abajo firmante declara que conoce las directrices éticas y la legislación aplicables a la investigación con animales y que se compromete a cumplirlas.')], { before: 40, after: 60 }),
-        par([txB(nombre ?? '—')], { before: 20, after: 40 }),
-        imgPar,
-      ], { w: w(80) }),
-    )]),
+    par([
+      txB('F. FIRMA: '),
+      tx('El/La abajo firmante declara que conoce las directrices éticas y la legislación aplicables a la investigación con animales y que se compromete a cumplirlas.'),
+    ], { before: 80, after: 40 }),
+    par([txB(nombre ?? '—')], { before: 20, after: 20 }),
+    imgPar,
     emptyLine(),
   ]
 }
@@ -275,11 +272,25 @@ const SEV_LABELS = { none: 'Sin clasificar', low: 'Leve', medium: 'Moderada', hi
 function secRow(title, span = 1) {
   return tr(gc([par([txB(title)])], { w: w(100), span }))
 }
-// Single-cell full-width content row
+// Single-cell full-width light-blue header row (accepts string or TextRun[])
+function secRowBlue(children, span = 1) {
+  const parChildren = typeof children === 'string'
+    ? [par([txB(children)])]
+    : [par(children)]
+  return tr(lbc(parChildren, { w: w(100), span }))
+}
+// Single-cell full-width content row (standard border)
 function fullTc(children, span = 1) {
   if (typeof children === 'string') children = [par(children)]
   return tr(tc(children, { w: w(100), span }))
 }
+// Single-cell full-width content row (thin border)
+function fullTcThin(children, span = 1) {
+  if (typeof children === 'string') children = [par(children)]
+  return tr(tct(children, { w: w(100), span }))
+}
+// Superscript number helper
+const sup = n => new TextRun({ text: String(n), font: FONT, size: 14, superScript: true })
 
 async function genSeccionA(proyectoId) {
   const proyecto = readProyecto(proyectoId)
@@ -311,20 +322,20 @@ async function genSeccionA(proyectoId) {
   function condRows() {
     if ('estandar' in ca) {
       const rows = [
-        par([tx(chk(ca.estandar)), tx(' Según las condiciones estándar del CIC bioGUNE')]),
+        par([tx(chk(ca.estandar)), tx(' Según las condiciones estándar del CIC bioGUNE'), sup(8)]),
         par([tx(chk(ca.variaciones)), tx(' Con las siguientes variaciones:')]),
       ]
       if (ca.variaciones && ca.descripcion)
         rows.push(par([tx('     '), tx(ca.descripcion)]))
-      rows.push(par([tx('☐ Otras condiciones. Describir:')]))
+      rows.push(par([tx('☐ Otras condiciones. '), txB('Describir:')]))
       return rows
     }
     const tipo = ca.tipo ?? ''
     return [
-      par([tx(chk(tipo === 'estandar')), tx(' Según las condiciones estándar del CIC bioGUNE')]),
+      par([tx(chk(tipo === 'estandar')), tx(' Según las condiciones estándar del CIC bioGUNE'), sup(8)]),
       par([tx(chk(tipo === 'variaciones' || tipo === 'especiales')), tx(' Con las siguientes variaciones:')]),
       ...(tipo !== 'estandar' && ca.descripcion ? [par([tx('     '), tx(ca.descripcion)])] : []),
-      par([tx('☐ Otras condiciones. Describir:')]),
+      par([tx('☐ Otras condiciones. '), txB('Describir:')]),
     ]
   }
 
@@ -459,7 +470,7 @@ async function genSeccionA(proyectoId) {
     tbl([
       tr(
         lbc([par([txB('Fecha prevista de inicio')])],       { w: w(50) }),
-        lbc([par([txB('Fecha prevista de finalización')])], { w: w(50) }),
+        lbc([par([txB('Fecha prevista de finalización'), sup(2)])], { w: w(50) }),
       ),
       tr(
         tct([par(fmtDate(a.duracion?.fecha_inicio))], { w: w(50) }),
@@ -483,23 +494,23 @@ async function genSeccionA(proyectoId) {
     ]),
     emptyLine(),
 
-    // ── A.4 Resumen y objetivos ─────────────────────────────────────────────
+    // ── A.4 Resumen y objetivos (light blue, thin borders) ─────────────────
     new Paragraph({ children: [txB('A.4 RESUMEN Y OBJETIVOS DEL PROYECTO')], spacing: { before: 80, after: 40 } }),
     tbl([
-      secRow('Objetivo científico principal', 3),
-      fullTc([par(a.objetivos?.objetivo_principal ?? '')], 3),
-      secRow('Resumen (300 palabras máx.)', 3),
-      fullTc([par(a.objetivos?.resumen ?? '')], 3),
-      secRow('Análisis daño/beneficio justificado (300 palabras máx.)', 3),
-      fullTc([par(a.objetivos?.dano_beneficio ?? '')], 3),
-      secRow('Tipo de proyecto según el Art. 31 RD 53/2013', 3),
+      secRowBlue('Objetivo científico principal', 3),
+      fullTcThin([par(a.objetivos?.objetivo_principal ?? '')], 3),
+      secRowBlue('Resumen (300 palabras máx.)', 3),
+      fullTcThin([par(a.objetivos?.resumen ?? '')], 3),
+      secRowBlue('Análisis daño/beneficio justificado (300 palabras máx.)', 3),
+      fullTcThin([par(a.objetivos?.dano_beneficio ?? '')], 3),
+      secRowBlue('Tipo de proyecto según el Art. 31 RD 53/2013', 3),
       tr(
-        tc([par([tx(chk(a.tipo_proyecto === 'I')),   tx(' Tipo I')])],   { w: w(33) }),
-        tc([par([tx(chk(a.tipo_proyecto === 'II')),  tx(' Tipo II')])],  { w: w(33) }),
-        tc([par([tx(chk(a.tipo_proyecto === 'III')), tx(' Tipo III')])], { w: w(34) }),
+        tct([par([tx(chk(a.tipo_proyecto === 'I')),   tx(' Tipo I')])],   { w: w(33) }),
+        tct([par([tx(chk(a.tipo_proyecto === 'II')),  tx(' Tipo II')])],  { w: w(33) }),
+        tct([par([tx(chk(a.tipo_proyecto === 'III')), tx(' Tipo III')])], { w: w(34) }),
       ),
-      secRow('Finalidad del proyecto', 3),
-      fullTc(
+      secRowBlue('Finalidad del proyecto', 3),
+      fullTcThin(
         Object.entries(FINALIDAD_LABELS_A).map(([k, lbl]) =>
           par([tx(chk((a.finalidad ?? []).includes(k))), tx(` ${lbl}`)])
         ),
@@ -508,42 +519,42 @@ async function genSeccionA(proyectoId) {
     ]),
     emptyLine(),
 
-    // ── A.5 Las 3Rs ─────────────────────────────────────────────────────────
+    // ── A.5 Las 3Rs (light blue, thin borders, superscripts) ────────────────
     new Paragraph({ children: [txB('A.5 CUMPLIMIENTO DE LAS 3 Rs:')], spacing: { before: 80, after: 40 } }),
     tbl([
-      secRow('Reemplazo'),
-      fullTc([par(a.tres_rs?.reemplazo ?? '')]),
-      secRow('Reducción'),
-      fullTc([par(a.tres_rs?.reduccion ?? '')]),
-      secRow('Refinamiento'),
-      fullTc([par(a.tres_rs?.refinamiento ?? '')]),
+      secRowBlue([txB('Reemplazo'), sup(3)]),
+      fullTcThin([par(a.tres_rs?.reemplazo ?? '')]),
+      secRowBlue([txB('Reducción'), sup(4)]),
+      fullTcThin([par(a.tres_rs?.reduccion ?? '')]),
+      secRowBlue([txB('Refinamiento'), sup(5)]),
+      fullTcThin([par(a.tres_rs?.refinamiento ?? '')]),
     ]),
     emptyLine(),
 
-    // ── A.6 Resumen de procedimientos ───────────────────────────────────────
+    // ── A.6 Resumen de procedimientos (light blue, thin, centered headers) ──
     new Paragraph({ children: [txB('A.6 RESUMEN DE PROCEDIMIENTOS:')], spacing: { before: 80, after: 40 } }),
     tbl([
       tr(
-        gc([par([txB('Número')])],             { w: w(8)  }),
-        gc([par([txB('Título')])],             { w: w(34) }),
-        gc([par([txB('Especie animal')])],     { w: w(22) }),
-        gc([par([txB('Número de animales')])], { w: w(18) }),
-        gc([par([txB('Severidad')])],          { w: w(18) }),
+        lbc([par([txB('Nº')],      { align: AlignmentType.CENTER })], { w: w(8)  }),
+        lbc([par([txB('Título')],  { align: AlignmentType.CENTER })], { w: w(34) }),
+        lbc([par([txB('Especie')], { align: AlignmentType.CENTER })], { w: w(22) }),
+        lbc([par([txB('Nº animales')], { align: AlignmentType.CENTER })], { w: w(18) }),
+        lbc([par([txB('Severidad')],   { align: AlignmentType.CENTER })], { w: w(18) }),
       ),
       ...(procs.length > 0
         ? procs.map((proc, idx) => tr(
-            tc([par(String(idx + 1))],                                                                   { w: w(8)  }),
-            tc([par(proc.datos_generales?.titulo_procedimiento ?? '')],                                  { w: w(34) }),
-            tc([par((proc.datos_generales?.especies ?? []).join(', '))],                                 { w: w(22) }),
-            tc([par(String(proc.datos_generales?.num_animales ?? ''))],                                  { w: w(18) }),
-            tc([par(SEV_LABELS[proc.clasificacion_severidad] ?? (proc.clasificacion_severidad ?? ''))], { w: w(18) }),
+            tct([par(String(idx + 1))],                                                                   { w: w(8)  }),
+            tct([par(proc.datos_generales?.titulo_procedimiento ?? '')],                                  { w: w(34) }),
+            tct([par((proc.datos_generales?.especies ?? []).join(', '))],                                 { w: w(22) }),
+            tct([par(String(proc.datos_generales?.num_animales ?? ''))],                                  { w: w(18) }),
+            tct([par(SEV_LABELS[proc.clasificacion_severidad] ?? (proc.clasificacion_severidad ?? ''))], { w: w(18) }),
           ))
         : [tr(
-            tc([par('')], { w: w(8)  }),
-            tc([par('')], { w: w(34) }),
-            tc([par('')], { w: w(22) }),
-            tc([par('')], { w: w(18) }),
-            tc([par('')], { w: w(18) }),
+            tct([par('')], { w: w(8)  }),
+            tct([par('')], { w: w(34) }),
+            tct([par('')], { w: w(22) }),
+            tct([par('')], { w: w(18) }),
+            tct([par('')], { w: w(18) }),
           )]
       ),
     ]),
@@ -556,45 +567,49 @@ async function genSeccionA(proyectoId) {
     ]),
 
     ...(a.hay_cria ? [
-      par([new TextRun({ text: 'Si ha contestado que sí, necesita rellenar la siguiente tabla e incluir un formulario C para cada línea.', font: FONT, size: SZ, italics: true })]),
+      par([new TextRun({ text: 'Si ha contestado que sí, necesita rellenar la siguiente tabla e incluir un formulario C para cada línea.', font: FONT, size: SZ, color: '1F4E79' })]),
       emptyLine(),
       tbl([
         tr(
-          gc([par([txB('Nomenclatura internacional de la cepa/línea a criar')])], { w: w(50) }),
-          gc([par([txB('Acrónimo de la cepa/línea')])],                            { w: w(25) }),
-          gc([par([txB('Número de animales que van a generarse')])],               { w: w(25) }),
+          lbc([par([txB('Nomenclatura internacional de la cepa/línea a criar'), sup(6)])], { w: w(50) }),
+          lbc([par([txB('Acrónimo de la cepa/línea'), sup(7)])],                            { w: w(25) }),
+          lbc([par([txB('Número de animales que van a generarse')])],                       { w: w(25) }),
         ),
         ...(a.cepas_cria ?? []).map(c => tr(
-          tc([par(c.nomenclatura_internacional ?? '')], { w: w(50) }),
-          tc([par(c.acronimo ?? '')],                   { w: w(25) }),
-          tc([par(String(c.num_animales ?? ''))],       { w: w(25) }),
+          tct([par(c.nomenclatura_internacional ?? '')], { w: w(50) }),
+          tct([par(c.acronimo ?? '')],                   { w: w(25) }),
+          tct([par(String(c.num_animales ?? ''))],       { w: w(25) }),
         )),
       ]),
     ] : []),
     emptyLine(),
 
-    // ── A.7 Condiciones de alojamiento ──────────────────────────────────────
+    // ── A.7 Condiciones de alojamiento (light blue, thin borders) ───────────
     new Paragraph({ children: [txB('A.7 CONDICIONES DE ALOJAMIENTO, ZOOTÉCNICAS Y CUIDADO DE ANIMALES:')], spacing: { before: 80, after: 40 } }),
     tbl([
-      secRow('Marcar con una X'),
-      fullTc(condRows()),
+      secRowBlue('Marcar con una X'),
+      fullTcThin(condRows()),
     ]),
     emptyLine(),
 
     // ── Firma ───────────────────────────────────────────────────────────────
     ...makeFirmaBlock(a.firmante || res.nombre_apellidos),
 
-    // ── Nota al pie (ECC/566/2015) ──────────────────────────────────────────
+    // ── Notas al pie ────────────────────────────────────────────────────────
     new Paragraph({
-      children: [new TextRun({
-        text: '¹ Función según orden ECC/566/2015: A. Cuidado de los animales B. Eutanasia C. Realización de los procedimientos. D. Diseño de los proyectos y procedimientos. E. Responsabilidad de la supervisión in situ del bienestar y cuidados de los animales. F. Veterinario Designado. Ninguna función específica.',
-        font: FONT, size: 16,
-      })],
+      children: [new TextRun({ text: '¹ Función según orden ECC/566/2015: A. Cuidado de los animales B. Eutanasia C. Realización de los procedimientos. D. Diseño de los proyectos y procedimientos. E. Responsabilidad de la supervisión in situ del bienestar y cuidados de los animales. F. Veterinario Designado. Ninguna función específica.', font: FONT, size: 16 })],
       border: { top: { style: BorderStyle.SINGLE, size: 4, color: '000000', space: 3 } },
       spacing: { before: 240, after: 40 },
     }),
-    notesPar('2 La duración máxima del proyecto es de 5 años.'),
-    notesPar('3 El resumen no debe superar las 300 palabras.'),
+    notesPar('² Máximo 5 años.'),
+    notesPar('³ ¿Por qué no es posible alcanzar los objetivos de su proyecto sin usar animales? ¿Qué alternativas ha considerado y por qué no son posibles? ¿Qué alternativas usará para alcanzar sus objetivos?'),
+    notesPar('⁴ ¿Qué medidas se han tomado o se tomarán para asegurar que se utiliza el menor número posible de animales? ¿Existe la posibilidad de que este procedimiento ya se haya realizado? ¿Contempla alguna medida para evitar la repetición injustificada de procedimientos?'),
+    notesPar('⁵ Explique su elección de especie(s), cepa(s) o raza(s), modelo(s) y método(s). Explique por qué son los más adecuados para sus objetivos.'),
+    ...(a.hay_cria ? [
+      notesPar('⁶ Nomenclature for Mouse Strains. Jackson Laboratories.'),
+      notesPar('⁷ Nombre con el que se referirá a la cepa/línea a lo largo del Proyecto y en el animalario de CIC bioGUNE.'),
+    ] : []),
+    notesPar('⁸ Las condiciones estándar del CIC bioGUNE consisten en el alojamiento de los animales en jaulas de policarbonato con lecho de viruta de madera. La densidad animal en cada jaula no excede en ningún momento la densidad máxima descrita en el Anexo II del RD 53/2013. Las salas de estabulación se mantienen dentro de los rangos de temperatura y humedad relativa apropiados para roedores (20-24ºC y 50-65%, respectivamente). La iluminación de las salas consiste en un ciclo de luz-oscuridad de 12:12 horas (luz de 08:00h a 20:00h). Los animales se alimentan con dieta de mantenimiento o cría específica para roedores y se les suministra agua de bebida ad libitum, mediante el empleo de biberón o de un sistema de bebida automática, según proceda.'),
   ]
 
   return Packer.toBuffer(buildDoc(children, 'Sección A'))
