@@ -354,6 +354,44 @@
 .severityBtnMedium.active{ background: rgba(202,138,4,0.12);  border-color: #ca8a04; color: #92400e; }
 .severityBtnHigh.active  { background: rgba(220,38,38,0.12);  border-color: #dc2626; color: #b91c1c; }
 
+/* ── Auto-expand textarea ─────────────────────────────────────────────────── */
+
+.taWrap {
+  position: relative;
+}
+
+.taExpandBtn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--border);
+  transition: color 0.18s, background 0.18s;
+  line-height: 1;
+}
+
+.taExpandBtn:hover {
+  color: var(--muted-light);
+  background: var(--surface-hover);
+}
+
+.taExpandBtnActive {
+  color: var(--muted);
+}
+
+.taExpandBtnActive:hover {
+  color: var(--text);
+}
+
 /* ── Responsive ───────────────────────────────────────────────────────────── */
 
 @media (max-width: 700px) {

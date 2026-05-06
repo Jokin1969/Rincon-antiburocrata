@@ -205,6 +205,64 @@ function Toast({ message, onDone }) {
   return <div className={s.toast}>{message}</div>
 }
 
+const ExpandIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 4.5V1h3.5M11 4.5V1H7.5M1 7.5V11h3.5M11 7.5V11H7.5"/>
+  </svg>
+)
+const CollapseIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4.5 1v3.5H1M7.5 1v3.5H11M4.5 11V7.5H1M7.5 11V7.5H11"/>
+  </svg>
+)
+
+function AutoExpandTextarea({ value, onChange, rows = 3, placeholder, storageKey }) {
+  const ref     = useRef(null)
+  const [expanded, setExpanded] = useState(() => {
+    try { return localStorage.getItem(`ta-exp:${storageKey}`) === '1' } catch { return false }
+  })
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (expanded) {
+      el.style.height = 'auto'
+      el.style.height = el.scrollHeight + 'px'
+    } else {
+      el.style.height = ''
+    }
+  }, [expanded, value])
+
+  function toggle() {
+    const next = !expanded
+    setExpanded(next)
+    try { localStorage.setItem(`ta-exp:${storageKey}`, next ? '1' : '0') } catch {}
+  }
+
+  return (
+    <div className={s.taWrap}>
+      <textarea
+        ref={ref}
+        className="form-group input"
+        rows={rows}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        style={{ width: '100%', paddingRight: '1.8rem', resize: 'none' }}
+      />
+      <button
+        type="button"
+        aria-label={expanded ? 'Contraer' : 'Expandir'}
+        title={expanded ? 'Contraer' : 'Expandir para ver todo el contenido'}
+        onClick={toggle}
+        className={`${s.taExpandBtn} ${expanded ? s.taExpandBtnActive : ''}`}
+      >
+        {expanded ? <CollapseIcon /> : <ExpandIcon />}
+      </button>
+    </div>
+  )
+}
+
 // ── Main form ─────────────────────────────────────────────────────────────────
 
 export default function SeccionBForm() {
@@ -451,8 +509,8 @@ export default function SeccionBForm() {
 
           <div className={`form-group ${s.fullRow}`}>
             <label>Severidad</label>
-            <textarea
-              className="form-group input"
+            <AutoExpandTextarea
+              storageKey="datos_generales.severidad"
               rows={3}
               value={form.datos_generales.severidad}
               onChange={e => update('datos_generales.severidad', e.target.value)}
@@ -462,8 +520,8 @@ export default function SeccionBForm() {
 
           <div className={`form-group ${s.fullRow}`}>
             <label>Duración<sup style={{ fontSize: 'inherit', verticalAlign: 'super', lineHeight: 0 }}>1</sup></label>
-            <textarea
-              className="form-group input"
+            <AutoExpandTextarea
+              storageKey="datos_generales.duracion"
               rows={3}
               value={form.datos_generales.duracion}
               onChange={e => update('datos_generales.duracion', e.target.value)}
@@ -477,8 +535,8 @@ export default function SeccionBForm() {
       <CollapsibleBlock title="B.2 METODOLOGÍA Y FASES DEL PROCEDIMIENTO">
         <div className="form-group">
           <label>Fases del procedimiento<sup style={{ fontSize: 'inherit', verticalAlign: 'super', lineHeight: 0 }}>2</sup></label>
-          <textarea
-            className="form-group input"
+          <AutoExpandTextarea
+            storageKey="metodologia.descripcion"
             rows={5}
             value={form.metodologia.descripcion}
             onChange={e => update('metodologia.descripcion', e.target.value)}
@@ -487,8 +545,8 @@ export default function SeccionBForm() {
         </div>
         <div className="form-group">
           <label>Describa en qué fases del procedimiento se prevé que el animal pueda experimentar sufrimiento, dolor, angustia o malestar</label>
-          <textarea
-            className="form-group input"
+          <AutoExpandTextarea
+            storageKey="metodologia.justificacion_procedimiento"
             rows={3}
             value={form.metodologia.justificacion_procedimiento}
             onChange={e => update('metodologia.justificacion_procedimiento', e.target.value)}
@@ -518,8 +576,8 @@ export default function SeccionBForm() {
         </div>
         <div className="form-group">
           <label>Justificación del tamaño muestral</label>
-          <textarea
-            className="form-group input"
+          <AutoExpandTextarea
+            storageKey="tamano_muestral.justificacion"
             rows={3}
             value={form.tamano_muestral.justificacion}
             onChange={e => update('tamano_muestral.justificacion', e.target.value)}
@@ -609,8 +667,8 @@ export default function SeccionBForm() {
           {(form.aislamiento_ayuno.hay_aislamiento === 'Sí' || form.aislamiento_ayuno.hay_ayuno === 'Sí') && (
             <div className={`form-group ${s.fullRow}`}>
               <label>Justificación</label>
-              <textarea
-                className="form-group input"
+              <AutoExpandTextarea
+                storageKey="aislamiento_ayuno.justificacion"
                 rows={2}
                 value={form.aislamiento_ayuno.justificacion}
                 onChange={e => update('aislamiento_ayuno.justificacion', e.target.value)}
@@ -667,8 +725,8 @@ export default function SeccionBForm() {
           {form.analgesia_anestesia.hay_analgesia === 'Sí' && (
             <div className="form-group">
               <label>Protocolo de analgesia</label>
-              <textarea
-                className="form-group input"
+              <AutoExpandTextarea
+                storageKey="analgesia_anestesia.protocolo_analgesia"
                 rows={2}
                 value={form.analgesia_anestesia.protocolo_analgesia}
                 onChange={e => update('analgesia_anestesia.protocolo_analgesia', e.target.value)}
@@ -698,8 +756,8 @@ export default function SeccionBForm() {
           {form.analgesia_anestesia.hay_anestesia === 'Sí' && (
             <div className="form-group">
               <label>Protocolo de anestesia</label>
-              <textarea
-                className="form-group input"
+              <AutoExpandTextarea
+                storageKey="analgesia_anestesia.protocolo_anestesia"
                 rows={2}
                 value={form.analgesia_anestesia.protocolo_anestesia}
                 onChange={e => update('analgesia_anestesia.protocolo_anestesia', e.target.value)}
@@ -712,8 +770,8 @@ export default function SeccionBForm() {
             <>
               <div className="form-group">
                 <label>Monitorización durante la anestesia</label>
-                <textarea
-                  className="form-group input"
+                <AutoExpandTextarea
+                  storageKey="analgesia_anestesia.monitorizacion"
                   rows={2}
                   value={form.analgesia_anestesia.monitorizacion}
                   onChange={e => update('analgesia_anestesia.monitorizacion', e.target.value)}
@@ -722,8 +780,8 @@ export default function SeccionBForm() {
               </div>
               <div className="form-group">
                 <label>Recuperación post-anestésica</label>
-                <textarea
-                  className="form-group input"
+                <AutoExpandTextarea
+                  storageKey="analgesia_anestesia.recuperacion"
                   rows={2}
                   value={form.analgesia_anestesia.recuperacion}
                   onChange={e => update('analgesia_anestesia.recuperacion', e.target.value)}
@@ -815,8 +873,8 @@ export default function SeccionBForm() {
       <CollapsibleBlock title="10. Finalización y eutanasia">
         <div className="form-group">
           <label>Criterios humanitarios de finalización</label>
-          <textarea
-            className="form-group input"
+          <AutoExpandTextarea
+            storageKey="finalizacion.criterios_humanos"
             rows={3}
             value={form.finalizacion.criterios_humanos}
             onChange={e => update('finalizacion.criterios_humanos', e.target.value)}
@@ -841,8 +899,8 @@ export default function SeccionBForm() {
         </div>
         <div className="form-group">
           <label>Justificación del método de eutanasia</label>
-          <textarea
-            className="form-group input"
+          <AutoExpandTextarea
+            storageKey="finalizacion.justificacion_eutanasia"
             rows={2}
             value={form.finalizacion.justificacion_eutanasia}
             onChange={e => update('finalizacion.justificacion_eutanasia', e.target.value)}
@@ -883,8 +941,8 @@ export default function SeccionBForm() {
           <>
             <div className="form-group">
               <label>Descripción de la reutilización</label>
-              <textarea
-                className="form-group input"
+              <AutoExpandTextarea
+                storageKey="reutilizacion.descripcion"
                 rows={2}
                 value={form.reutilizacion.descripcion}
                 onChange={e => update('reutilizacion.descripcion', e.target.value)}
@@ -893,8 +951,8 @@ export default function SeccionBForm() {
             </div>
             <div className="form-group">
               <label>Justificación de la reutilización</label>
-              <textarea
-                className="form-group input"
+              <AutoExpandTextarea
+                storageKey="reutilizacion.justificacion"
                 rows={2}
                 value={form.reutilizacion.justificacion}
                 onChange={e => update('reutilizacion.justificacion', e.target.value)}
@@ -955,8 +1013,8 @@ export default function SeccionBForm() {
           </div>
           <div className={`form-group ${s.fullRow}`}>
             <label>Observaciones</label>
-            <textarea
-              className="form-group input"
+            <AutoExpandTextarea
+              storageKey="firma.observaciones"
               rows={2}
               value={form.firma.observaciones}
               onChange={e => update('firma.observaciones', e.target.value)}
