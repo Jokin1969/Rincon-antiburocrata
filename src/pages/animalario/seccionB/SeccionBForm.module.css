@@ -354,16 +354,22 @@
 .severityBtnMedium.active{ background: rgba(202,138,4,0.12);  border-color: #ca8a04; color: #92400e; }
 .severityBtnHigh.active  { background: rgba(220,38,38,0.12);  border-color: #dc2626; color: #b91c1c; }
 
-/* ── Auto-expand textarea ─────────────────────────────────────────────────── */
+/* ── Auto-expand / copy-from textarea ────────────────────────────────────── */
 
 .taWrap {
   position: relative;
 }
 
-.taExpandBtn {
+.taBtns {
   position: absolute;
   top: 6px;
   right: 6px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.taBtn {
   width: 22px;
   height: 22px;
   padding: 0;
@@ -377,19 +383,91 @@
   color: var(--border);
   transition: color 0.18s, background 0.18s;
   line-height: 1;
+  flex-shrink: 0;
 }
 
-.taExpandBtn:hover {
+.taBtn:hover {
   color: var(--muted-light);
   background: var(--surface-hover);
 }
 
-.taExpandBtnActive {
+.taBtnActive {
   color: var(--muted);
 }
 
-.taExpandBtnActive:hover {
+.taBtnActive:hover {
   color: var(--text);
+}
+
+/* Copy-from dropdown */
+
+.copyDropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 3px);
+  z-index: 300;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.10);
+  min-width: 280px;
+  max-width: 420px;
+  max-height: 230px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.copyDropdownUp {
+  top: auto;
+  bottom: calc(100% + 3px);
+}
+
+.copyEmpty {
+  padding: 0.75rem 1rem;
+  font-size: 0.82rem;
+  color: var(--muted-light);
+  text-align: center;
+}
+
+.copyItem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  padding: 0.55rem 0.9rem;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s;
+  width: 100%;
+}
+
+.copyItem:last-child { border-bottom: none; }
+
+.copyItem:hover { background: var(--surface-hover); }
+
+.copyItem:disabled { opacity: 0.6; cursor: wait; }
+
+.copyItemTitle {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.copyItemProject {
+  font-size: 0.72rem;
+  color: var(--muted-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 /* ── Responsive ───────────────────────────────────────────────────────────── */

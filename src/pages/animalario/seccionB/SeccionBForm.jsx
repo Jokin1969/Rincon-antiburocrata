@@ -215,13 +215,32 @@ const CollapseIcon = () => (
     <path d="M4.5 1v3.5H1M7.5 1v3.5H11M4.5 11V7.5H1M7.5 11V7.5H11"/>
   </svg>
 )
+const CopyFromIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="1" y="4" width="7" height="7" rx="1"/>
+    <path d="M4 4V3a1 1 0 011-1h5a1 1 0 011 1v5a1 1 0 01-1 1H9"/>
+  </svg>
+)
+
+function getByPath(obj, path) {
+  return path.split('.').reduce((o, k) => o?.[k], obj) ?? ''
+}
 
 function AutoExpandTextarea({ value, onChange, rows = 3, placeholder, storageKey }) {
-  const ref     = useRef(null)
-  const [expanded, setExpanded] = useState(() => {
+  const ref      = useRef(null)
+  const wrapRef  = useRef(null)
+  const hasCopy  = rows >= 3
+
+  const [expanded,    setExpanded]    = useState(() => {
     try { return localStorage.getItem(`ta-exp:${storageKey}`) === '1' } catch { return false }
   })
+  const [showCopy,    setShowCopy]    = useState(false)
+  const [copyProcs,   setCopyProcs]   = useState(null)   // null = not loaded yet
+  const [copyLoading, setCopyLoading] = useState(false)
+  const [selecting,   setSelecting]   = useState(null)   // id being fetched
+  const [openUp,      setOpenUp]      = useState(false)
 
+  // Auto-height when expanded
   useEffect(() => {
     const el = ref.current
     if (!el) return
@@ -233,14 +252,61 @@ function AutoExpandTextarea({ value, onChange, rows = 3, placeholder, storageKey
     }
   }, [expanded, value])
 
-  function toggle() {
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!showCopy) return
+    function onDown(e) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setShowCopy(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [showCopy])
+
+  function toggleExpand() {
     const next = !expanded
     setExpanded(next)
     try { localStorage.setItem(`ta-exp:${storageKey}`, next ? '1' : '0') } catch {}
   }
 
+  async function openCopyDropdown() {
+    if (showCopy) { setShowCopy(false); return }
+
+    // Decide flip direction
+    if (wrapRef.current) {
+      const rect = wrapRef.current.getBoundingClientRect()
+      setOpenUp(window.innerHeight - rect.bottom < 240)
+    }
+
+    setShowCopy(true)
+    if (copyProcs !== null) return   // already loaded
+
+    setCopyLoading(true)
+    try {
+      const r = await fetch('/api/animalario/procedimientos')
+      setCopyProcs(r.ok ? await r.json() : [])
+    } catch {
+      setCopyProcs([])
+    } finally {
+      setCopyLoading(false)
+    }
+  }
+
+  async function selectProc(proc) {
+    setSelecting(proc.id)
+    try {
+      const r    = await fetch(`/api/animalario/procedimientos/${proc.id}`)
+      const data = await r.json()
+      const val  = getByPath(data, storageKey)
+      if (val) onChange({ target: { value: val } })
+    } catch {}
+    setSelecting(null)
+    setShowCopy(false)
+  }
+
+  const prPad = hasCopy ? '3.6rem' : '1.8rem'
+
   return (
-    <div className={s.taWrap}>
+    <div className={s.taWrap} ref={wrapRef}>
       <textarea
         ref={ref}
         className="form-group input"
@@ -248,17 +314,54 @@ function AutoExpandTextarea({ value, onChange, rows = 3, placeholder, storageKey
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        style={{ width: '100%', paddingRight: '1.8rem', resize: 'none' }}
+        style={{ width: '100%', paddingRight: prPad, resize: 'none' }}
       />
-      <button
-        type="button"
-        aria-label={expanded ? 'Contraer' : 'Expandir'}
-        title={expanded ? 'Contraer' : 'Expandir para ver todo el contenido'}
-        onClick={toggle}
-        className={`${s.taExpandBtn} ${expanded ? s.taExpandBtnActive : ''}`}
-      >
-        {expanded ? <CollapseIcon /> : <ExpandIcon />}
-      </button>
+
+      <div className={s.taBtns}>
+        {hasCopy && (
+          <button
+            type="button"
+            aria-label="Copiar de otro procedimiento"
+            title="Copiar de otro procedimiento"
+            onClick={openCopyDropdown}
+            className={`${s.taBtn} ${showCopy ? s.taBtnActive : ''}`}
+          >
+            <CopyFromIcon />
+          </button>
+        )}
+        <button
+          type="button"
+          aria-label={expanded ? 'Contraer' : 'Expandir'}
+          title={expanded ? 'Contraer' : 'Expandir para ver todo el contenido'}
+          onClick={toggleExpand}
+          className={`${s.taBtn} ${expanded ? s.taBtnActive : ''}`}
+        >
+          {expanded ? <CollapseIcon /> : <ExpandIcon />}
+        </button>
+      </div>
+
+      {showCopy && (
+        <div className={`${s.copyDropdown} ${openUp ? s.copyDropdownUp : ''}`}>
+          {copyLoading && <div className={s.copyEmpty}>Cargando…</div>}
+          {!copyLoading && copyProcs?.length === 0 && (
+            <div className={s.copyEmpty}>No hay procedimientos guardados.</div>
+          )}
+          {!copyLoading && copyProcs?.map(p => (
+            <button
+              key={p.id}
+              type="button"
+              className={s.copyItem}
+              onClick={() => selectProc(p)}
+              disabled={selecting === p.id}
+            >
+              <span className={s.copyItemTitle}>
+                {selecting === p.id ? 'Cargando…' : (p.titulo || '(Sin título)')}
+              </span>
+              <span className={s.copyItemProject}>{p.proyecto_titulo}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
