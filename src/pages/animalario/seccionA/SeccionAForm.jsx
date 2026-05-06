@@ -728,7 +728,7 @@ export default function SeccionAForm() {
           disabled={saving} onClick={() => doSave(true)}>
           {saving ? 'Guardando…' : 'Guardar y continuar →'}
         </button>
-        {!isNew && (
+        {isEdit && (
           <ExportButton
             endpoint={`/api/animalario/proyectos/${proyectoId}/exportar/seccionA`}
             basename={`SeccionA_${proyectoId}`}

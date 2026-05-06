@@ -39,6 +39,12 @@ export default function ProyectosList() {
         subtitle="Lista de proyectos de experimentación animal registrados."
       />
 
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+        <button className="btn btn-primary" onClick={() => navigate('/animalario/proyecto/nuevo')}>
+          ＋ Nuevo proyecto
+        </button>
+      </div>
+
       <div className={styles.toolbar}>
         <input
           type="search"
@@ -47,9 +53,6 @@ export default function ProyectosList() {
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
-        <button className="btn btn-primary" onClick={() => navigate('/animalario/proyecto/nuevo')}>
-          ＋ Nuevo proyecto
-        </button>
       </div>
 
       {loading && <p className={styles.empty}>Cargando proyectos…</p>}
