@@ -52,7 +52,7 @@ const NON = {
   left:   { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
   right:  { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
 }
-const CM = { top: 70, bottom: 70, left: 110, right: 110 }
+const CM = { top: 25, bottom: 25, left: 110, right: 110 }
 const GF        = { type: ShadingType.CLEAR, color: 'auto', fill: 'D9D9D9' }
 const DARK_BLUE = { type: ShadingType.CLEAR, color: 'auto', fill: '1F4E79' }
 const LITE_BLUE = { type: ShadingType.CLEAR, color: 'auto', fill: 'DEEAF1' }
@@ -71,7 +71,7 @@ function par(children, opts = {}) {
   return new Paragraph({
     children,
     alignment: opts.align,
-    spacing: { before: opts.before ?? 60, after: opts.after ?? 60 },
+    spacing: { before: opts.before ?? 25, after: opts.after ?? 25 },
   })
 }
 const emptyLine = () => new Paragraph({ children: [tx('')], spacing: { before: 20, after: 20 } })
