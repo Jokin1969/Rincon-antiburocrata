@@ -10,6 +10,7 @@ const __dirname     = dirname(__filename)
 const DATA_DIR      = process.env.DATA_DIR ?? join(__dirname, '..', '..', 'data')
 const PROYECTOS_DIR = join(DATA_DIR, 'animalario', 'proyectos')
 const PROC_DIR      = join(DATA_DIR, 'animalario', 'procedimientos')
+const CRIA_DIR      = join(DATA_DIR, 'animalario', 'crias')
 const REPO_FILE     = join(DATA_DIR, 'animalario', 'repositorio', 'campos_frecuentes.json')
 
 const router = Router()
@@ -46,6 +47,21 @@ function writeProc(proc) {
   writeFileSync(
     join(PROC_DIR, `proc_${proc.id}.json`),
     JSON.stringify(proc, null, 2),
+    'utf-8'
+  )
+}
+
+function readCria(id) {
+  const path = join(CRIA_DIR, `cria_${id}.json`)
+  if (!existsSync(path)) return null
+  return JSON.parse(readFileSync(path, 'utf-8'))
+}
+
+function writeCria(cria) {
+  ensureDir(CRIA_DIR)
+  writeFileSync(
+    join(CRIA_DIR, `cria_${cria.id}.json`),
+    JSON.stringify(cria, null, 2),
     'utf-8'
   )
 }
@@ -149,7 +165,6 @@ router.post('/proyectos', (req, res) => {
       modificaciones:      [],
       ...req.body,
     }
-    // Ensure arrays are never overwritten with undefined from body
     proyecto.procedimientos = Array.isArray(req.body.procedimientos) ? req.body.procedimientos : []
     proyecto.crias          = Array.isArray(req.body.crias)          ? req.body.crias          : []
     proyecto.modificaciones = Array.isArray(req.body.modificaciones) ? req.body.modificaciones : []
@@ -200,10 +215,8 @@ router.get('/proyectos/:proyectoId/procedimientos', (req, res) => {
     const proyecto = readProyecto(req.params.proyectoId)
     if (!proyecto) return res.status(404).json({ error: 'Proyecto no encontrado' })
 
-    const ids = Array.isArray(proyecto.procedimientos) ? proyecto.procedimientos : []
-    const procs = ids
-      .map(id => readProc(id))
-      .filter(Boolean)
+    const ids   = Array.isArray(proyecto.procedimientos) ? proyecto.procedimientos : []
+    const procs = ids.map(id => readProc(id)).filter(Boolean)
 
     res.json(procs)
   } catch (err) {
@@ -227,7 +240,6 @@ router.post('/proyectos/:proyectoId/procedimientos', (req, res) => {
     }
     writeProc(proc)
 
-    // Register id in proyecto
     const ids = Array.isArray(proyecto.procedimientos) ? proyecto.procedimientos : []
     proyecto.procedimientos      = [...ids, proc.id]
     proyecto.fecha_actualizacion = now
@@ -267,7 +279,6 @@ router.put('/procedimientos/:id', (req, res) => {
     }
     writeProc(updated)
 
-    // Update proyecto's fecha_actualizacion and riesgo flag
     const proyecto = readProyecto(existing.proyecto_id)
     if (proyecto) {
       proyecto.fecha_actualizacion = updated.fecha_actualizacion
@@ -287,7 +298,6 @@ router.delete('/procedimientos/:id', (req, res) => {
     const proc = readProc(req.params.id)
     if (!proc) return res.status(404).json({ error: 'Procedimiento no encontrado' })
 
-    // Remove from proyecto's list and resync riesgo flag
     const proyecto = readProyecto(proc.proyecto_id)
     if (proyecto) {
       proyecto.procedimientos      = (proyecto.procedimientos ?? []).filter(id => id !== proc.id)
@@ -296,7 +306,6 @@ router.delete('/procedimientos/:id', (req, res) => {
       writeProyecto(proyecto)
     }
 
-    // Delete file
     const path = join(PROC_DIR, `proc_${proc.id}.json`)
     if (existsSync(path)) unlinkSync(path)
 
@@ -319,13 +328,11 @@ router.post('/procedimientos/:id/duplicar', (req, res) => {
       fecha_creacion:      now,
       fecha_actualizacion: now,
     }
-    // Append "(copia)" to the title if present
     if (copy.datos_generales?.titulo_procedimiento) {
       copy.datos_generales.titulo_procedimiento += ' (copia)'
     }
     writeProc(copy)
 
-    // Register in proyecto
     const proyecto = readProyecto(original.proyecto_id)
     if (proyecto) {
       proyecto.procedimientos      = [...(proyecto.procedimientos ?? []), copy.id]
@@ -334,6 +341,114 @@ router.post('/procedimientos/:id/duplicar', (req, res) => {
     }
 
     res.status(201).json(copy)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// ── Crías ─────────────────────────────────────────────────────────────────────
+
+// POST /api/animalario/proyectos/:proyectoId/crias  (crear)
+router.post('/proyectos/:proyectoId/crias', (req, res) => {
+  try {
+    const proyecto = readProyecto(req.params.proyectoId)
+    if (!proyecto) return res.status(404).json({ error: 'Proyecto no encontrado' })
+
+    const now  = new Date().toISOString()
+    const cria = {
+      ...req.body,
+      id:                  randomUUID(),
+      proyecto_id:         req.params.proyectoId,
+      fecha_creacion:      now,
+      fecha_actualizacion: now,
+    }
+    writeCria(cria)
+
+    // Store lightweight reference in proyecto.crias
+    const ref = {
+      id:                       cria.id,
+      cepa_idx:                 req.body.cepa_idx ?? null,
+      acronimo:                 cria.seccionC?.identificacion?.acronimo ?? '',
+      nomenclatura_internacional: cria.seccionC?.identificacion?.nomenclatura_internacional ?? '',
+      es_omg:                   cria.seccionC?.es_omg ?? false,
+    }
+    proyecto.crias               = [...(proyecto.crias ?? []), ref]
+    proyecto.fecha_actualizacion = now
+    writeProyecto(proyecto)
+
+    res.status(201).json(cria)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// GET /api/animalario/crias/:id
+router.get('/crias/:id', (req, res) => {
+  try {
+    const cria = readCria(req.params.id)
+    if (!cria) return res.status(404).json({ error: 'Cría no encontrada' })
+    res.json(cria)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// PUT /api/animalario/crias/:id  (actualizar)
+router.put('/crias/:id', (req, res) => {
+  try {
+    const existing = readCria(req.params.id)
+    if (!existing) return res.status(404).json({ error: 'Cría no encontrada' })
+
+    const updated = {
+      ...existing,
+      ...req.body,
+      id:                  existing.id,
+      proyecto_id:         existing.proyecto_id,
+      fecha_creacion:      existing.fecha_creacion,
+      fecha_actualizacion: new Date().toISOString(),
+    }
+    writeCria(updated)
+
+    // Update reference in proyecto
+    const proyecto = readProyecto(existing.proyecto_id)
+    if (proyecto) {
+      proyecto.crias = (proyecto.crias ?? []).map(c =>
+        c.id === updated.id
+          ? {
+              ...c,
+              acronimo:                 updated.seccionC?.identificacion?.acronimo ?? c.acronimo,
+              nomenclatura_internacional: updated.seccionC?.identificacion?.nomenclatura_internacional ?? c.nomenclatura_internacional,
+              es_omg:                   updated.seccionC?.es_omg ?? c.es_omg,
+            }
+          : c
+      )
+      proyecto.fecha_actualizacion = updated.fecha_actualizacion
+      writeProyecto(proyecto)
+    }
+
+    res.json(updated)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// DELETE /api/animalario/crias/:id
+router.delete('/crias/:id', (req, res) => {
+  try {
+    const cria = readCria(req.params.id)
+    if (!cria) return res.status(404).json({ error: 'Cría no encontrada' })
+
+    const proyecto = readProyecto(cria.proyecto_id)
+    if (proyecto) {
+      proyecto.crias               = (proyecto.crias ?? []).filter(c => c.id !== cria.id)
+      proyecto.fecha_actualizacion = new Date().toISOString()
+      writeProyecto(proyecto)
+    }
+
+    const path = join(CRIA_DIR, `cria_${cria.id}.json`)
+    if (existsSync(path)) unlinkSync(path)
+
+    res.json({ ok: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

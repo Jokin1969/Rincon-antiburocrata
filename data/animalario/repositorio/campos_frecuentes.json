@@ -19,5 +19,23 @@
     "inhalatoria",
     "otra"
   ],
-  "frecuencia_tecnica": []
+  "frecuencia_tecnica": [],
+  "muestra_genotipaje": [
+    "biopsia cola",
+    "sangre",
+    "saliva",
+    "pelo"
+  ],
+  "tipo_modificacion_omg": [
+    "inserción",
+    "deleción",
+    "sustitución",
+    "inversión",
+    "translocación",
+    "fusión celular",
+    "transgénesis",
+    "knock-in",
+    "knock-out",
+    "knock-down"
+  ]
 }

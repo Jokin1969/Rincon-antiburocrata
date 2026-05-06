@@ -46,8 +46,15 @@ export default function ProyectoHub() {
   const hasCria        = p.seccionA?.hay_cria === true
   const numProcs       = Array.isArray(p.procedimientos) ? p.procedimientos.length : 0
   const hasProductos   = Boolean(p.hay_productos_riesgo)
-  const numCrias       = Array.isArray(p.crias) ? p.crias.length : 0
   const modificaciones = Array.isArray(p.modificaciones) ? p.modificaciones : []
+
+  // Map cepa_idx → cría reference so we can match per-cepa
+  const criasByCepaIdx = {}
+  for (const c of p.crias ?? []) {
+    if (c.cepa_idx != null) criasByCepaIdx[c.cepa_idx] = c
+  }
+
+  const cepas = p.seccionA?.cepas_cria ?? []
 
   return (
     <div>
@@ -101,23 +108,52 @@ export default function ProyectoHub() {
           }
         />
 
-        {/* Sección C — Cría (solo si seccionA.tiene_cria) */}
-        {hasCria && (
+        {/* Sección C — Cría: one card per cepa declared in Sección A */}
+        {hasCria && cepas.length === 0 && (
           <SectionCard
             label="Sección C"
             name="Cría de animales"
-            detail={`${numCrias} cepa${numCrias !== 1 ? 's' : ''}/línea${numCrias !== 1 ? 's' : ''} definida${numCrias !== 1 ? 's' : ''}`}
-            ok={numCrias > 0}
+            detail="No hay cepas/líneas declaradas en Sección A"
+            ok={false}
             actions={
               <button
-                className="btn btn-primary"
-                onClick={() => navigate(`/animalario/proyecto/${proyectoId}/cria/nueva`)}
+                className="btn btn-ghost"
+                onClick={() => navigate(`/animalario/proyecto/${proyectoId}/editar`)}
               >
-                Gestionar →
+                Añadir en Sección A →
               </button>
             }
           />
         )}
+        {hasCria && cepas.map((cepa, idx) => {
+          const cria   = criasByCepaIdx[idx]
+          const nombre = cepa.acronimo || cepa.nomenclatura_internacional || `Cepa ${idx + 1}`
+          const detalle = cepa.acronimo && cepa.nomenclatura_internacional && cepa.acronimo !== cepa.nomenclatura_internacional
+            ? cepa.nomenclatura_internacional
+            : null
+
+          return (
+            <SectionCard
+              key={idx}
+              label={`Sección C · Cepa ${idx + 1}`}
+              name={nombre}
+              detail={detalle}
+              ok={Boolean(cria)}
+              actions={
+                <button
+                  className="btn btn-primary"
+                  onClick={() =>
+                    cria
+                      ? navigate(`/animalario/proyecto/${proyectoId}/cria/${cria.id}`)
+                      : navigate(`/animalario/proyecto/${proyectoId}/cria/nueva?cepaIdx=${idx}`)
+                  }
+                >
+                  {cria ? 'Editar' : 'Crear'}
+                </button>
+              }
+            />
+          )
+        })}
 
         {/* Sección D — Productos con riesgo (solo si algún procedimiento lo tiene) */}
         {hasProductos && (
