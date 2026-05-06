@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import PageHeader from '../../../components/PageHeader'
 import styles from '../../../styles/animalario/animalario.module.css'
+import hubStyles from './ProcedimientosHub.module.css'
 import ManualUsuario from '../../../components/animalario/ManualUsuario'
 
 const SEVERITY_LABELS = { none: 'Sin clasificar', low: 'Leve', medium: 'Moderado', high: 'Severo' }
@@ -57,7 +58,7 @@ export default function ProcedimientosHub() {
   const [deleting, setDeleting]       = useState(null)
   const [duplicating, setDuplicating] = useState(null)
   const [exporting, setExporting]     = useState(null)
-  const [showManual, setShowManual]   = useState(false)
+  const [manualAbierto, setManualAbierto] = useState(false)
 
   function load() {
     setLoading(true)
@@ -133,22 +134,16 @@ export default function ProcedimientosHub() {
         />
         <button
           type="button"
-          onClick={() => setShowManual(true)}
+          className={hubStyles.botonManual}
+          onClick={() => setManualAbierto(true)}
           title="Manual de usuario"
-          style={{
-            position: 'absolute', top: 0, right: 0,
-            background: 'none', border: '1px solid rgba(123,28,46,0.3)',
-            borderRadius: 'var(--radius-sm)',
-            color: 'var(--accent)', cursor: 'pointer',
-            padding: '0.3rem 0.55rem', fontSize: '0.82rem', fontFamily: 'inherit',
-            lineHeight: 1,
-          }}
+          aria-label="Abrir manual de usuario"
         >
           📖
         </button>
       </div>
 
-      {showManual && <ManualUsuario onClose={() => setShowManual(false)} />}
+      <ManualUsuario abierto={manualAbierto} onCerrar={() => setManualAbierto(false)} />
 
       {/* Summary bar */}
       {procs.length > 0 && (
