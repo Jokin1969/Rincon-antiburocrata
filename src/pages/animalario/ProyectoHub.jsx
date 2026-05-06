@@ -43,7 +43,7 @@ export default function ProyectoHub() {
   const p = proyecto
 
   const hasSeccionA    = Boolean(p.seccionA)
-  const hasCria        = p.seccionA?.tiene_cria === true
+  const hasCria        = p.seccionA?.hay_cria === true
   const numProcs       = Array.isArray(p.procedimientos) ? p.procedimientos.length : 0
   const hasProductos   = Array.isArray(p.procedimientos) && p.procedimientos.some(b => b.tiene_productos_riesgo)
   const numCrias       = Array.isArray(p.crias) ? p.crias.length : 0
