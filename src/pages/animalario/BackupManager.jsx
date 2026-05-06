@@ -117,8 +117,8 @@ export default function BackupManager() {
           {info && (
             <div className={bk.configBar}>
               <span className={bk.configItem}>
-                <span className={bk.configLabel}>Directorio</span>
-                <code className={bk.configVal}>{info.backupDir}</code>
+                <span className={bk.configLabel}>Carpeta Dropbox</span>
+                <code className={bk.configVal}>{info.dropboxFolder}</code>
               </span>
               <span className={bk.configItem}>
                 <span className={bk.configLabel}>Intervalo</span>

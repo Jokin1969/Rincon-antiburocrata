@@ -1,9 +1,9 @@
 import { Router } from 'express'
 import { fileURLToPath } from 'url'
-import { dirname, join, basename } from 'path'
+import { dirname, join } from 'path'
 import {
   existsSync, mkdirSync, readdirSync, statSync,
-  unlinkSync, writeFileSync, readFileSync,
+  readFileSync, writeFileSync,
 } from 'fs'
 import JSZip from 'jszip'
 
@@ -12,49 +12,135 @@ const __dirname  = dirname(__filename)
 
 const DATA_DIR       = process.env.DATA_DIR ?? join(__dirname, '..', '..', 'data')
 const ANIMALARIO_DIR = join(DATA_DIR, 'animalario')
-const BACKUP_DIR     = process.env.BACKUP_DIR ?? join(DATA_DIR, 'backups', 'animalario')
+
 const INTERVAL_HOURS = parseFloat(process.env.BACKUP_INTERVAL_HOURS ?? '2')
 const MAX_COUNT      = parseInt(process.env.BACKUP_MAX_COUNT ?? '100', 10)
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// Dropbox folder: strip trailing slash, ensure leading slash for non-root
+const _rawFolder = (process.env.DROPBOX_FOLDER ?? '').replace(/\/$/, '')
+const DBX_FOLDER = _rawFolder === '' ? '' : (_rawFolder.startsWith('/') ? _rawFolder : `/${_rawFolder}`)
 
-function ensureBackupDir() {
-  if (!existsSync(BACKUP_DIR)) mkdirSync(BACKUP_DIR, { recursive: true })
+function dropboxConfigured() {
+  return !!(
+    process.env.DROPBOX_REFRESH_TOKEN &&
+    process.env.DROPBOX_APP_KEY &&
+    process.env.DROPBOX_APP_SECRET
+  )
 }
 
-function listBackups() {
-  ensureBackupDir()
-  return readdirSync(BACKUP_DIR)
-    .filter(f => /^animalario_backup_[\d_-]+\.zip$/.test(f))
-    .sort()
-    .reverse()
-    .map(f => {
-      const stat = statSync(join(BACKUP_DIR, f))
-      return { filename: f, size: stat.size, createdAt: stat.mtime.toISOString() }
-    })
+function dbxPath(filename) {
+  return DBX_FOLDER ? `${DBX_FOLDER}/${filename}` : `/${filename}`
 }
 
-function getLastModifiedMs() {
-  if (!existsSync(ANIMALARIO_DIR)) return 0
-  let latest = 0
-  function walk(dir) {
-    for (const entry of readdirSync(dir)) {
-      const full = join(dir, entry)
-      const stat = statSync(full)
-      if (stat.isDirectory()) walk(full)
-      else if (stat.mtimeMs > latest) latest = stat.mtimeMs
-    }
+// ── Dropbox OAuth2 token (cached, auto-refreshed) ─────────────────────────────
+
+let _token  = null
+let _expiry = 0
+
+async function getToken() {
+  if (_token && Date.now() < _expiry - 60_000) return _token
+
+  const resp = await fetch('https://api.dropboxapi.com/oauth2/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type:    'refresh_token',
+      refresh_token: process.env.DROPBOX_REFRESH_TOKEN,
+      client_id:     process.env.DROPBOX_APP_KEY,
+      client_secret: process.env.DROPBOX_APP_SECRET,
+    }),
+  })
+  const data = await resp.json()
+  if (!data.access_token) throw new Error(`Dropbox auth error: ${JSON.stringify(data)}`)
+  _token  = data.access_token
+  _expiry = Date.now() + (data.expires_in ?? 14400) * 1000
+  return _token
+}
+
+// ── Dropbox API helpers ───────────────────────────────────────────────────────
+
+async function dbxListFolder() {
+  const token = await getToken()
+  const resp  = await fetch('https://api.dropboxapi.com/2/files/list_folder', {
+    method:  'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ path: DBX_FOLDER || '', recursive: false }),
+  })
+  const data = await resp.json()
+  if (!resp.ok) throw new Error(data?.error_summary ?? JSON.stringify(data))
+  return data.entries ?? []
+}
+
+async function dbxUpload(filename, buffer) {
+  const token = await getToken()
+  const resp  = await fetch('https://content.dropboxapi.com/2/files/upload', {
+    method:  'POST',
+    headers: {
+      Authorization:    `Bearer ${token}`,
+      'Dropbox-API-Arg': JSON.stringify({
+        path:       dbxPath(filename),
+        mode:       'overwrite',
+        autorename: false,
+        mute:       true,
+      }),
+      'Content-Type': 'application/octet-stream',
+    },
+    body: buffer,
+  })
+  const data = await resp.json()
+  if (!resp.ok) throw new Error(data?.error_summary ?? JSON.stringify(data))
+  return data
+}
+
+async function dbxDownload(filename) {
+  const token = await getToken()
+  const resp  = await fetch('https://content.dropboxapi.com/2/files/download', {
+    method:  'POST',
+    headers: {
+      Authorization:    `Bearer ${token}`,
+      'Dropbox-API-Arg': JSON.stringify({ path: dbxPath(filename) }),
+    },
+  })
+  if (!resp.ok) {
+    const err = await resp.text()
+    throw new Error(`Dropbox download error: ${err}`)
   }
-  try { walk(ANIMALARIO_DIR) } catch {}
-  return latest
+  return Buffer.from(await resp.arrayBuffer())
+}
+
+async function dbxDelete(filename) {
+  const token = await getToken()
+  const resp  = await fetch('https://api.dropboxapi.com/2/files/delete_v2', {
+    method:  'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ path: dbxPath(filename) }),
+  })
+  const data = await resp.json()
+  if (!resp.ok) throw new Error(data?.error_summary ?? JSON.stringify(data))
+}
+
+// ── Backup logic ──────────────────────────────────────────────────────────────
+
+function isBackupFile(name) {
+  return /^animalario_backup_[\d_-]+\.zip$/.test(name)
+}
+
+async function listBackups() {
+  const entries = await dbxListFolder()
+  return entries
+    .filter(e => e['.tag'] === 'file' && isBackupFile(e.name))
+    .map(e => ({
+      filename:  e.name,
+      size:      e.size,
+      createdAt: e.client_modified ?? e.server_modified,
+    }))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 }
 
 async function createBackup() {
-  ensureBackupDir()
   if (!existsSync(ANIMALARIO_DIR)) return null
 
   const zip = new JSZip()
-
   function addDir(dir, zipPath) {
     for (const entry of readdirSync(dir)) {
       const full = join(dir, entry)
@@ -75,15 +161,16 @@ async function createBackup() {
     compression: 'DEFLATE',
     compressionOptions: { level: 6 },
   })
-  writeFileSync(join(BACKUP_DIR, filename), buf)
+
+  await dbxUpload(filename, buf)
 
   // Rotate: delete oldest if over MAX_COUNT
-  const all = readdirSync(BACKUP_DIR)
-    .filter(f => /^animalario_backup_[\d_-]+\.zip$/.test(f))
-    .sort()
-  while (all.length > MAX_COUNT) {
-    try { unlinkSync(join(BACKUP_DIR, all.shift())) } catch {}
-  }
+  try {
+    const all = await listBackups()
+    for (const old of all.slice(MAX_COUNT)) {
+      await dbxDelete(old.filename).catch(() => {})
+    }
+  } catch {}
 
   return { filename, size: buf.length, createdAt: now.toISOString() }
 }
@@ -92,42 +179,70 @@ async function createBackup() {
 
 let lastBackupTime = 0
 
-export function initAutoBackup() {
-  // Initialise from most recent existing backup
-  const existing = listBackups()
-  if (existing.length > 0) {
-    lastBackupTime = new Date(existing[0].createdAt).getTime()
+function getLastModifiedMs() {
+  if (!existsSync(ANIMALARIO_DIR)) return 0
+  let latest = 0
+  function walk(dir) {
+    try {
+      for (const entry of readdirSync(dir)) {
+        const full = join(dir, entry)
+        const stat = statSync(full)
+        if (stat.isDirectory()) walk(full)
+        else if (stat.mtimeMs > latest) latest = stat.mtimeMs
+      }
+    } catch {}
   }
+  walk(ANIMALARIO_DIR)
+  return latest
+}
+
+export function initAutoBackup() {
+  if (!dropboxConfigured()) {
+    console.warn('[Backup] Dropbox no configurado (faltan DROPBOX_REFRESH_TOKEN, DROPBOX_APP_KEY o DROPBOX_APP_SECRET) — auto-backup desactivado.')
+    return
+  }
+
+  // Seed lastBackupTime from most recent existing backup
+  listBackups()
+    .then(all => { if (all.length > 0) lastBackupTime = new Date(all[0].createdAt).getTime() })
+    .catch(() => {})
 
   const intervalMs = INTERVAL_HOURS * 60 * 60 * 1000
 
   setInterval(async () => {
     try {
-      const lastMod = getLastModifiedMs()
-      if (lastMod > lastBackupTime) {
+      if (getLastModifiedMs() > lastBackupTime) {
         const result = await createBackup()
         if (result) {
           lastBackupTime = Date.now()
-          console.log(`[Backup] ${result.filename} · ${Math.round(result.size / 1024)} KB`)
+          console.log(`[Backup] ${result.filename} · ${Math.round(result.size / 1024)} KB → Dropbox:${DBX_FOLDER || '/'}`)
         }
       }
     } catch (err) {
-      console.error('[Backup] Error en auto-backup:', err)
+      console.error('[Backup] Error en auto-backup:', err.message)
     }
   }, intervalMs)
 
-  console.log(`[Backup] Auto-backup cada ${INTERVAL_HOURS}h → ${BACKUP_DIR} (máx. ${MAX_COUNT})`)
+  console.log(`[Backup] Auto-backup cada ${INTERVAL_HOURS}h → Dropbox:${DBX_FOLDER || '/'} (máx. ${MAX_COUNT})`)
 }
 
 // ── Router ────────────────────────────────────────────────────────────────────
 
 const router = Router()
 
-router.get('/backup/list', (_req, res) => {
+function requireDropbox(res) {
+  if (dropboxConfigured()) return false
+  res.status(503).json({ error: 'Dropbox no configurado. Revisa las variables DROPBOX_REFRESH_TOKEN, DROPBOX_APP_KEY y DROPBOX_APP_SECRET.' })
+  return true
+}
+
+router.get('/backup/list', async (_req, res) => {
+  if (requireDropbox(res)) return
   try {
+    const backups = await listBackups()
     res.json({
-      backups:       listBackups(),
-      backupDir:     BACKUP_DIR,
+      backups,
+      dropboxFolder: DBX_FOLDER || '/',
       intervalHours: INTERVAL_HOURS,
       maxCount:      MAX_COUNT,
     })
@@ -137,6 +252,7 @@ router.get('/backup/list', (_req, res) => {
 })
 
 router.post('/backup/create', async (_req, res) => {
+  if (requireDropbox(res)) return
   try {
     const result = await createBackup()
     if (!result) return res.status(400).json({ error: 'No hay datos de animalario para respaldar.' })
@@ -148,26 +264,27 @@ router.post('/backup/create', async (_req, res) => {
   }
 })
 
-router.get('/backup/download/:filename', (req, res) => {
+router.get('/backup/download/:filename', async (req, res) => {
+  if (requireDropbox(res)) return
   const { filename } = req.params
-  if (!/^animalario_backup_[\d_-]+\.zip$/.test(filename)) {
-    return res.status(400).json({ error: 'Nombre de archivo no válido.' })
+  if (!isBackupFile(filename)) return res.status(400).json({ error: 'Nombre de archivo no válido.' })
+  try {
+    const buf = await dbxDownload(filename)
+    res.setHeader('Content-Type', 'application/zip')
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+    res.send(buf)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
   }
-  const filepath = join(BACKUP_DIR, filename)
-  if (!existsSync(filepath)) return res.status(404).json({ error: 'Backup no encontrado.' })
-  res.download(filepath, filename)
 })
 
 router.post('/backup/restore/:filename', async (req, res) => {
+  if (requireDropbox(res)) return
   const { filename } = req.params
-  if (!/^animalario_backup_[\d_-]+\.zip$/.test(filename)) {
-    return res.status(400).json({ error: 'Nombre de archivo no válido.' })
-  }
-  const filepath = join(BACKUP_DIR, filename)
-  if (!existsSync(filepath)) return res.status(404).json({ error: 'Backup no encontrado.' })
-
+  if (!isBackupFile(filename)) return res.status(400).json({ error: 'Nombre de archivo no válido.' })
   try {
-    const zip = await new JSZip().loadAsync(readFileSync(filepath))
+    const buf = await dbxDownload(filename)
+    const zip = await new JSZip().loadAsync(buf)
     for (const [zipPath, file] of Object.entries(zip.files)) {
       if (file.dir) continue
       const destPath = join(ANIMALARIO_DIR, zipPath)
@@ -181,15 +298,16 @@ router.post('/backup/restore/:filename', async (req, res) => {
   }
 })
 
-router.delete('/backup/:filename', (req, res) => {
+router.delete('/backup/:filename', async (req, res) => {
+  if (requireDropbox(res)) return
   const { filename } = req.params
-  if (!/^animalario_backup_[\d_-]+\.zip$/.test(filename)) {
-    return res.status(400).json({ error: 'Nombre de archivo no válido.' })
+  if (!isBackupFile(filename)) return res.status(400).json({ error: 'Nombre de archivo no válido.' })
+  try {
+    await dbxDelete(filename)
+    res.json({ ok: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
   }
-  const filepath = join(BACKUP_DIR, filename)
-  if (!existsSync(filepath)) return res.status(404).json({ error: 'Backup no encontrado.' })
-  unlinkSync(filepath)
-  res.json({ ok: true })
 })
 
 export default router
