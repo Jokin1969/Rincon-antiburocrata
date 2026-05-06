@@ -511,8 +511,14 @@ export default function SeccionAForm() {
           </div>
           <div className="form-group">
             <label>Autoridad Competente</label>
-            <input type="text" value={form.responsable.autoridad_competente}
-              onChange={e => update('responsable.autoridad_competente', e.target.value)} />
+            <QuickFillInput
+              value={form.responsable.autoridad_competente}
+              onChange={v => update('responsable.autoridad_competente', v)}
+              presets={[
+                'Convalidado por el Ministerio de Agricultura, Pesca y Alimentación (RD 1201/2005)',
+                'Capacidad reconocida por la Dirección General de Medio Ambiente, Vivienda y Agricultura de la Comunidad de Madrid',
+              ]}
+            />
           </div>
           <div className="form-group">
             <label>Fecha de acreditación</label>
