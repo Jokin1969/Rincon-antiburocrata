@@ -42,6 +42,14 @@ const MODULES = [
     href: '/aduanas',
     status: 'ready',
   },
+  {
+    id: 'animalario',
+    name: 'Animalario',
+    description: 'Gestión de proyectos de experimentación animal: secciones A–D, procedimientos, cría y modificaciones.',
+    icon: '🐭',
+    href: '/animalario',
+    status: 'ready',
+  },
 ]
 
 export default function Home() {

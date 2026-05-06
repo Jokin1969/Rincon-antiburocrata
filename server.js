@@ -1,4 +1,5 @@
 import express from 'express'
+import animalarioRouter from './server/routes/animalario.js'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'fs'
@@ -672,6 +673,9 @@ app.delete('/api/store/:col/:id', (req, res) => {
   writeData(`${col}.json`, list.filter(r => r.id !== id))
   res.json({ ok: true })
 })
+
+// ── Animalario ────────────────────────────────────────────────────────────────
+app.use('/api/animalario', animalarioRouter)
 
 // ── SPA fallback ─────────────────────────────────────────────────────────────
 app.get('*', (_req, res) => {

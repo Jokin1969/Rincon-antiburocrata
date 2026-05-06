@@ -10,6 +10,15 @@ import AdaptarCarta from './pages/adaptarcarta/AdaptarCarta'
 import GestorLogos from './pages/logos/GestorLogos'
 import ContratoMenorPage from './pages/contratomenos/ContratoMenorPage'
 import CertificadoExclusividad from './pages/contratomenor/CertificadoExclusividad'
+import AnimalarioHub from './pages/animalario/AnimalarioHub'
+import ProyectosList from './pages/animalario/ProyectosList'
+import ProyectoHub from './pages/animalario/ProyectoHub'
+import SeccionAForm from './pages/animalario/seccionA/SeccionAForm'
+import ProcedimientosHub from './pages/animalario/seccionB/ProcedimientosHub'
+import SeccionBForm from './pages/animalario/seccionB/SeccionBForm'
+import SeccionCForm from './pages/animalario/seccionC/SeccionCForm'
+import SeccionDForm from './pages/animalario/seccionD/SeccionDForm'
+import ModificacionForm from './pages/animalario/modificacion/ModificacionForm'
 import NotFound from './pages/NotFound'
 
 export default function App() {
@@ -26,6 +35,22 @@ export default function App() {
         <Route path="/aduanas/factura-proforma" element={<FacturaProforma />} />
         <Route path="/contrato-menor" element={<ContratoMenorPage />} />
         <Route path="/contrato-menor/certificado-exclusividad" element={<CertificadoExclusividad />} />
+
+        {/* Animalario */}
+        <Route path="/animalario" element={<AnimalarioHub />} />
+        <Route path="/animalario/proyectos" element={<ProyectosList />} />
+        <Route path="/animalario/proyecto/nuevo" element={<SeccionAForm />} />
+        <Route path="/animalario/proyecto/:proyectoId" element={<ProyectoHub />} />
+        <Route path="/animalario/proyecto/:proyectoId/editar" element={<SeccionAForm />} />
+        <Route path="/animalario/proyecto/:proyectoId/procedimientos" element={<ProcedimientosHub />} />
+        <Route path="/animalario/proyecto/:proyectoId/procedimiento/nuevo" element={<SeccionBForm />} />
+        <Route path="/animalario/proyecto/:proyectoId/procedimiento/:bId" element={<SeccionBForm />} />
+        <Route path="/animalario/proyecto/:proyectoId/cria/nueva" element={<SeccionCForm />} />
+        <Route path="/animalario/proyecto/:proyectoId/cria/:cId" element={<SeccionCForm />} />
+        <Route path="/animalario/proyecto/:proyectoId/productos" element={<SeccionDForm />} />
+        <Route path="/animalario/proyecto/:proyectoId/modificacion/nueva" element={<ModificacionForm />} />
+        <Route path="/animalario/proyecto/:proyectoId/modificacion/:mId" element={<ModificacionForm />} />
+
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
