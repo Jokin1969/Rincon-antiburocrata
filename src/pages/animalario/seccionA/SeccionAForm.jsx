@@ -31,7 +31,7 @@ const EMPTY_FORM = {
   referencia_cbba: '',
   responsable: {
     nif_pasaporte:        '16287336R',
-    nombre_apellidos:     'Castilla, Joaquín',
+    nombre_apellidos:     'Joaquín Castilla',
     telefono:             '+34 956 572 525',
     email:                'jcastilla@cicbiogune.es',
     funcion_ecc566:       'D',
@@ -101,10 +101,11 @@ function CollapsibleBlock({ title, children, defaultOpen = true }) {
   )
 }
 
-// Input with quick-fill preset options (▾ dropdown button)
+// Input with quick-fill preset options (▾ dropdown button, flips upward near bottom)
 function QuickFillInput({ value, onChange, presets = [], type = 'text', placeholder, disabled }) {
-  const [show, setShow] = useState(false)
-  const wrapRef         = useRef(null)
+  const [show,   setShow]   = useState(false)
+  const [openUp, setOpenUp] = useState(false)
+  const wrapRef             = useRef(null)
 
   useEffect(() => {
     const onOut = e => {
@@ -113,6 +114,14 @@ function QuickFillInput({ value, onChange, presets = [], type = 'text', placehol
     document.addEventListener('mousedown', onOut)
     return () => document.removeEventListener('mousedown', onOut)
   }, [])
+
+  function toggleDropdown() {
+    if (!show && wrapRef.current) {
+      const rect = wrapRef.current.getBoundingClientRect()
+      setOpenUp(window.innerHeight - rect.bottom < 220)
+    }
+    setShow(o => !o)
+  }
 
   return (
     <div ref={wrapRef} style={{ position: 'relative', display: 'flex', gap: '0.3rem' }}>
@@ -127,7 +136,7 @@ function QuickFillInput({ value, onChange, presets = [], type = 'text', placehol
       {presets.length > 0 && (
         <button
           type="button"
-          onClick={() => setShow(o => !o)}
+          onClick={toggleDropdown}
           title="Opciones rápidas"
           style={{
             padding: '0 0.55rem', fontSize: '0.78rem', lineHeight: 1,
@@ -139,7 +148,8 @@ function QuickFillInput({ value, onChange, presets = [], type = 'text', placehol
       )}
       {show && (
         <ul style={{
-          position: 'absolute', right: 0, top: 'calc(100% + 2px)', zIndex: 60,
+          position: 'absolute', right: 0, zIndex: 60,
+          ...(openUp ? { bottom: 'calc(100% + 2px)' } : { top: 'calc(100% + 2px)' }),
           background: 'var(--surface)', border: '1px solid var(--border)',
           borderRadius: 'var(--radius-sm)', boxShadow: '0 4px 14px rgba(0,0,0,0.12)',
           listStyle: 'none', margin: 0, padding: '0.2rem 0', minWidth: 220,
@@ -477,8 +487,8 @@ export default function SeccionAForm() {
             <QuickFillInput
               value={form.responsable.nombre_apellidos}
               onChange={v => update('responsable.nombre_apellidos', v)}
-              presets={['Castilla, Joaquín', 'Moreno, Jorge']}
-              placeholder="Apellidos, Nombre"
+              presets={['Joaquín Castilla', 'Jorge Moreno']}
+              placeholder="Nombre Apellidos"
             />
             {errors.responsable_nombre && <span className={styles.error}>{errors.responsable_nombre}</span>}
           </div>

@@ -419,14 +419,12 @@ async function genSeccionA(proyectoId) {
         dbc([par([txBW('Título del proyecto:')])],           { w: w(35) }),
         tc([par(a.titulo ?? proyecto.titulo ?? '')],         { w: w(65) }),
       ),
-      tr(
-        dbc([par([txBW('Registro de referencia (CBBA):')])], { w: w(35) }),
-        tc([par(
-          (a.referencia_cbba ?? proyecto.referencia_cbba)
-            ? `P-CBG-CBBA-${(a.referencia_cbba ?? proyecto.referencia_cbba ?? '').replace(/^P-CBG-CBBA-/, '')}`
-            : 'P-CBG-CBBA-'
-        )], { w: w(65) }),
-      ),
+      tr(tc([par([
+        txB('Registro de referencia (CBBA): '),
+        tx((a.referencia_cbba ?? proyecto.referencia_cbba)
+          ? `P-CBG-CBBA-${(a.referencia_cbba ?? proyecto.referencia_cbba ?? '').replace(/^P-CBG-CBBA-/, '')}`
+          : 'P-CBG-CBBA-'),
+      ])], { w: w(100), span: 2 })),
     ]),
     emptyLine(),
 
