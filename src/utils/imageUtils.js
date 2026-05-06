@@ -76,17 +76,21 @@ export async function downloadLogo(logo, opts = {}) {
     background = 'transparent',
   } = opts
 
-  const blob = new Blob([logo.data], { type: logo.mimeType })
+  // Support both legacy logo.data (ArrayBuffer) and new logo.imageUrl (URL string)
+  const srcUrl  = logo.imageUrl ?? URL.createObjectURL(new Blob([logo.data], { type: logo.mimeType }))
+  const ownedUrl = !logo.imageUrl
 
   // SVG passthrough (no canvas processing needed unless resize/mono requested)
   if (logo.mimeType === 'image/svg+xml' && format === 'svg' && !mono && !width && !height) {
+    const r = await fetch(srcUrl)
+    const blob = await r.blob()
+    if (ownedUrl) URL.revokeObjectURL(srcUrl)
     triggerDownload(blob, `${slug(logo.name)}.svg`)
     return
   }
 
-  const url = URL.createObjectURL(blob)
-  const img = await loadImage(url)
-  URL.revokeObjectURL(url)
+  const img = await loadImage(srcUrl)
+  if (ownedUrl) URL.revokeObjectURL(srcUrl)
 
   const origW = img.naturalWidth || logo.width || 256
   const origH = img.naturalHeight || logo.height || 256

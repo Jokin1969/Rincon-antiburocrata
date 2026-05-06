@@ -32,9 +32,6 @@ const CATEGORIES = [
 
 const ACCEPTED_MIME = Object.keys(MIME_EXT)
 
-function blobUrl(data, mime) {
-  return URL.createObjectURL(new Blob([data], { type: mime }))
-}
 
 function bumpVersion(v) {
   const parts = String(v || '1').split('.')
@@ -49,7 +46,7 @@ const PROVIDER_META = {
   gemini: { label: 'Gemini', endpoint: '/api/logos/gemini-enhance' },
 }
 
-function EnhancePanel({ logo, provider, onAccept, onClose }) {
+function EnhancePanel({ logo, provider, onAccept, onClose, fetchLogoData }) {
   const { label, endpoint } = PROVIDER_META[provider]
   const [phase, setPhase] = useState('loading') // loading | result | refine | error
   const [svgResult, setSvgResult] = useState(null)
@@ -61,7 +58,8 @@ function EnhancePanel({ logo, provider, onAccept, onClose }) {
     setPhase('loading')
     setError(null)
     try {
-      const base64 = arrayBufferToBase64(logo.data)
+      const data   = await fetchLogoData(logo.id)
+      const base64 = arrayBufferToBase64(data)
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -139,7 +137,7 @@ function EnhancePanel({ logo, provider, onAccept, onClose }) {
                 <div className={styles.openaiCompareCol}>
                   <span className={styles.openaiCompareLabel}>Original</span>
                   <div className={styles.openaiPreview}>
-                    <img src={blobUrl(logo.data, logo.mimeType)} alt="original" />
+                    <img src={logo.imageUrl} alt="original" />
                   </div>
                 </div>
                 <div className={styles.openaiCompareCol}>
@@ -388,7 +386,7 @@ function UploadPanel({ onSave, onClose, existingNames, initialFile }) {
 
 // ── Detail / download panel ───────────────────────────────────────────────────
 
-function DetailPanel({ logo, onClose, onSave, onSaveNew, onDelete }) {
+function DetailPanel({ logo, onClose, onSave, onSaveNew, onDelete, fetchLogoData }) {
   const [name, setName] = useState(logo.name)
   const [version, setVersion] = useState(logo.version)
   const [cats, setCats] = useState(logo.categories || [])
@@ -412,19 +410,16 @@ function DetailPanel({ logo, onClose, onSave, onSaveNew, onDelete }) {
   const isSvg = logo.mimeType === 'image/svg+xml'
   const ar = logo.width && logo.height ? logo.width / logo.height : null
 
-  // Load original image once; initial preview = original blob URL
+  // Load original image once; initial preview = imageUrl
   useEffect(() => {
-    const blob = new Blob([logo.data], { type: logo.mimeType })
-    const url  = URL.createObjectURL(blob)
-    origUrlRef.current = url
-    setPreviewSrc(url)
+    origUrlRef.current = logo.imageUrl
+    setPreviewSrc(logo.imageUrl)
 
     const img = new Image()
     img.onload = () => { imgRef.current = img }
-    img.src = url
+    img.src = logo.imageUrl
 
     return () => {
-      URL.revokeObjectURL(url)
       origUrlRef.current = null
       if (canvasUrlRef.current) {
         URL.revokeObjectURL(canvasUrlRef.current)
@@ -728,6 +723,7 @@ function DetailPanel({ logo, onClose, onSave, onSaveNew, onDelete }) {
       <EnhancePanel
         logo={logo}
         provider={aiProvider}
+        fetchLogoData={fetchLogoData}
         onClose={() => setAiProvider(null)}
         onAccept={onSaveNew}
       />
@@ -739,9 +735,6 @@ function DetailPanel({ logo, onClose, onSave, onSaveNew, onDelete }) {
 // ── Logo card ─────────────────────────────────────────────────────────────────
 
 function LogoCard({ logo, onClick, onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd, isDragOver }) {
-  const url = useRef(blobUrl(logo.data, logo.mimeType))
-  useEffect(() => () => URL.revokeObjectURL(url.current), [])
-
   const ext = MIME_EXT[logo.mimeType]?.toUpperCase() ?? '?'
   const dims = logo.width ? `${logo.width}×${logo.height}` : null
 
@@ -757,7 +750,7 @@ function LogoCard({ logo, onClick, onDragStart, onDragOver, onDragLeave, onDrop,
       onDragEnd={onDragEnd}
     >
       <div className={styles.thumb}>
-        <img src={url.current} alt={logo.name} />
+        <img src={logo.imageUrl} alt={logo.name} loading="lazy" />
         <span className={styles.versionBadge}>v{logo.version}</span>
       </div>
       <div className={styles.cardBody}>
@@ -786,7 +779,7 @@ function LogoCard({ logo, onClick, onDragStart, onDragOver, onDragLeave, onDrop,
 const PAGE_SIZE_OPTIONS = [12, 24, 48]
 
 export default function GestorLogos() {
-  const { logos, loading, saveLogo, deleteLogo, saveOrder } = useLogoStore()
+  const { logos, loading, saveLogo, deleteLogo, saveOrder, fetchLogoData } = useLogoStore()
   const [search, setSearch] = useState('')
   const [catFilter, setCatFilter] = useState(null)
   const [showUpload, setShowUpload] = useState(false)
@@ -1000,6 +993,7 @@ export default function GestorLogos() {
       {selected && (
         <DetailPanel
           logo={selected}
+          fetchLogoData={fetchLogoData}
           onClose={() => setSelected(null)}
           onSave={async entry => { await saveLogo(entry); setSelected(null) }}
           onSaveNew={saveLogo}

@@ -605,14 +605,30 @@ const VALID_COLS = new Set(['contrato', 'proforma', 'genscript-eus', 'genscript-
 
 // Logos (binary stored as base64 strings inside JSON)
 app.get('/api/store/logos', (_req, res) => {
-  res.json(readData('logos.json', []))
+  const list = readData('logos.json', [])
+  // Strip binary payload — client loads each image individually via /:id/image
+  res.json(list.map(({ data, ...meta }) => ({ ...meta, imageUrl: `/api/store/logos/${meta.id}/image` })))
+})
+app.get('/api/store/logos/:id/image', (req, res) => {
+  const list = readData('logos.json', [])
+  const logo = list.find(l => l.id === req.params.id)
+  if (!logo?.data) return res.status(404).end()
+  const buf = Buffer.from(logo.data, 'base64')
+  res.setHeader('Content-Type', logo.mimeType)
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+  res.send(buf)
 })
 app.post('/api/store/logos', (req, res) => {
-  const entry = req.body
+  const { imageUrl, ...entry } = req.body
   if (!entry?.id) return res.status(400).json({ error: 'id requerido' })
   const list = readData('logos.json', [])
   const idx = list.findIndex(l => l.id === entry.id)
-  if (idx >= 0) list[idx] = entry; else list.push(entry)
+  if (idx >= 0) {
+    // Preserve existing binary when only metadata changes
+    list[idx] = entry.data ? entry : { ...entry, data: list[idx].data }
+  } else {
+    list.push(entry)
+  }
   writeData('logos.json', list)
   res.json({ ok: true })
 })
