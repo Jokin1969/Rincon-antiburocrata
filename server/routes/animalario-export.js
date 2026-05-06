@@ -222,181 +222,353 @@ function notesPar(text) {
 // SECCIÓN A
 // ═══════════════════════════════════════════════════════════════════════════════
 
+const FUNCION_LABELS = {
+  A: 'A. Cuidado de los animales',
+  B: 'B. Eutanasia',
+  C: 'C. Realización de procedimientos',
+  D: 'D. Diseño de proyectos y procedimientos',
+  E: 'E. Responsabilidad supervisión in situ',
+  F: 'F. Veterinario Designado',
+}
+
+const FINALIDAD_LABELS_A = {
+  a: 'a. Investigación básica',
+  b: 'b. Investigación traslacional',
+  c: 'c. Utilización reglamentaria y producción rutinaria',
+  d: 'd. Protección del medio ambiente natural en interés de la salud o bienestar de los seres humanos o de los animales',
+  e: 'e. Preservación de especies',
+  f: 'f. Enseñanza superior o formación para la adquisición, mantenimiento o mejora',
+  g: 'g. Investigaciones forenses',
+}
+
+const SEV_LABELS = { none: 'Sin clasificar', low: 'Leve', medium: 'Moderada', high: 'Severa' }
+
+// Single-cell full-width grey header row (span = number of cols in that table)
+function secRow(title, span = 1) {
+  return tr(gc([par([txB(title)])], { w: w(100), span }))
+}
+// Single-cell full-width content row
+function fullTc(children, span = 1) {
+  if (typeof children === 'string') children = [par(children)]
+  return tr(tc(children, { w: w(100), span }))
+}
+
 async function genSeccionA(proyectoId) {
   const proyecto = readProyecto(proyectoId)
   if (!proyecto) throw new Error('Proyecto no encontrado')
 
-  const a   = proyecto.seccionA ?? {}
-  const res = a.responsable ?? {}
+  const a     = proyecto.seccionA ?? {}
+  const res   = a.responsable ?? {}
   const procs = (proyecto.procedimientos ?? []).map(id => readProc(id)).filter(Boolean)
+  const fin   = a.financiacion ?? {}
+  const lr    = a.lugar_realizacion ?? {}
+  const ca    = a.condiciones_alojamiento ?? {}
 
-  const FINALIDAD_LABELS = {
-    a: 'Investigación básica', b: 'Investigación traslacional',
-    c: 'Utilización reglamentaria y producción rutinaria', d: 'Protección del medio ambiente natural',
-    e: 'Preservación de especies', f: 'Enseñanza superior o formación', g: 'Investigaciones forenses',
+  // ── Lugar de realización ──────────────────────────────────────────────────
+  function lugarRows() {
+    // New model: { animalario_cicbiogune, otro, descripcion }
+    if ('animalario_cicbiogune' in lr) {
+      const rows = [
+        par([tx(chk(lr.animalario_cicbiogune)), tx(' Animalario CIC bioGUNE')]),
+      ]
+      if (lr.otro && lr.descripcion) {
+        rows.push(par([tx('☑ Otro. Indicar: '), tx(lr.descripcion)]))
+      } else {
+        rows.push(par([tx(chk(lr.otro)), tx(' Otro. Indicar: '), tx(lr.otro ? (lr.descripcion ?? '') : '')]))
+      }
+      return rows
+    }
+    // Old model fallback
+    const tipo = lr.tipo ?? ''
+    return [
+      par([tx(chk(tipo === 'animalario_cicbiogune')), tx(' Animalario CIC bioGUNE')]),
+      par([tx(chk(tipo === 'otro')), tx(' Otro. Indicar: '), tx(tipo === 'otro' ? (lr.descripcion ?? '') : '')]),
+    ]
+  }
+
+  // ── Condiciones alojamiento ───────────────────────────────────────────────
+  function condRows() {
+    if ('estandar' in ca) {
+      const rows = [
+        par([tx(chk(ca.estandar)), tx(' Según las condiciones estándar del CIC bioGUNE')]),
+        par([tx(chk(ca.variaciones)), tx(' Con las siguientes variaciones:')]),
+      ]
+      if (ca.variaciones && ca.descripcion)
+        rows.push(par([tx('     '), tx(ca.descripcion)]))
+      rows.push(par([tx('☐ Otras condiciones. Describir:')]))
+      return rows
+    }
+    const tipo = ca.tipo ?? ''
+    return [
+      par([tx(chk(tipo === 'estandar')), tx(' Según las condiciones estándar del CIC bioGUNE')]),
+      par([tx(chk(tipo === 'variaciones' || tipo === 'especiales')), tx(' Con las siguientes variaciones:')]),
+      ...(tipo !== 'estandar' && ca.descripcion ? [par([tx('     '), tx(ca.descripcion)])] : []),
+      par([tx('☐ Otras condiciones. Describir:')]),
+    ]
   }
 
   const children = [
-    makeHeader(), emptyLine(),
-    h1('SOLICITUD DE EVALUACIÓN ÉTICA DE UN PROYECTO\nDE INVESTIGACIÓN CON ANIMALES DE INVESTIGACIÓN'),
-    emptyLine(),
-    tbl([
-      kvRow('Título del proyecto', a.titulo ?? proyecto.titulo),
-      kvRow('Registro CBBA', a.referencia_cbba ?? proyecto.referencia_cbba),
-    ]),
-    emptyLine(),
-    makeEstablishment(),
+    // ── Logos ──────────────────────────────────────────────────────────────
+    makeHeader(),
     emptyLine(),
 
-    h2('A.1 — Responsable del proyecto'),
-    tbl([
-      kvRow('NIF / Pasaporte',       res.nif_pasaporte),
-      kvRow('Nombre y apellidos',    res.nombre_apellidos),
-      kvRow('Teléfono',              res.telefono),
-      kvRow('Correo electrónico',    res.email),
-      kvRow('Función ECC566',        res.funcion_ecc566),
-      kvRow('Autoridad competente',  res.autoridad_competente),
-      kvRow('Fecha acreditación',    fmtDate(res.fecha_acreditacion)),
-    ]),
-    emptyLine(),
+    // ── Título principal ────────────────────────────────────────────────────
+    new Paragraph({
+      children: [new TextRun({
+        text: 'SOLICITUD DE EVALUACIÓN ÉTICA DE UN PROYECTO DE INVESTIGACIÓN CON ANIMALES DE INVESTIGACIÓN',
+        font: FONT, size: SZ, bold: true,
+      })],
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 100, after: 100 },
+    }),
 
-    h2('A.2 — Participantes'),
-    ...(!(a.participantes ?? []).length
-      ? [par('— Sin participantes registrados —')]
-      : [tbl([
-          tr(
-            gc([par([txB('Nombre y apellidos')])], { w: w(35) }),
-            gc([par([txB('NIF / Pasaporte')])],   { w: w(20) }),
-            gc([par([txB('Institución')])],        { w: w(25) }),
-            gc([par([txB('Función ECC566')])],     { w: w(20) }),
-          ),
-          ...a.participantes.map(pt => tr(
-            tc([par(pt.nombre_apellidos ?? '')], { w: w(35) }),
-            tc([par(pt.nif_pasaporte ?? '')],    { w: w(20) }),
-            tc([par(pt.institucion ?? '')],       { w: w(25) }),
-            tc([par(pt.funcion_ecc566 ?? '')],    { w: w(20) }),
-          )),
-        ])]
-    ),
-    emptyLine(),
-
-    h2('A.3 — Duración, financiación y localización'),
+    // ── Título proyecto + CBBA ──────────────────────────────────────────────
     tbl([
-      kvRow('Fecha inicio',           fmtDate(a.duracion?.fecha_inicio)),
-      kvRow('Fecha fin',              fmtDate(a.duracion?.fecha_fin)),
-      kvRow('Entidad financiadora',   a.financiacion?.entidad_programa),
-      kvRow('Estado financiación',    a.financiacion?.estado),
-      kvRow('Nº proyecto',            a.financiacion?.numero_proyecto),
-      kvRow('IP es responsable',      yn(a.financiacion?.ip_es_responsable)),
-      ...(a.financiacion?.ip_es_responsable === false
-        ? [kvRow('IP / otro responsable', a.financiacion?.ip_responsable_otro)] : []),
-      kvRow('Lugar de realización',
-        // New checkbox model: { animalario_cicbiogune, otro, descripcion }
-        // Old model fallback: { tipo, descripcion }
-        'animalario_cicbiogune' in (a.lugar_realizacion ?? {})
-          ? [
-              a.lugar_realizacion.animalario_cicbiogune ? '☑ Animalario CIC bioGUNE' : null,
-              a.lugar_realizacion.otro
-                ? `☑ Otro: ${a.lugar_realizacion.descripcion ?? ''}`
-                : null,
-            ].filter(Boolean).join('\n') || '—'
-          : (a.lugar_realizacion?.tipo === 'animalario_cicbiogune'
-              ? '☑ Animalario CIC bioGUNE'
-              : (a.lugar_realizacion?.descripcion ?? a.lugar_realizacion?.tipo ?? '—'))),
+      tr(
+        gc([par([txB('Título del proyecto:')])], { w: w(35) }),
+        tc([par(a.titulo ?? proyecto.titulo ?? '')], { w: w(65) }),
+      ),
+      tr(
+        gc([par([txB('Registro de referencia (CBBA):')])], { w: w(35) }),
+        tc([par(
+          (a.referencia_cbba ?? proyecto.referencia_cbba)
+            ? `P-CBG-CBBA-${(a.referencia_cbba ?? proyecto.referencia_cbba ?? '').replace(/^P-CBG-CBBA-/, '')}`
+            : 'P-CBG-CBBA-'
+        )], { w: w(65) }),
+      ),
     ]),
     emptyLine(),
 
-    h2('A.4 — Resumen y objetivos'),
+    // ── Establecimiento usuario ─────────────────────────────────────────────
     tbl([
-      kvRow('Tipo de proyecto',
-        a.tipo_proyecto === 'I' ? 'I. Proyecto nuevo' : 'II. Repetición de proyecto'),
-      kvRow('Finalidades',
-        (a.finalidad ?? []).length
-          ? a.finalidad.map(f => `${chk(true)} ${f}. ${FINALIDAD_LABELS[f] ?? f}`).join('\n')
-          : '—'),
-      kvRow('Objetivo principal', a.objetivos?.objetivo_principal),
-      kvRow('Resumen',            a.objetivos?.resumen),
-      kvRow('Daño / beneficio',   a.objetivos?.dano_beneficio),
+      tr(tc([
+        par([txB('Identificación del establecimiento usuario (EU)')]),
+        par([new TextRun({ text: '(Indicar dónde se va a llevar a cabo la experimentación)', font: FONT, size: SZ_SM, italics: true })]),
+      ], { w: w(100) })),
+      tr(tc([par([
+        txB('Nombre: '), tx('CIC bioGUNE'),
+        tx('     '),
+        txB('Número de registro (REGA): '), tx('ES489010006106'),
+        tx('     '),
+        txB('Fecha de registro: '), tx('4/3/2011'),
+      ])], { w: w(100) })),
+      tr(tc([par([
+        txB('Nombre y apellidos del responsable del EU: '), tx('Juan Anguita Castillo'),
+        tx('     '),
+        txB('E-mail: '), tx('janguita@cicbiogune.es'),
+      ])], { w: w(100) })),
+      tr(tc([par([
+        txB('Nombre y apellidos del responsable de bienestar animal: '), tx('Juan Rodríguez Cuesta'),
+        tx('     '),
+        txB('E-mail: '), tx('juanrodriguezcuesta@gmail.com'),
+      ])], { w: w(100) })),
+      tr(tc([par([
+        txB('Nombre y apellidos del veterinario designado: '), tx('Juan Rodríguez Cuesta'),
+        tx('     '),
+        txB('E-mail: '), tx('juanrodriguezcuesta@gmail.com'),
+      ])], { w: w(100) })),
     ]),
     emptyLine(),
 
-    h2('A.5 — Las 3Rs'),
+    // ── INFORMACIÓN GENERAL ─────────────────────────────────────────────────
+    new Paragraph({
+      children: [new TextRun({ text: 'INFORMACIÓN GENERAL DEL PROYECTO', font: FONT, size: SZ, bold: true })],
+      spacing: { before: 140, after: 80 },
+    }),
+
+    // ── A.1 Responsable ─────────────────────────────────────────────────────
+    new Paragraph({ children: [txB('A.1 RESPONSABLE DEL PROYECTO')], spacing: { before: 80, after: 40 } }),
     tbl([
-      kvRow('Reemplazo',    a.tres_rs?.reemplazo),
-      kvRow('Reducción',    a.tres_rs?.reduccion),
-      kvRow('Refinamiento', a.tres_rs?.refinamiento),
+      tr(
+        gc([par([txB('NIF/ Pasaporte')])],    { w: w(50) }),
+        gc([par([txB('Nombre y apellidos')])], { w: w(50) }),
+      ),
+      tr(
+        tc([par(dash(res.nif_pasaporte))],    { w: w(50) }),
+        tc([par(dash(res.nombre_apellidos))], { w: w(50) }),
+      ),
+      tr(
+        gc([par([txB('Teléfono')])],          { w: w(50) }),
+        gc([par([txB('Correo electrónico')])], { w: w(50) }),
+      ),
+      tr(
+        tc([par(dash(res.telefono))],         { w: w(50) }),
+        tc([par(dash(res.email))],            { w: w(50) }),
+      ),
+      secRow('Función en experimentación animal según ECC/566/2015', 2),
+      fullTc([par(
+        res.funcion_ecc566
+          ? (FUNCION_LABELS[res.funcion_ecc566] ?? res.funcion_ecc566)
+          : '—'
+      )], 2),
+      tr(
+        gc([par([txB('Autoridad Competente')])],                            { w: w(50) }),
+        gc([par([txB('Última fecha de acreditación o mantenimiento')])],    { w: w(50) }),
+      ),
+      tr(
+        tc([par(dash(res.autoridad_competente))],      { w: w(50) }),
+        tc([par(fmtDate(res.fecha_acreditacion))],     { w: w(50) }),
+      ),
     ]),
     emptyLine(),
 
-    h2('A.6 — Resumen de procedimientos'),
-    ...(!procs.length
-      ? [par('— No hay procedimientos vinculados —')]
-      : [tbl([
-          tr(
-            gc([par([txB('Nº')])],         { w: w(6)  }),
-            gc([par([txB('Título')])],      { w: w(32) }),
-            gc([par([txB('Especies')])],    { w: w(20) }),
-            gc([par([txB('Nº animales')])], { w: w(14) }),
-            gc([par([txB('Severidad')])],   { w: w(14) }),
-            gc([par([txB('Con riesgo')])],  { w: w(14) }),
-          ),
-          ...procs.map((proc, idx) => tr(
-            tc([par(String(idx + 1))], { w: w(6)  }),
-            tc([par(proc.datos_generales?.titulo_procedimiento ?? '')], { w: w(32) }),
-            tc([par((proc.datos_generales?.especies ?? []).join(', '))], { w: w(20) }),
-            tc([par(String(proc.datos_generales?.num_animales ?? ''))], { w: w(14) }),
-            tc([par(proc.clasificacion_severidad ?? 'none')], { w: w(14) }),
-            tc([par(proc.otras_sustancias?.hay_riesgo ? 'Sí' : 'No')], { w: w(14) }),
-          )),
-        ])]
-    ),
-    emptyLine(),
-
-    ...(a.hay_cria && (a.cepas_cria ?? []).length > 0
-      ? [
-          h2('Cepas / líneas de cría'),
-          tbl([
-            tr(
-              gc([par([txB('Nomenclatura internacional')])], { w: w(50) }),
-              gc([par([txB('Acrónimo')])],                   { w: w(25) }),
-              gc([par([txB('Nº animales')])],                { w: w(25) }),
-            ),
-            ...a.cepas_cria.map(c => tr(
-              tc([par(c.nomenclatura_internacional ?? '')], { w: w(50) }),
-              tc([par(c.acronimo ?? '')],                   { w: w(25) }),
-              tc([par(String(c.num_animales ?? ''))],       { w: w(25) }),
-            )),
-          ]),
-          emptyLine(),
-        ]
-      : []
-    ),
-
-    h2('A.7 — Condiciones de alojamiento'),
+    // ── A.2 Participantes ───────────────────────────────────────────────────
+    new Paragraph({ children: [txB('A.2 CAPACITACIÓN DE LAS PERSONAS QUE PARTICIPAN EN EL PROYECTO')], spacing: { before: 80, after: 40 } }),
     tbl([
-      kvRow('Condiciones',
-        // New checkbox model: { estandar, variaciones, descripcion }
-        // Old model fallback: { tipo, descripcion }
-        'estandar' in (a.condiciones_alojamiento ?? {})
-          ? [
-              a.condiciones_alojamiento.estandar    ? '☑ Según condiciones estándar del CIC bioGUNE' : null,
-              a.condiciones_alojamiento.variaciones ? '☑ Con las siguientes variaciones' : null,
-            ].filter(Boolean).join('\n') || '—'
-          : (a.condiciones_alojamiento?.tipo === 'estandar'
-              ? '☑ Estándar'
-              : a.condiciones_alojamiento?.tipo === 'especiales'
-              ? '☑ Condiciones especiales'
-              : (a.condiciones_alojamiento?.tipo ?? '—'))),
-      ...('estandar' in (a.condiciones_alojamiento ?? {})
-        ? (a.condiciones_alojamiento.variaciones
-            ? [kvRow('Descripción', a.condiciones_alojamiento.descripcion)]
-            : [])
-        : (a.condiciones_alojamiento?.tipo !== 'estandar'
-            ? [kvRow('Descripción', a.condiciones_alojamiento?.descripcion)]
-            : [])),
+      tr(
+        gc([par([txB('Nombre y apellidos')])], { w: w(40) }),
+        gc([par([txB('Función/es')])],          { w: w(35) }),
+        gc([par([txB('NIF/ Pasaporte')])],      { w: w(25) }),
+      ),
+      ...(a.participantes ?? []).map(pt => {
+        const funs = (pt.funciones ?? '').split(',').filter(Boolean)
+          .map(f => FUNCION_LABELS[f.trim()] ?? f.trim()).join(', ')
+        return tr(
+          tc([par(pt.nombre_apellidos ?? '')], { w: w(40) }),
+          tc([par(funs || (pt.funciones ?? ''))],            { w: w(35) }),
+          tc([par(pt.nif_pasaporte ?? '')],    { w: w(25) }),
+        )
+      }),
+      // Blank rows when no participants
+      ...((a.participantes ?? []).length === 0
+        ? Array(3).fill(null).map(() => tr(
+            tc([par('')], { w: w(40) }),
+            tc([par('')], { w: w(35) }),
+            tc([par('')], { w: w(25) }),
+          ))
+        : []),
     ]),
     emptyLine(),
 
+    // ── A.3 Duración, financiación y localización ───────────────────────────
+    new Paragraph({ children: [txB('A.3 DURACIÓN, FINANCIACIÓN Y LOCALIZACIÓN')], spacing: { before: 80, after: 40 } }),
+    tbl([
+      tr(
+        gc([par([txB('Fecha prevista de inicio')])],       { w: w(50) }),
+        gc([par([txB('Fecha prevista de finalización')])], { w: w(50) }),
+      ),
+      tr(
+        tc([par(fmtDate(a.duracion?.fecha_inicio))], { w: w(50) }),
+        tc([par(fmtDate(a.duracion?.fecha_fin))],    { w: w(50) }),
+      ),
+      secRow('Fuente de financiación', 2),
+      fullTc([par([txB('Entidad financiadora y programa: '), tx(dash(fin.entidad_programa))])], 2),
+      fullTc([par([
+        tx(chk(fin.estado === 'solicitada')), tx(' Solicitada     '),
+        tx(chk(fin.estado === 'aprobada')),   tx(' Aprobada. (Número de proyecto: '),
+        tx(dash(fin.numero_proyecto)), tx(')'),
+      ])], 2),
+      secRow('¿Es el IP del proyecto el responsable de la financiación del mismo?', 2),
+      fullTc([par([
+        tx(chk(fin.ip_es_responsable === true)),  tx(' Sí     '),
+        tx(chk(fin.ip_es_responsable === false)), tx(' No. Indicar: '),
+        tx(fin.ip_es_responsable === false ? (fin.ip_responsable_otro ?? '') : ''),
+      ])], 2),
+      secRow('Lugar de realización del proyecto', 2),
+      fullTc(lugarRows(), 2),
+    ]),
+    emptyLine(),
+
+    // ── A.4 Resumen y objetivos ─────────────────────────────────────────────
+    new Paragraph({ children: [txB('A.4 RESUMEN Y OBJETIVOS DEL PROYECTO')], spacing: { before: 80, after: 40 } }),
+    tbl([
+      secRow('Objetivo científico principal', 3),
+      fullTc([par(a.objetivos?.objetivo_principal ?? '')], 3),
+      secRow('Resumen (300 palabras máx.)', 3),
+      fullTc([par(a.objetivos?.resumen ?? '')], 3),
+      secRow('Análisis daño/beneficio justificado (300 palabras máx.)', 3),
+      fullTc([par(a.objetivos?.dano_beneficio ?? '')], 3),
+      secRow('Tipo de proyecto según el Art. 31 RD 53/2013', 3),
+      tr(
+        tc([par([tx(chk(a.tipo_proyecto === 'I')),   tx(' Tipo I')])],   { w: w(33) }),
+        tc([par([tx(chk(a.tipo_proyecto === 'II')),  tx(' Tipo II')])],  { w: w(33) }),
+        tc([par([tx(chk(a.tipo_proyecto === 'III')), tx(' Tipo III')])], { w: w(34) }),
+      ),
+      secRow('Finalidad del proyecto', 3),
+      fullTc(
+        Object.entries(FINALIDAD_LABELS_A).map(([k, lbl]) =>
+          par([tx(chk((a.finalidad ?? []).includes(k))), tx(` ${lbl}`)])
+        ),
+        3
+      ),
+    ]),
+    emptyLine(),
+
+    // ── A.5 Las 3Rs ─────────────────────────────────────────────────────────
+    new Paragraph({ children: [txB('A.5 CUMPLIMIENTO DE LAS 3 Rs:')], spacing: { before: 80, after: 40 } }),
+    tbl([
+      secRow('Reemplazo'),
+      fullTc([par(a.tres_rs?.reemplazo ?? '')]),
+      secRow('Reducción'),
+      fullTc([par(a.tres_rs?.reduccion ?? '')]),
+      secRow('Refinamiento'),
+      fullTc([par(a.tres_rs?.refinamiento ?? '')]),
+    ]),
+    emptyLine(),
+
+    // ── A.6 Resumen de procedimientos ───────────────────────────────────────
+    new Paragraph({ children: [txB('A.6 RESUMEN DE PROCEDIMIENTOS:')], spacing: { before: 80, after: 40 } }),
+    tbl([
+      tr(
+        gc([par([txB('Número')])],            { w: w(8)  }),
+        gc([par([txB('Título')])],            { w: w(34) }),
+        gc([par([txB('Especie animal')])],    { w: w(22) }),
+        gc([par([txB('Número de animales')])],{ w: w(18) }),
+        gc([par([txB('Severidad')])],         { w: w(18) }),
+      ),
+      ...(procs.length > 0
+        ? procs.map((proc, idx) => tr(
+            tc([par(String(idx + 1))],                                           { w: w(8)  }),
+            tc([par(proc.datos_generales?.titulo_procedimiento ?? '')],          { w: w(34) }),
+            tc([par((proc.datos_generales?.especies ?? []).join(', '))],         { w: w(22) }),
+            tc([par(String(proc.datos_generales?.num_animales ?? ''))],          { w: w(18) }),
+            tc([par(SEV_LABELS[proc.clasificacion_severidad] ?? (proc.clasificacion_severidad ?? ''))], { w: w(18) }),
+          ))
+        : [tr(
+            tc([par('')], { w: w(8)  }),
+            tc([par('')], { w: w(34) }),
+            tc([par('')], { w: w(22) }),
+            tc([par('')], { w: w(18) }),
+            tc([par('')], { w: w(18) }),
+          )]
+      ),
+    ]),
+    emptyLine(),
+
+    // Pregunta cría (fuera de la tabla, como en la plantilla)
+    par([
+      txB('¿Contempla un procedimiento de cría de animales? '),
+      tx(chk(!a.hay_cria)), tx(' NO     '),
+      tx(chk(a.hay_cria)),  tx(' SÍ'),
+    ]),
+
+    ...(a.hay_cria ? [
+      par([new TextRun({ text: 'Si ha contestado que sí, necesita rellenar la siguiente tabla e incluir un formulario C para cada línea.', font: FONT, size: SZ, italics: true })]),
+      emptyLine(),
+      tbl([
+        tr(
+          gc([par([txB('Nomenclatura internacional de la cepa/línea a criar')])], { w: w(50) }),
+          gc([par([txB('Acrónimo de la cepa/línea')])],                            { w: w(25) }),
+          gc([par([txB('Número de animales que van a generarse')])],               { w: w(25) }),
+        ),
+        ...(a.cepas_cria ?? []).map(c => tr(
+          tc([par(c.nomenclatura_internacional ?? '')], { w: w(50) }),
+          tc([par(c.acronimo ?? '')],                   { w: w(25) }),
+          tc([par(String(c.num_animales ?? ''))],       { w: w(25) }),
+        )),
+      ]),
+    ] : []),
+    emptyLine(),
+
+    // ── A.7 Condiciones de alojamiento ──────────────────────────────────────
+    new Paragraph({ children: [txB('A.7 CONDICIONES DE ALOJAMIENTO, ZOOTÉCNICAS Y CUIDADO DE ANIMALES:')], spacing: { before: 80, after: 40 } }),
+    tbl([
+      secRow('Marcar con una X'),
+      fullTc(condRows()),
+    ]),
+    emptyLine(),
+
+    // ── Firma ───────────────────────────────────────────────────────────────
     ...makeFirmaBlock(a.firmante || res.nombre_apellidos),
 
     notesPar('1 El responsable del proyecto debe estar acreditado según RD 53/2013 y ECC/566/2015.'),
