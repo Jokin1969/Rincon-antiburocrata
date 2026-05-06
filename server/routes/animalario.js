@@ -7,11 +7,12 @@ import { randomUUID }                                from 'crypto'
 
 const __filename    = fileURLToPath(import.meta.url)
 const __dirname     = dirname(__filename)
-const DATA_DIR      = process.env.DATA_DIR ?? join(__dirname, '..', '..', 'data')
-const PROYECTOS_DIR = join(DATA_DIR, 'animalario', 'proyectos')
-const PROC_DIR      = join(DATA_DIR, 'animalario', 'procedimientos')
-const CRIA_DIR      = join(DATA_DIR, 'animalario', 'crias')
-const REPO_FILE     = join(DATA_DIR, 'animalario', 'repositorio', 'campos_frecuentes.json')
+const DATA_DIR        = process.env.DATA_DIR ?? join(__dirname, '..', '..', 'data')
+const PROYECTOS_DIR   = join(DATA_DIR, 'animalario', 'proyectos')
+const PROC_DIR        = join(DATA_DIR, 'animalario', 'procedimientos')
+const CRIA_DIR        = join(DATA_DIR, 'animalario', 'crias')
+const PRODUCTOS_DIR   = join(DATA_DIR, 'animalario', 'productos')
+const REPO_FILE       = join(DATA_DIR, 'animalario', 'repositorio', 'campos_frecuentes.json')
 
 const router = Router()
 
@@ -427,6 +428,98 @@ router.put('/crias/:id', (req, res) => {
     }
 
     res.json(updated)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// ── Productos con riesgo (Sección D) ─────────────────────────────────────────
+
+function productosPath(proyectoId) {
+  return join(PRODUCTOS_DIR, `productos_${proyectoId}.json`)
+}
+
+function readProductos(proyectoId) {
+  const path = productosPath(proyectoId)
+  if (!existsSync(path)) return null
+  return JSON.parse(readFileSync(path, 'utf-8'))
+}
+
+function writeProductos(doc) {
+  ensureDir(PRODUCTOS_DIR)
+  writeFileSync(productosPath(doc.proyecto_id), JSON.stringify(doc, null, 2), 'utf-8')
+}
+
+const EMPTY_SECCION_D = { agentes_biologicos: [], agentes_quimicos: [], firmante: '' }
+
+// GET /api/animalario/proyectos/:proyectoId/productos
+router.get('/proyectos/:proyectoId/productos', (req, res) => {
+  try {
+    const doc = readProductos(req.params.proyectoId)
+    if (!doc) {
+      // Return empty structure so the form can initialise without a 404
+      return res.json({
+        proyecto_id:         req.params.proyectoId,
+        fecha_creacion:      null,
+        fecha_actualizacion: null,
+        seccionD:            EMPTY_SECCION_D,
+      })
+    }
+    res.json(doc)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /api/animalario/proyectos/:proyectoId/productos  (crear)
+router.post('/proyectos/:proyectoId/productos', (req, res) => {
+  try {
+    const proyecto = readProyecto(req.params.proyectoId)
+    if (!proyecto) return res.status(404).json({ error: 'Proyecto no encontrado' })
+
+    const now = new Date().toISOString()
+    const doc = {
+      ...req.body,
+      id:                  randomUUID(),
+      proyecto_id:         req.params.proyectoId,
+      fecha_creacion:      now,
+      fecha_actualizacion: now,
+    }
+    writeProductos(doc)
+
+    proyecto.seccionD_id         = doc.id
+    proyecto.fecha_actualizacion = now
+    writeProyecto(proyecto)
+
+    res.status(201).json(doc)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// PUT /api/animalario/proyectos/:proyectoId/productos  (actualizar)
+router.put('/proyectos/:proyectoId/productos', (req, res) => {
+  try {
+    const proyecto = readProyecto(req.params.proyectoId)
+    if (!proyecto) return res.status(404).json({ error: 'Proyecto no encontrado' })
+
+    const existing = readProductos(req.params.proyectoId)
+    const now = new Date().toISOString()
+    const doc = {
+      ...(existing ?? {}),
+      ...req.body,
+      proyecto_id:         req.params.proyectoId,
+      id:                  existing?.id ?? randomUUID(),
+      fecha_creacion:      existing?.fecha_creacion ?? now,
+      fecha_actualizacion: now,
+    }
+    writeProductos(doc)
+
+    proyecto.seccionD_id         = doc.id
+    proyecto.fecha_actualizacion = now
+    writeProyecto(proyecto)
+
+    res.json(doc)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

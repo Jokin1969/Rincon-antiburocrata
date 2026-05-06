@@ -2,21 +2,25 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import styles from '../../styles/animalario/animalario.module.css'
 
-function StatusDot({ ok }) {
-  return <span className={`${styles.statusDot} ${ok ? styles.statusDotOk : styles.statusDotPending}`} />
+function StatusDot({ ok, warn }) {
+  let cls = styles.statusDotPending
+  if (ok)   cls = styles.statusDotOk
+  if (warn) cls = styles.statusDotWarn
+  return <span className={`${styles.statusDot} ${cls}`} />
 }
 
-function SectionCard({ label, name, detail, ok, actions }) {
+function SectionCard({ label, name, detail, ok, warn, actions }) {
   return (
     <div className={styles.sectionCard}>
-      <StatusDot ok={ok} />
+      <StatusDot ok={ok} warn={warn} />
       <div className={styles.sectionInfo}>
         <div className={styles.sectionLabel}>{label}</div>
         <div className={styles.sectionName}>{name}</div>
         {detail && <div className={styles.sectionDetail}>{detail}</div>}
       </div>
       <div className={styles.sectionActions}>
-        {ok && <span className={styles.statusBadgeOk}>Completada</span>}
+        {ok   && <span className={styles.statusBadgeOk}>Completada</span>}
+        {warn && <span className={styles.statusBadgePending}>Pendiente</span>}
         {actions}
       </div>
     </div>
@@ -46,14 +50,14 @@ export default function ProyectoHub() {
   const hasCria        = p.seccionA?.hay_cria === true
   const numProcs       = Array.isArray(p.procedimientos) ? p.procedimientos.length : 0
   const hasProductos   = Boolean(p.hay_productos_riesgo)
+  const seccionDOk     = Boolean(p.seccionD_id)
   const modificaciones = Array.isArray(p.modificaciones) ? p.modificaciones : []
 
-  // Map cepa_idx → cría reference so we can match per-cepa
+  // Map cepa_idx → cría reference
   const criasByCepaIdx = {}
   for (const c of p.crias ?? []) {
     if (c.cepa_idx != null) criasByCepaIdx[c.cepa_idx] = c
   }
-
   const cepas = p.seccionA?.cepas_cria ?? []
 
   return (
@@ -72,6 +76,13 @@ export default function ProyectoHub() {
       <div className={styles.projectTitle2}>{p.titulo}</div>
       {p.referencia_cbba && (
         <div className={styles.projectRef}>Ref. CBBA: {p.referencia_cbba}</div>
+      )}
+
+      {/* Warning banner — Sección D pendiente */}
+      {hasProductos && !seccionDOk && (
+        <div className={styles.warningBanner}>
+          ⚠ Uno o más procedimientos declaran sustancias con riesgo. Completa la Sección D.
+        </div>
       )}
 
       {/* Sections */}
@@ -108,7 +119,7 @@ export default function ProyectoHub() {
           }
         />
 
-        {/* Sección C — Cría: one card per cepa declared in Sección A */}
+        {/* Sección C — una card por cepa */}
         {hasCria && cepas.length === 0 && (
           <SectionCard
             label="Sección C"
@@ -155,18 +166,19 @@ export default function ProyectoHub() {
           )
         })}
 
-        {/* Sección D — Productos con riesgo (solo si algún procedimiento lo tiene) */}
+        {/* Sección D — Productos con riesgo */}
         {hasProductos && (
           <SectionCard
             label="Sección D"
             name="Productos con riesgo"
-            ok={Boolean(p.seccionD)}
+            ok={seccionDOk}
+            warn={!seccionDOk}
             actions={
               <button
                 className="btn btn-primary"
                 onClick={() => navigate(`/animalario/proyecto/${proyectoId}/productos`)}
               >
-                Gestionar →
+                {seccionDOk ? 'Editar' : 'Crear'}
               </button>
             }
           />

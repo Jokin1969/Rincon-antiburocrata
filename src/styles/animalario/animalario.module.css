@@ -190,6 +190,7 @@
 
 .statusDotOk       { background: #16a34a; }
 .statusDotPending  { background: var(--border); border: 1px solid var(--muted-light); }
+.statusDotWarn     { background: #ca8a04; }
 
 .sectionInfo {
   flex: 1;
@@ -233,6 +234,34 @@
   color: #15803d;
   border: 1px solid rgba(22, 163, 74, 0.3);
   white-space: nowrap;
+}
+
+.statusBadgePending {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  background: rgba(202, 138, 4, 0.1);
+  color: #92400e;
+  border: 1px solid rgba(202, 138, 4, 0.3);
+  white-space: nowrap;
+}
+
+/* ── Hub warning banner ───────────────────────────────────────────────────── */
+
+.warningBanner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 1rem;
+  background: rgba(202, 138, 4, 0.08);
+  border: 1px solid rgba(202, 138, 4, 0.3);
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  color: #92400e;
+  margin-bottom: 1rem;
 }
 
 /* ── Severity badges ──────────────────────────────────────────────────────── */
