@@ -269,14 +269,13 @@ async function addDocxFootnotes(docxBuf, entries) {
   if (!entries || entries.length === 0) return docxBuf
   const zip = await new JSZip().loadAsync(docxBuf)
 
-  // Patch document.xml: replace each FN marker run with a footnoteReference run
+  // Patch document.xml: replace just the <w:t>FNN</w:t> with <w:footnoteReference/>
+  // (leaves the surrounding <w:r><w:rPr>…</w:rPr> intact — safe, no cross-boundary risk)
   let docXml = await zip.file('word/document.xml').async('string')
   for (const { id } of entries) {
-    const marker = FN_MARKER(id)
-    const refXml = `<w:r><w:rPr><w:vertAlign w:val="superscript"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:footnoteReference w:id="${id}"/></w:r>`
     docXml = docXml.replace(
-      new RegExp(`<w:r>[\\s\\S]*?<w:t[^>]*>${marker}<\\/w:t><\\/w:r>`, 'g'),
-      refXml
+      new RegExp(`<w:t[^>]*>${FN_MARKER(id)}<\\/w:t>`, 'g'),
+      `<w:footnoteReference w:id="${id}"/>`
     )
   }
   zip.file('word/document.xml', docXml)
@@ -349,7 +348,7 @@ function fullTcThin(children, span = 1) {
 }
 // Footnote reference marker — replaced post-generation with real Word footnoteRef XML
 const FN_MARKER = id => `FN${id}`
-const sup = n => new TextRun({ text: FN_MARKER(n), font: FONT, size: 20 })
+const sup = n => new TextRun({ text: FN_MARKER(n), font: FONT, size: 20, superScript: true })
 
 async function genSeccionA(proyectoId) {
   const proyecto = readProyecto(proyectoId)
