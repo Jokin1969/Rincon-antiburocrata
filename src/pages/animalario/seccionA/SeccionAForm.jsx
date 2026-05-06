@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import PageHeader from '../../../components/PageHeader'
 import styles from './SeccionAForm.module.css'
 import ExportButton from '../../../components/animalario/ExportButton'
+import CollapsibleBlock from '../../../components/animalario/CollapsibleBlock'
+import AutoExpandTextarea from '../../../components/animalario/AutoExpandTextarea'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -88,18 +90,6 @@ function clone(obj) {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function CollapsibleBlock({ title, children, defaultOpen = true }) {
-  const [open, setOpen] = useState(defaultOpen)
-  return (
-    <div className={styles.block}>
-      <button type="button" className={styles.blockHeader} onClick={() => setOpen(o => !o)}>
-        <span>{title}</span>
-        <span className={styles.chevron}>{open ? '▲' : '▼'}</span>
-      </button>
-      {open && <div className={styles.blockBody}>{children}</div>}
-    </div>
-  )
-}
 
 // Input with quick-fill preset options (▾ dropdown button, flips upward near bottom)
 function QuickFillInput({ value, onChange, presets = [], type = 'text', placeholder, disabled }) {
@@ -446,7 +436,11 @@ export default function SeccionAForm() {
       )}
 
       {/* ── Bloque 1: Identificación ─────────────────────────────────────── */}
-      <CollapsibleBlock title="1 · Identificación del proyecto">
+      <CollapsibleBlock
+        title="Identificación del proyecto"
+        storageKey="secA:id"
+        requiredFields={[form.titulo]}
+      >
         <div className={styles.grid2}>
           <div className={`form-group ${styles.fullRow}`}>
             <label>Título del proyecto *</label>
@@ -472,7 +466,11 @@ export default function SeccionAForm() {
       </CollapsibleBlock>
 
       {/* ── Bloque A.1: Responsable ──────────────────────────────────────── */}
-      <CollapsibleBlock title="A.1 · Responsable del proyecto">
+      <CollapsibleBlock
+        title="A.1 · Responsable del proyecto"
+        storageKey="secA:resp"
+        requiredFields={[form.responsable.nombre_apellidos, form.responsable.email]}
+      >
         <div className={styles.grid2}>
           <div className="form-group">
             <label>NIF / Pasaporte</label>
@@ -537,7 +535,7 @@ export default function SeccionAForm() {
       </CollapsibleBlock>
 
       {/* ── Bloque A.2: Participantes ────────────────────────────────────── */}
-      <CollapsibleBlock title="A.2 · Participantes">
+      <CollapsibleBlock title="A.2 · Participantes" storageKey="secA:part">
         {form.participantes.length === 0 && (
           <p className={styles.emptyNote}>No hay participantes añadidos.</p>
         )}
@@ -577,7 +575,11 @@ export default function SeccionAForm() {
       </CollapsibleBlock>
 
       {/* ── Bloque A.3: Duración, financiación y localización ───────────── */}
-      <CollapsibleBlock title="A.3 · Duración, financiación y localización">
+      <CollapsibleBlock
+        title="A.3 · Duración, financiación y localización"
+        storageKey="secA:dur"
+        requiredFields={[form.duracion.fecha_inicio, form.duracion.fecha_fin]}
+      >
         <div className={styles.grid2}>
           <div className="form-group">
             <label>Fecha de inicio *</label>
@@ -670,9 +672,10 @@ export default function SeccionAForm() {
                   Otro
                 </label>
                 {form.lugar_realizacion.otro && (
-                  <textarea
+                  <AutoExpandTextarea
+                    storageKey="secA:lugar_realizacion.descripcion"
                     rows={4}
-                    style={{ marginTop: '0.5rem', width: '100%' }}
+                    style={{ marginTop: '0.5rem' }}
                     value={form.lugar_realizacion.descripcion}
                     onChange={e => update('lugar_realizacion.descripcion', e.target.value)}
                     placeholder="Describir el lugar de realización"
@@ -685,17 +688,29 @@ export default function SeccionAForm() {
       </CollapsibleBlock>
 
       {/* ── Bloque A.4: Resumen y objetivos ─────────────────────────────── */}
-      <CollapsibleBlock title="A.4 · Resumen y objetivos">
+      <CollapsibleBlock
+        title="A.4 · Resumen y objetivos"
+        storageKey="secA:obj"
+        requiredFields={[form.objetivos.objetivo_principal, form.objetivos.resumen]}
+      >
         <div className="form-group">
           <label>Objetivo científico principal</label>
-          <textarea rows={3} value={form.objetivos.objetivo_principal}
-            onChange={e => update('objetivos.objetivo_principal', e.target.value)} />
+          <AutoExpandTextarea
+            storageKey="secA:objetivos.objetivo_principal"
+            rows={3}
+            value={form.objetivos.objetivo_principal}
+            onChange={e => update('objetivos.objetivo_principal', e.target.value)}
+          />
         </div>
 
         <div className="form-group">
           <label>Resumen</label>
-          <textarea rows={5} value={form.objetivos.resumen}
-            onChange={e => update('objetivos.resumen', e.target.value)} />
+          <AutoExpandTextarea
+            storageKey="secA:objetivos.resumen"
+            rows={5}
+            value={form.objetivos.resumen}
+            onChange={e => update('objetivos.resumen', e.target.value)}
+          />
           <span className={`${styles.wordCount} ${wordCount(form.objetivos.resumen) > 300 ? styles.wordCountOver : ''}`}>
             {wordCount(form.objetivos.resumen)} palabras {wordCount(form.objetivos.resumen) > 300 ? '(supera las 300 recomendadas)' : '/ 300 recomendadas'}
           </span>
@@ -703,8 +718,12 @@ export default function SeccionAForm() {
 
         <div className="form-group">
           <label>Análisis daño/beneficio</label>
-          <textarea rows={5} value={form.objetivos.dano_beneficio}
-            onChange={e => update('objetivos.dano_beneficio', e.target.value)} />
+          <AutoExpandTextarea
+            storageKey="secA:objetivos.dano_beneficio"
+            rows={5}
+            value={form.objetivos.dano_beneficio}
+            onChange={e => update('objetivos.dano_beneficio', e.target.value)}
+          />
           <span className={`${styles.wordCount} ${wordCount(form.objetivos.dano_beneficio) > 300 ? styles.wordCountOver : ''}`}>
             {wordCount(form.objetivos.dano_beneficio)} palabras {wordCount(form.objetivos.dano_beneficio) > 300 ? '(supera las 300 recomendadas)' : '/ 300 recomendadas'}
           </span>
@@ -740,7 +759,11 @@ export default function SeccionAForm() {
       </CollapsibleBlock>
 
       {/* ── Bloque A.5: 3Rs ─────────────────────────────────────────────── */}
-      <CollapsibleBlock title="A.5 · Cumplimiento de las 3Rs">
+      <CollapsibleBlock
+        title="A.5 · Cumplimiento de las 3Rs"
+        storageKey="secA:3rs"
+        requiredFields={[form.tres_rs.reemplazo, form.tres_rs.reduccion, form.tres_rs.refinamiento]}
+      >
         {[
           {
             key:   'reemplazo',
@@ -761,14 +784,18 @@ export default function SeccionAForm() {
           <div key={key} className="form-group">
             <label>{label}</label>
             <span className={styles.helpText}>{help}</span>
-            <textarea rows={4} value={form.tres_rs[key]}
-              onChange={e => update(`tres_rs.${key}`, e.target.value)} />
+            <AutoExpandTextarea
+              storageKey={`secA:tres_rs.${key}`}
+              rows={4}
+              value={form.tres_rs[key]}
+              onChange={e => update(`tres_rs.${key}`, e.target.value)}
+            />
           </div>
         ))}
       </CollapsibleBlock>
 
       {/* ── Bloque A.6: Procedimientos (solo lectura) + Cría ────────────── */}
-      <CollapsibleBlock title="A.6 · Resumen de procedimientos">
+      <CollapsibleBlock title="A.6 · Resumen de procedimientos" storageKey="secA:proc">
         {procedimientos.length === 0 ? (
           <p className={styles.emptyNote}>
             Aún no hay procedimientos. Podrás añadirlos desde el hub del proyecto.
@@ -846,7 +873,7 @@ export default function SeccionAForm() {
       </CollapsibleBlock>
 
       {/* ── Bloque A.7: Condiciones de alojamiento — checkboxes ─────────── */}
-      <CollapsibleBlock title="A.7 · Condiciones de alojamiento">
+      <CollapsibleBlock title="A.7 · Condiciones de alojamiento" storageKey="secA:cond">
         <div className="form-group">
           <div className={styles.checkboxGroup} style={{ flexDirection: 'column', gap: '0.6rem' }}>
             <label className={styles.checkboxLabel}>
@@ -863,9 +890,9 @@ export default function SeccionAForm() {
                 Con las siguientes variaciones
               </label>
               {form.condiciones_alojamiento.variaciones && (
-                <textarea
+                <AutoExpandTextarea
+                  storageKey="secA:condiciones_alojamiento.descripcion"
                   rows={4}
-                  style={{ marginTop: '0.5rem', width: '100%' }}
                   value={form.condiciones_alojamiento.descripcion}
                   onChange={e => update('condiciones_alojamiento.descripcion', e.target.value)}
                   placeholder="Describe las variaciones sobre las condiciones estándar…"
@@ -877,7 +904,7 @@ export default function SeccionAForm() {
       </CollapsibleBlock>
 
       {/* ── Bloque 9: Firma ──────────────────────────────────────────────── */}
-      <CollapsibleBlock title="9 · Firma">
+      <CollapsibleBlock title="Firma" storageKey="secA:firma">
         <div className="form-group" style={{ maxWidth: '380px' }}>
           <label>Nombre del firmante</label>
           <QuickFillInput

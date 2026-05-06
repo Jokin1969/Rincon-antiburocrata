@@ -3,6 +3,8 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import PageHeader from '../../../components/PageHeader'
 import s from './SeccionCForm.module.css'
 import ExportButton from '../../../components/animalario/ExportButton'
+import CollapsibleBlock from '../../../components/animalario/CollapsibleBlock'
+import AutoExpandTextarea from '../../../components/animalario/AutoExpandTextarea'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -117,19 +119,6 @@ const EMPTY_SECCION_C = {
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
-
-function CollapsibleBlock({ title, children, defaultOpen = true }) {
-  const [open, setOpen] = useState(defaultOpen)
-  return (
-    <div className={s.block}>
-      <button type="button" className={s.blockHeader} onClick={() => setOpen(o => !o)}>
-        {title}
-        <span className={s.chevron} style={{ transform: open ? 'rotate(180deg)' : 'none' }}>▼</span>
-      </button>
-      {open && <div className={s.blockBody}>{children}</div>}
-    </div>
-  )
-}
 
 function AutocompleteInput({ campo, value, onChange, placeholder, initialSuggestions = [] }) {
   const [suggestions, setSuggestions] = useState([])
@@ -364,7 +353,11 @@ export default function SeccionCForm() {
           ════════════════════════════════════════════════ */}
 
       {/* Bloque 1: Identificación */}
-      <CollapsibleBlock title="1 · Identificación de la cepa">
+      <CollapsibleBlock
+        title="1 · Identificación de la cepa"
+        storageKey="secC:id"
+        requiredFields={[form.identificacion.nomenclatura_internacional]}
+      >
         <div className={s.grid2}>
           <div className="form-group">
             <label>Nomenclatura internacional</label>
@@ -394,7 +387,7 @@ export default function SeccionCForm() {
       </CollapsibleBlock>
 
       {/* Bloque 2: OMG */}
-      <CollapsibleBlock title="2 · ¿Es un organismo modificado genéticamente (OMG)?">
+      <CollapsibleBlock title="2 · ¿Es un organismo modificado genéticamente (OMG)?" storageKey="secC:omg">
         <div className="form-group">
           <div className={s.radioGroup}>
             <label className={s.radioLabel}>
@@ -420,7 +413,7 @@ export default function SeccionCForm() {
       </CollapsibleBlock>
 
       {/* Bloque 3: Fenotipo */}
-      <CollapsibleBlock title="3 · Fenotipo">
+      <CollapsibleBlock title="3 · Fenotipo" storageKey="secC:feno">
         <div className="form-group">
           <label>
             ¿El fenotipo de los reproductores o de la descendencia está asociado con alguna anormalidad
@@ -460,7 +453,7 @@ export default function SeccionCForm() {
       </CollapsibleBlock>
 
       {/* Bloque 4: Condiciones especiales */}
-      <CollapsibleBlock title="4 · Condiciones especiales de mantenimiento">
+      <CollapsibleBlock title="4 · Condiciones especiales de mantenimiento" storageKey="secC:cond">
         <div className="form-group">
           <label>
             ¿Los animales necesitan ser mantenidos/manipulados en condiciones especiales?
@@ -499,10 +492,10 @@ export default function SeccionCForm() {
       </CollapsibleBlock>
 
       {/* Bloque 5: Sistema de cría */}
-      <CollapsibleBlock title="5 · Sistema de cría">
+      <CollapsibleBlock title="5 · Sistema de cría" storageKey="secC:cria">
         <div className="form-group">
-          <textarea
-            className="form-group input"
+          <AutoExpandTextarea
+            storageKey="secC:sistema_cria"
             rows={3}
             value={form.sistema_cria}
             onChange={e => update('sistema_cria', e.target.value)}
@@ -515,7 +508,7 @@ export default function SeccionCForm() {
       </CollapsibleBlock>
 
       {/* Bloque 6: Genotipaje */}
-      <CollapsibleBlock title="6 · Genotipaje">
+      <CollapsibleBlock title="6 · Genotipaje" storageKey="secC:geno">
         <div className={s.grid2}>
           <div className="form-group">
             <label>Procedimiento de genotipaje</label>
@@ -565,7 +558,7 @@ export default function SeccionCForm() {
       </CollapsibleBlock>
 
       {/* Bloque 7: Identificación de los animales */}
-      <CollapsibleBlock title="7 · Identificación de los animales">
+      <CollapsibleBlock title="7 · Identificación de los animales" storageKey="secC:idanim">
         <div className="form-group">
           <label>Métodos de identificación (pueden combinarse)</label>
           <div className={s.checkboxGroupCol}>
@@ -595,7 +588,7 @@ export default function SeccionCForm() {
       </CollapsibleBlock>
 
       {/* Bloque 8: Animales a generar */}
-      <CollapsibleBlock title="8 · Animales a generar">
+      <CollapsibleBlock title="8 · Animales a generar" storageKey="secC:anim">
         <div className={s.grid2}>
           <div className="form-group">
             <label>Número total de animales a generar</label>
@@ -622,8 +615,8 @@ export default function SeccionCForm() {
           </div>
           <div className={`form-group ${s.fullRow}`}>
             <label>Justificación del número de animales</label>
-            <textarea
-              className="form-group input"
+            <AutoExpandTextarea
+              storageKey="secC:animales_a_generar.justificacion"
               rows={3}
               value={form.animales_a_generar.justificacion}
               onChange={e => update('animales_a_generar.justificacion', e.target.value)}
@@ -634,7 +627,7 @@ export default function SeccionCForm() {
       </CollapsibleBlock>
 
       {/* Bloque 9: Procedimiento de cría */}
-      <CollapsibleBlock title="9 · Procedimiento de cría">
+      <CollapsibleBlock title="9 · Procedimiento de cría" storageKey="secC:proccria">
         <div className="form-group">
           <div className={s.radioGroup}>
             <label className={s.radioLabel}>
@@ -668,8 +661,8 @@ export default function SeccionCForm() {
           {form.procedimiento_cria.tipo === 'otro' && (
             <div className="form-group" style={{ marginTop: '0.75rem' }}>
               <label>Describir el procedimiento de cría</label>
-              <textarea
-                className="form-group input"
+              <AutoExpandTextarea
+                storageKey="secC:procedimiento_cria.descripcion"
                 rows={4}
                 value={form.procedimiento_cria.descripcion}
                 onChange={e => update('procedimiento_cria.descripcion', e.target.value)}
@@ -687,7 +680,7 @@ export default function SeccionCForm() {
       {omgActivo && (
         <>
           {/* OMG-0: ¿Usado anteriormente? */}
-          <CollapsibleBlock title="OMG-0 · ¿Utilizado anteriormente en procedimiento aprobado?">
+          <CollapsibleBlock title="OMG-0 · ¿Utilizado anteriormente en procedimiento aprobado?" storageKey="secC:omg0">
             <div className="form-group">
               <label>
                 ¿Ha sido utilizado anteriormente este OMG, en las mismas condiciones, en otro
@@ -747,7 +740,7 @@ export default function SeccionCForm() {
           {!usadoAnteriormente && (
             <>
               {/* OMG-1: Información general */}
-              <CollapsibleBlock title="OMG-1 · Información general del OMG">
+              <CollapsibleBlock title="OMG-1 · Información general del OMG" storageKey="secC:omg1">
                 <div className="form-group">
                   <label>Clasificación de la actividad (según Directivas 98/81/CE y 2000/608/CE)</label>
                   <input
@@ -759,8 +752,8 @@ export default function SeccionCForm() {
                 </div>
                 <div className="form-group">
                   <label>Descripción de las operaciones a realizar</label>
-                  <textarea
-                    className="form-group input"
+                  <AutoExpandTextarea
+                    storageKey="secC:omg.descripcion_operaciones"
                     rows={3}
                     value={form.omg.descripcion_operaciones}
                     onChange={e => update('omg.descripcion_operaciones', e.target.value)}
@@ -805,11 +798,11 @@ export default function SeccionCForm() {
               </CollapsibleBlock>
 
               {/* OMG-2: Origen de la manipulación genética */}
-              <CollapsibleBlock title="OMG-2 · Origen de la manipulación genética" defaultOpen={false}>
+              <CollapsibleBlock title="OMG-2 · Origen de la manipulación genética" storageKey="secC:omg2" defaultOpen={false}>
                 <div className="form-group">
                   <label>¿Dónde se realizó la manipulación genética?</label>
-                  <textarea
-                    className="form-group input"
+                  <AutoExpandTextarea
+                    storageKey="secC:omg.donde_manipulacion_genetica"
                     rows={3}
                     value={form.omg.donde_manipulacion_genetica}
                     onChange={e => update('omg.donde_manipulacion_genetica', e.target.value)}
@@ -819,7 +812,7 @@ export default function SeccionCForm() {
               </CollapsibleBlock>
 
               {/* OMG-3: Cruce entre OMGs */}
-              <CollapsibleBlock title="OMG-3 · ¿Es resultado de un cruce entre OMGs?" defaultOpen={false}>
+              <CollapsibleBlock title="OMG-3 · ¿Es resultado de un cruce entre OMGs?" storageKey="secC:omg3" defaultOpen={false}>
                 <div className="form-group">
                   <div className={s.radioGroup}>
                     <label className={s.radioLabel}>
@@ -881,7 +874,7 @@ export default function SeccionCForm() {
               </CollapsibleBlock>
 
               {/* OMG-4: Modificación genética */}
-              <CollapsibleBlock title="OMG-4 · Modificación genética" defaultOpen={false}>
+              <CollapsibleBlock title="OMG-4 · Modificación genética" storageKey="secC:omg4" defaultOpen={false}>
                 <div className={s.grid2}>
                   <div className="form-group">
                     <label>Tipo de modificación</label>
@@ -904,8 +897,8 @@ export default function SeccionCForm() {
                   </div>
                   <div className={`form-group ${s.fullRow}`}>
                     <label>Descripción breve del método</label>
-                    <textarea
-                      className="form-group input"
+                    <AutoExpandTextarea
+                      storageKey="secC:omg.modificacion_genetica.metodo_descripcion"
                       rows={3}
                       value={form.omg.modificacion_genetica.metodo_descripcion}
                       onChange={e => update('omg.modificacion_genetica.metodo_descripcion', e.target.value)}
@@ -914,8 +907,8 @@ export default function SeccionCForm() {
                   </div>
                   <div className={`form-group ${s.fullRow}`}>
                     <label>Características del vector</label>
-                    <textarea
-                      className="form-group input"
+                    <AutoExpandTextarea
+                      storageKey="secC:omg.modificacion_genetica.caracteristicas_vector"
                       rows={3}
                       value={form.omg.modificacion_genetica.caracteristicas_vector}
                       onChange={e => update('omg.modificacion_genetica.caracteristicas_vector', e.target.value)}
@@ -1010,7 +1003,7 @@ export default function SeccionCForm() {
               </CollapsibleBlock>
 
               {/* OMG-5: OMG resultante */}
-              <CollapsibleBlock title="OMG-5 · OMG resultante" defaultOpen={false}>
+              <CollapsibleBlock title="OMG-5 · OMG resultante" storageKey="secC:omg5" defaultOpen={false}>
                 <div className={s.grid2}>
                   <div className="form-group">
                     <label>Denominación del OMG</label>
@@ -1059,8 +1052,8 @@ export default function SeccionCForm() {
                   </div>
                   <div className={`form-group ${s.fullRow}`}>
                     <label>Descripción breve del OMG</label>
-                    <textarea
-                      className="form-group input"
+                    <AutoExpandTextarea
+                      storageKey="secC:omg.omg_resultante.descripcion_breve"
                       rows={3}
                       value={form.omg.omg_resultante.descripcion_breve}
                       onChange={e => update('omg.omg_resultante.descripcion_breve', e.target.value)}
@@ -1242,7 +1235,12 @@ export default function SeccionCForm() {
       )}
 
       {/* Bloque final: Firma */}
-      <CollapsibleBlock title="Firma del responsable" defaultOpen={false}>
+      <CollapsibleBlock
+        title="Firma del responsable"
+        storageKey="secC:firma"
+        defaultOpen={false}
+        requiredFields={[form.firma.nombre, form.firma.fecha]}
+      >
         <div className={s.grid2}>
           <div className="form-group">
             <label>Nombre y apellidos</label>
