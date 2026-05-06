@@ -17,6 +17,31 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
+function slug(str, fallback = 'sin_titulo') {
+  const s = (str ?? '').replace(/[^a-zA-Z0-9_\-áéíóúÁÉÍÓÚñÑ ]/g, '').replace(/ /g, '_').substring(0, 60).trim()
+  return s || fallback
+}
+
+async function descargarFichero(url, nombreSugerido) {
+  try {
+    const res = await fetch(url)
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      throw new Error(data.error ?? `Error ${res.status}`)
+    }
+    const blob    = await res.blob()
+    const blobUrl = URL.createObjectURL(blob)
+    const cd      = res.headers.get('Content-Disposition') ?? ''
+    const name    = cd.match(/filename="(.+?)"/)?.[1] ?? nombreSugerido
+    const a = document.createElement('a')
+    a.href = blobUrl; a.download = name
+    document.body.appendChild(a); a.click()
+    document.body.removeChild(a); URL.revokeObjectURL(blobUrl)
+  } catch (e) {
+    alert(`No se pudo exportar: ${e.message}`)
+  }
+}
+
 function StatusDot({ ok, warn }) {
   let cls = styles.statusDotPending
   if (ok)   cls = styles.statusDotOk
@@ -43,6 +68,18 @@ function SectionCard({ label, name, detail, ok, warn, actions }) {
 }
 
 function ModificacionesSection({ proyectoId, modificaciones, navigate, onDelete }) {
+  const [exportando, setExportando] = useState(null)
+
+  async function exportarMod(mId, formato, numero) {
+    const key = `${mId}-${formato}`
+    setExportando(key)
+    await descargarFichero(
+      `/api/animalario/modificaciones/${mId}/exportar?formato=${formato}`,
+      `Modificacion_${slug(String(numero), 'mod')}.${formato}`
+    )
+    setExportando(null)
+  }
+
   return (
     <div className={styles.modifSection}>
       <div className={styles.modifSectionHeader}>
@@ -89,6 +126,22 @@ function ModificacionesSection({ proyectoId, modificaciones, navigate, onDelete 
                 onClick={() => navigate(`/animalario/proyecto/${proyectoId}/modificacion/${m.id}`)}
               >
                 Editar
+              </button>
+              <button
+                className="btn btn-ghost"
+                disabled={exportando === `${m.id}-docx`}
+                onClick={() => exportarMod(m.id, 'docx', m.numero_modificacion)}
+                style={{ fontSize: '0.8rem' }}
+              >
+                {exportando === `${m.id}-docx` ? '…' : '⬇ Word'}
+              </button>
+              <button
+                className="btn btn-ghost"
+                disabled={exportando === `${m.id}-pdf`}
+                onClick={() => exportarMod(m.id, 'pdf', m.numero_modificacion)}
+                style={{ fontSize: '0.8rem' }}
+              >
+                {exportando === `${m.id}-pdf` ? '…' : '⬇ PDF'}
               </button>
               <button
                 className="btn btn-ghost"
@@ -168,7 +221,7 @@ function ExportProyectoDropdown({ proyectoId }) {
           position: 'absolute', left: 0, top: 'calc(100% + 4px)',
           zIndex: 100, background: 'var(--surface)',
           border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)',
-          boxShadow: '0 4px 14px rgba(0,0,0,0.12)', minWidth: 230, overflow: 'hidden',
+          boxShadow: '0 4px 14px rgba(0,0,0,0.12)', minWidth: 240, overflow: 'hidden',
         }}>
           {[
             { label: '📦 Todo en Word (.docx)',   formato: 'docx' },
@@ -184,16 +237,15 @@ function ExportProyectoDropdown({ proyectoId }) {
           ))}
           <div style={MENU_SEPARATOR} />
           {[
-            { label: '📄 Solo Sección A',          url: `${base}/exportar/seccionA` },
-            { label: '🔬 Solo Procedimientos (B)',  url: `${base}/exportar/completo` },
-            { label: '🐭 Solo Crías (C)',           url: `${base}/exportar/completo` },
-            { label: '⚗ Solo Productos (D)',       url: `${base}/exportar/seccionD` },
-            { label: '📝 Solo Modificaciones',     url: `${base}/exportar/completo` },
-          ].map(({ label, url }) => (
+            { label: '📄 Solo Sección A — Word', url: `${base}/exportar/seccionA`, formato: 'docx' },
+            { label: '📄 Solo Sección A — PDF',  url: `${base}/exportar/seccionA`, formato: 'pdf'  },
+            { label: '⚗ Solo Sección D — Word',  url: `${base}/exportar/seccionD`, formato: 'docx' },
+            { label: '⚗ Solo Sección D — PDF',   url: `${base}/exportar/seccionD`, formato: 'pdf'  },
+          ].map(({ label, url, formato }) => (
             <button key={label} type="button" style={{ ...MENU_ITEM, fontSize: '0.8rem', color: 'var(--muted)' }}
               onMouseEnter={e => e.target.style.background = 'var(--surface-hover)'}
               onMouseLeave={e => e.target.style.background = 'none'}
-              onClick={() => doExport(url, 'Proyecto', 'docx')}>
+              onClick={() => doExport(url, 'Proyecto', formato)}>
               {label}
             </button>
           ))}
@@ -206,9 +258,10 @@ function ExportProyectoDropdown({ proyectoId }) {
 export default function ProyectoHub() {
   const { proyectoId } = useParams()
   const navigate       = useNavigate()
-  const [proyecto, setProyecto] = useState(null)
-  const [loading, setLoading]   = useState(true)
-  const [error, setError]       = useState(null)
+  const [proyecto, setProyecto]       = useState(null)
+  const [loading, setLoading]         = useState(true)
+  const [error, setError]             = useState(null)
+  const [exportandoCria, setExportandoCria] = useState(null)
 
   const load = useCallback(() => {
     fetch(`/api/animalario/proyectos/${proyectoId}`)
@@ -228,6 +281,16 @@ export default function ProyectoHub() {
     } catch (e) {
       alert(e.message)
     }
+  }
+
+  async function exportarCria(criaId, formato, nombreCepa) {
+    const key = `${criaId}-${formato}`
+    setExportandoCria(key)
+    await descargarFichero(
+      `/api/animalario/crias/${criaId}/exportar?formato=${formato}`,
+      `SeccionC_${slug(nombreCepa, 'cria')}.${formato}`
+    )
+    setExportandoCria(null)
   }
 
   if (loading) return <p className={styles.empty}>Cargando proyecto…</p>
@@ -339,16 +402,38 @@ export default function ProyectoHub() {
               detail={detalle}
               ok={Boolean(cria)}
               actions={
-                <button
-                  className="btn btn-primary"
-                  onClick={() =>
-                    cria
-                      ? navigate(`/animalario/proyecto/${proyectoId}/cria/${cria.id}`)
-                      : navigate(`/animalario/proyecto/${proyectoId}/cria/nueva?cepaIdx=${idx}`)
-                  }
-                >
-                  {cria ? 'Editar' : 'Crear'}
-                </button>
+                <>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() =>
+                      cria
+                        ? navigate(`/animalario/proyecto/${proyectoId}/cria/${cria.id}`)
+                        : navigate(`/animalario/proyecto/${proyectoId}/cria/nueva?cepaIdx=${idx}`)
+                    }
+                  >
+                    {cria ? 'Editar' : 'Crear'}
+                  </button>
+                  {cria && (
+                    <>
+                      <button
+                        className="btn btn-ghost"
+                        disabled={exportandoCria === `${cria.id}-docx`}
+                        onClick={() => exportarCria(cria.id, 'docx', nombre)}
+                        style={{ fontSize: '0.8rem' }}
+                      >
+                        {exportandoCria === `${cria.id}-docx` ? '…' : '⬇ Word'}
+                      </button>
+                      <button
+                        className="btn btn-ghost"
+                        disabled={exportandoCria === `${cria.id}-pdf`}
+                        onClick={() => exportarCria(cria.id, 'pdf', nombre)}
+                        style={{ fontSize: '0.8rem' }}
+                      >
+                        {exportandoCria === `${cria.id}-pdf` ? '…' : '⬇ PDF'}
+                      </button>
+                    </>
+                  )}
+                </>
               }
             />
           )

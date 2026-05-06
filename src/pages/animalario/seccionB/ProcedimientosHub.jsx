@@ -5,6 +5,31 @@ import styles from '../../../styles/animalario/animalario.module.css'
 import ManualUsuario from '../../../components/animalario/ManualUsuario'
 
 const SEVERITY_LABELS = { none: 'Sin clasificar', low: 'Leve', medium: 'Moderado', high: 'Severo' }
+
+function slug(str, fallback = 'sin_titulo') {
+  const s = (str ?? '').replace(/[^a-zA-Z0-9_\-áéíóúÁÉÍÓÚñÑ ]/g, '').replace(/ /g, '_').substring(0, 60).trim()
+  return s || fallback
+}
+
+async function descargarFichero(url, nombreSugerido) {
+  try {
+    const res = await fetch(url)
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      throw new Error(data.error ?? `Error ${res.status}`)
+    }
+    const blob    = await res.blob()
+    const blobUrl = URL.createObjectURL(blob)
+    const cd      = res.headers.get('Content-Disposition') ?? ''
+    const name    = cd.match(/filename="(.+?)"/)?.[1] ?? nombreSugerido
+    const a = document.createElement('a')
+    a.href = blobUrl; a.download = name
+    document.body.appendChild(a); a.click()
+    document.body.removeChild(a); URL.revokeObjectURL(blobUrl)
+  } catch (e) {
+    alert(`No se pudo exportar: ${e.message}`)
+  }
+}
 const SEVERITY_CLASSES = {
   none:   styles.severityNone,
   low:    styles.severityLow,
@@ -31,6 +56,7 @@ export default function ProcedimientosHub() {
   const [error, setError]             = useState(null)
   const [deleting, setDeleting]       = useState(null)
   const [duplicating, setDuplicating] = useState(null)
+  const [exporting, setExporting]     = useState(null)
   const [showManual, setShowManual]   = useState(false)
 
   function load() {
@@ -61,6 +87,16 @@ export default function ProcedimientosHub() {
     } finally {
       setDeleting(null)
     }
+  }
+
+  async function handleExport(procId, formato, titulo) {
+    const key = `${procId}-${formato}`
+    setExporting(key)
+    await descargarFichero(
+      `/api/animalario/procedimientos/${procId}/exportar?formato=${formato}`,
+      `Procedimiento_${slug(titulo, 'procedimiento')}.${formato}`
+    )
+    setExporting(null)
   }
 
   async function handleDuplicate(procId) {
@@ -183,6 +219,22 @@ export default function ProcedimientosHub() {
                     onClick={() => navigate(`/animalario/proyecto/${proyectoId}/procedimientos/${proc.id}`)}
                   >
                     Editar
+                  </button>
+                  <button
+                    className="btn btn-ghost"
+                    disabled={exporting === `${proc.id}-docx`}
+                    onClick={() => handleExport(proc.id, 'docx', titulo)}
+                    style={{ fontSize: '0.8rem' }}
+                  >
+                    {exporting === `${proc.id}-docx` ? '…' : '⬇ Word'}
+                  </button>
+                  <button
+                    className="btn btn-ghost"
+                    disabled={exporting === `${proc.id}-pdf`}
+                    onClick={() => handleExport(proc.id, 'pdf', titulo)}
+                    style={{ fontSize: '0.8rem' }}
+                  >
+                    {exporting === `${proc.id}-pdf` ? '…' : '⬇ PDF'}
                   </button>
                   <button
                     className="btn btn-ghost"
