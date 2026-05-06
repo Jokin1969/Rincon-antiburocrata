@@ -13,15 +13,17 @@ const BASE_ESPECIES = ['Mus musculus', 'Rattus norvegicus', 'Oryctolagus cunicul
 const EMPTY_FORM = {
   datos_generales: {
     titulo_procedimiento: '',
-    especies: [],
+    especies: ['Mus musculus'],
     cepa_linea: '',
-    sexo: '',
-    edad_peso: '',
+    sexo: 'Ambos',
+    edad_peso: '4 semanas o más',
     num_animales: '',
     origen: '',
     aclimatacion: '',
     identificacion: '',
     condiciones_especiales: '',
+    severidad: '',
+    duracion: '',
   },
   metodologia: {
     descripcion: '',
@@ -367,8 +369,8 @@ export default function SeccionBForm() {
 
       {error && <div className="alert alert-error" style={{ marginBottom: '1rem' }}>{error}</div>}
 
-      {/* ── 1. Datos generales ─────────────────────────────────── */}
-      <CollapsibleBlock title="1. Datos generales del procedimiento">
+      {/* ── B.1. Datos generales ────────────────────────────────── */}
+      <CollapsibleBlock title="B.1 DATOS GENERALES DEL PROCEDIMIENTO">
         <div className={s.grid2}>
           <div className={`form-group ${s.fullRow}`}>
             <label>Título del procedimiento</label>
@@ -426,12 +428,12 @@ export default function SeccionBForm() {
           </div>
 
           <div className="form-group">
-            <label>Edad / peso al inicio</label>
+            <label>Edad</label>
             <input
               className="form-group input"
               value={form.datos_generales.edad_peso}
               onChange={e => update('datos_generales.edad_peso', e.target.value)}
-              placeholder="Ej. 8-10 semanas, 20-25 g"
+              placeholder="Ej. 8-10 semanas"
             />
           </div>
 
@@ -447,53 +449,34 @@ export default function SeccionBForm() {
             />
           </div>
 
-          <div className="form-group">
-            <label>Origen de los animales</label>
-            <input
+          <div className={`form-group ${s.fullRow}`}>
+            <label>Severidad</label>
+            <textarea
               className="form-group input"
-              value={form.datos_generales.origen}
-              onChange={e => update('datos_generales.origen', e.target.value)}
-              placeholder="Ej. Envigo, Charles River, colonia propia…"
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Periodo de aclimatación</label>
-            <input
-              className="form-group input"
-              value={form.datos_generales.aclimatacion}
-              onChange={e => update('datos_generales.aclimatacion', e.target.value)}
-              placeholder="Ej. 7 días"
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Sistema de identificación</label>
-            <input
-              className="form-group input"
-              value={form.datos_generales.identificacion}
-              onChange={e => update('datos_generales.identificacion', e.target.value)}
-              placeholder="Ej. microchip, tatuaje, orejera…"
+              rows={3}
+              value={form.datos_generales.severidad}
+              onChange={e => update('datos_generales.severidad', e.target.value)}
+              placeholder="Indicar la severidad del procedimiento"
             />
           </div>
 
           <div className={`form-group ${s.fullRow}`}>
-            <label>Condiciones especiales de alojamiento</label>
+            <label>Duración<sup style={{ fontSize: 'inherit', verticalAlign: 'super', lineHeight: 0 }}>1</sup></label>
             <textarea
               className="form-group input"
-              rows={2}
-              value={form.datos_generales.condiciones_especiales}
-              onChange={e => update('datos_generales.condiciones_especiales', e.target.value)}
-              placeholder="Indicar si requiere aislamiento, SPF, etc."
+              rows={3}
+              value={form.datos_generales.duracion}
+              onChange={e => update('datos_generales.duracion', e.target.value)}
+              placeholder="Describir la duración total del procedimiento"
             />
           </div>
         </div>
       </CollapsibleBlock>
 
-      {/* ── 2. Metodología ─────────────────────────────────────── */}
-      <CollapsibleBlock title="2. Metodología y justificación">
+      {/* ── B.2. Metodología ────────────────────────────────────── */}
+      <CollapsibleBlock title="B.2 METODOLOGÍA Y FASES DEL PROCEDIMIENTO">
         <div className="form-group">
-          <label>Descripción del procedimiento</label>
+          <label>Fases del procedimiento<sup style={{ fontSize: 'inherit', verticalAlign: 'super', lineHeight: 0 }}>2</sup></label>
           <textarea
             className="form-group input"
             rows={5}
@@ -503,13 +486,13 @@ export default function SeccionBForm() {
           />
         </div>
         <div className="form-group">
-          <label>Justificación del procedimiento</label>
+          <label>Describa en qué fases del procedimiento se prevé que el animal pueda experimentar sufrimiento, dolor, angustia o malestar</label>
           <textarea
             className="form-group input"
             rows={3}
             value={form.metodologia.justificacion_procedimiento}
             onChange={e => update('metodologia.justificacion_procedimiento', e.target.value)}
-            placeholder="Por qué es necesario este procedimiento para alcanzar los objetivos científicos"
+            placeholder="Indicar las fases con posible impacto en el bienestar animal"
           />
         </div>
       </CollapsibleBlock>
