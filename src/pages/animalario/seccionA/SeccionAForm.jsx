@@ -69,6 +69,7 @@ const EMPTY_FORM = {
     variaciones: true,
     descripcion: 'Una vez los animales se hayan administrado con AAV se mantendrán en la zona limpia (rack ventilado) durante 10 días. Pasado este tiempo, los animales se trasladarán a la zona sucia del SDA para su perfusión o su traslado a Neiker, CReSA o UNIZAR para la inoculación de priones.',
   },
+  codigo_aprobacion: '',
   firmante: 'Joaquín Castilla',
 }
 
@@ -233,6 +234,10 @@ export default function SeccionAForm() {
   const [errors,        setErrors]     = useState({})
   const [saveError,     setSaveError]  = useState(null)
   const [showErrPanel,  setShowErrPanel] = useState(false)
+  const [cert,          setCert]       = useState(null)
+  const [certUploading, setCertUploading] = useState(false)
+  const [copied,        setCopied]     = useState(false)
+  const fileInputRef                   = useRef(null)
 
   // Load existing data in edit mode
   useEffect(() => {
@@ -241,6 +246,7 @@ export default function SeccionAForm() {
       .then(r => { if (!r.ok) throw new Error('Proyecto no encontrado'); return r.json() })
       .then(data => {
         setProyecto(data)
+        setCert(data.certificado ?? null)
         if (data.seccionA) {
           const secA = data.seccionA
           // Migrate old lugar_realizacion model (tipo string → checkboxes)
@@ -329,6 +335,54 @@ export default function SeccionAForm() {
       ? current.filter(f => f !== funcion)
       : [...current, funcion]
     updateParticipante(i, 'funciones', next.join(','))
+  }
+
+  async function uploadCert(file) {
+    if (!file) return
+    if (file.type !== 'application/pdf') {
+      setSaveError('Solo se admiten archivos PDF.')
+      return
+    }
+    setCertUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const r = await fetch(`/api/animalario/proyectos/${proyectoId}/certificado`, { method: 'POST', body: fd })
+      if (!r.ok) throw new Error((await r.json()).error ?? 'Error al subir el certificado')
+      const { certificado } = await r.json()
+      setCert(certificado)
+      setToast('Certificado subido correctamente')
+    } catch (err) {
+      setSaveError(err.message)
+    } finally {
+      setCertUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  async function deleteCert() {
+    try {
+      await fetch(`/api/animalario/proyectos/${proyectoId}/certificado`, { method: 'DELETE' })
+      setCert(null)
+      setToast('Certificado eliminado')
+    } catch {
+      setSaveError('Error al eliminar el certificado.')
+    }
+  }
+
+  function copyCodigo() {
+    const code = form.codigo_aprobacion?.trim()
+    if (!code) return
+    navigator.clipboard.writeText(code).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
+  function fmtBytes(n) {
+    if (n < 1024) return `${n} B`
+    if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
+    return `${(n / (1024 * 1024)).toFixed(1)} MB`
   }
 
   // Validation — returns map of field → message
@@ -902,6 +956,135 @@ export default function SeccionAForm() {
           </div>
         </div>
       </CollapsibleBlock>
+
+      {/* ── Aprobación Diputación de Bizkaia ────────────────────────────── */}
+      {isEdit && (
+        <CollapsibleBlock title="Aprobación — Diputación de Bizkaia" storageKey="secA:aprob" defaultOpen={false}>
+          {/* Código del proyecto aprobado */}
+          <div className="form-group">
+            <label>Código del proyecto aprobado</label>
+            <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+              <input
+                type="text"
+                value={form.codigo_aprobacion}
+                onChange={e => update('codigo_aprobacion', e.target.value)}
+                placeholder="Ej. DIPUT-2025-0042"
+                style={{ flex: 1 }}
+              />
+              <button
+                type="button"
+                title="Copiar al portapapeles"
+                onClick={copyCodigo}
+                disabled={!form.codigo_aprobacion?.trim()}
+                style={{
+                  padding: '0.45rem 0.7rem',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--surface)',
+                  cursor: form.codigo_aprobacion?.trim() ? 'pointer' : 'not-allowed',
+                  fontSize: '0.9rem',
+                  lineHeight: 1,
+                  color: copied ? '#16a34a' : 'var(--muted)',
+                  transition: 'color 0.2s',
+                  flexShrink: 0,
+                }}
+              >
+                {copied ? '✓' : '⧉'}
+              </button>
+            </div>
+            {copied && (
+              <span style={{ fontSize: '0.78rem', color: '#16a34a', marginTop: '0.25rem', display: 'block' }}>
+                Código copiado al portapapeles
+              </span>
+            )}
+          </div>
+
+          {/* Certificado PDF */}
+          <div className="form-group" style={{ marginTop: '1rem' }}>
+            <label>Certificado de aprobación (PDF)</label>
+
+            {cert ? (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '0.75rem',
+                padding: '0.65rem 0.85rem',
+                background: 'rgba(37, 99, 235, 0.05)',
+                border: '1px solid rgba(37, 99, 235, 0.2)',
+                borderRadius: 'var(--radius-sm)',
+                fontSize: '0.875rem',
+              }}>
+                <span style={{ fontSize: '1.2rem' }}>📄</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {cert.filename}
+                  </div>
+                  <div style={{ fontSize: '0.76rem', color: 'var(--muted-light)' }}>
+                    {fmtBytes(cert.size)} · subido {new Date(cert.uploadedAt).toLocaleDateString('es-ES')}
+                  </div>
+                </div>
+                <a
+                  href={`/api/animalario/proyectos/${proyectoId}/certificado`}
+                  download
+                  style={{
+                    padding: '0.35rem 0.65rem',
+                    background: 'var(--accent)',
+                    color: '#fff',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    flexShrink: 0,
+                  }}
+                >
+                  ↓ Descargar
+                </a>
+                <button
+                  type="button"
+                  onClick={deleteCert}
+                  title="Eliminar certificado"
+                  style={{
+                    padding: '0.35rem 0.55rem',
+                    border: '1px solid #fca5a5',
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'transparent',
+                    color: '#dc2626',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    flexShrink: 0,
+                  }}
+                >✕</button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={certUploading}
+                  style={{
+                    padding: '0.45rem 0.9rem',
+                    border: '1px dashed var(--border)',
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'var(--surface)',
+                    color: 'var(--muted)',
+                    cursor: certUploading ? 'not-allowed' : 'pointer',
+                    fontSize: '0.855rem',
+                  }}
+                >
+                  {certUploading ? 'Subiendo…' : '📎 Adjuntar certificado PDF'}
+                </button>
+                <span style={{ fontSize: '0.78rem', color: 'var(--muted-light)' }}>Máx. 20 MB</span>
+              </div>
+            )}
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/pdf"
+              style={{ display: 'none' }}
+              onChange={e => uploadCert(e.target.files?.[0])}
+            />
+          </div>
+        </CollapsibleBlock>
+      )}
 
       {/* ── Bloque 9: Firma ──────────────────────────────────────────────── */}
       <CollapsibleBlock title="Firma" storageKey="secA:firma">

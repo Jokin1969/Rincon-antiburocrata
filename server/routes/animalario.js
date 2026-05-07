@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, readdirSync,
 import { join, dirname }                             from 'path'
 import { fileURLToPath }                             from 'url'
 import { randomUUID }                                from 'crypto'
+import multer                                        from 'multer'
 
 const __filename    = fileURLToPath(import.meta.url)
 const __dirname     = dirname(__filename)
@@ -14,6 +15,9 @@ const CRIA_DIR        = join(DATA_DIR, 'animalario', 'crias')
 const PRODUCTOS_DIR   = join(DATA_DIR, 'animalario', 'productos')
 const MODIF_DIR       = join(DATA_DIR, 'animalario', 'modificaciones')
 const REPO_FILE       = join(DATA_DIR, 'animalario', 'repositorio', 'campos_frecuentes.json')
+const CERT_DIR        = join(DATA_DIR, 'animalario', 'certificados')
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } })
 
 const router = Router()
 
@@ -754,6 +758,53 @@ router.delete('/crias/:id', (req, res) => {
     const path = join(CRIA_DIR, `cria_${cria.id}.json`)
     if (existsSync(path)) unlinkSync(path)
 
+    res.json({ ok: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// ── Certificado Diputación de Bizkaia ─────────────────────────────────────────
+
+router.post('/proyectos/:id/certificado', upload.single('file'), (req, res) => {
+  try {
+    if (!req.file || req.file.mimetype !== 'application/pdf')
+      return res.status(400).json({ error: 'Se requiere un archivo PDF.' })
+    ensureDir(CERT_DIR)
+    writeFileSync(join(CERT_DIR, `cert_${req.params.id}.pdf`), req.file.buffer)
+    const proyecto = readProyecto(req.params.id)
+    if (!proyecto) return res.status(404).json({ error: 'Proyecto no encontrado' })
+    proyecto.certificado = {
+      filename:   req.file.originalname,
+      size:       req.file.size,
+      uploadedAt: new Date().toISOString(),
+    }
+    writeProyecto(proyecto)
+    res.json({ ok: true, certificado: proyecto.certificado })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+router.get('/proyectos/:id/certificado', (req, res) => {
+  const filePath = join(CERT_DIR, `cert_${req.params.id}.pdf`)
+  if (!existsSync(filePath)) return res.status(404).json({ error: 'No hay certificado adjunto.' })
+  const proyecto = readProyecto(req.params.id)
+  const filename = proyecto?.certificado?.filename ?? `certificado_${req.params.id}.pdf`
+  res.setHeader('Content-Type', 'application/pdf')
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+  res.send(readFileSync(filePath))
+})
+
+router.delete('/proyectos/:id/certificado', (req, res) => {
+  try {
+    const filePath = join(CERT_DIR, `cert_${req.params.id}.pdf`)
+    if (existsSync(filePath)) unlinkSync(filePath)
+    const proyecto = readProyecto(req.params.id)
+    if (proyecto) {
+      proyecto.certificado = null
+      writeProyecto(proyecto)
+    }
     res.json({ ok: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
