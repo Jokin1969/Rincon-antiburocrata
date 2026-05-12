@@ -15,6 +15,7 @@ import { generateAdaptarCarta } from './generators/adaptarCarta.js'
 import { generateContratoMenor } from './generators/contratoMenor.js'
 import { generateFacturaProforma } from './generators/facturaProforma.js'
 import { generatePqpImport } from './generators/pqpImport.js'
+import { generateDocumento1403 } from './generators/documento1403.js'
 import { generateCertificadoExclusividad } from './generators/certificadoExclusividad.js'
 import { docxToPdf } from './utils/pdf.js'
 
@@ -236,6 +237,37 @@ app.post('/api/contrato-menor', async (req, res) => {
 })
 
 // ── Aduanas: Factura Proforma ─────────────────────────────────────────────────
+app.post('/api/aduanas/documento-1403', async (req, res) => {
+  const { firmante, producto, empresaOrigen, shipper } = req.body
+
+  if (!firmante?.trim()) {
+    return res.status(400).json({ error: 'Campo obligatorio: firmante.' })
+  }
+  if (!producto?.trim()) {
+    return res.status(400).json({ error: 'Campo obligatorio: producto.' })
+  }
+  if (!empresaOrigen?.trim()) {
+    return res.status(400).json({ error: 'Campo obligatorio: empresa de origen.' })
+  }
+  if (!shipper || !(shipper.organizacion?.trim() || shipper.nombre?.trim())) {
+    return res.status(400).json({ error: 'Campo obligatorio: empresa emisora (shipper).' })
+  }
+
+  const format = req.query.format === 'pdf' ? 'pdf' : 'docx'
+
+  try {
+    const docxBuffer = await generateDocumento1403(req.body)
+    const sn  = (shipper.organizacion || shipper.nombre || 'emisor').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20)
+    const pr  = empresaOrigen.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20)
+    const num = (req.body.numero || '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 20)
+    const base = num ? `Doc1403_${num}_${sn}_${pr}` : `Doc1403_${sn}_${pr}`
+    sendDocument(res, docxBuffer, base, format)
+  } catch (err) {
+    console.error('Documento 1403 error:', err)
+    res.status(500).json({ error: 'Error al generar el documento.' })
+  }
+})
+
 app.post('/api/aduanas/pqp-import', async (req, res) => {
   const { proveedor, shipper } = req.body
 

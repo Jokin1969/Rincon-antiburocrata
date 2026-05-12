@@ -19,6 +19,14 @@ const DOCS = [
     href: '/aduanas/pqp-import',
     status: 'ready',
   },
+  {
+    id: 'documento-1403',
+    name: 'Documento 1403',
+    description: 'Declaración del importador de productos NO sometidos a control farmacéutico (Orden SPI/2136/2011). Datos del producto, envío, TARIC, BoL y firma.',
+    icon: '💊',
+    href: '/aduanas/documento-1403',
+    status: 'ready',
+  },
 ]
 
 export default function AduanasHome() {
