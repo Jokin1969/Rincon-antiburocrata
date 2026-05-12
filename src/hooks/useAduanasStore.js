@@ -7,7 +7,8 @@ function makeApiHooks(col) {
     const refresh = useCallback(async () => {
       try {
         const res = await fetch(`/api/store/${col}`)
-        setRecords(await res.json())
+        const data = await res.json()
+        setRecords(Array.isArray(data) ? data : [])
       } catch {
         setRecords([])
       }
