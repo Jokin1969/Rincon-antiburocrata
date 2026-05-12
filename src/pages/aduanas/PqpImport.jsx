@@ -100,7 +100,7 @@ export default function PqpImport() {
       setLogoStatus('loading')
       setLogoData(null)
       const url = `/assets/logos/${logoFile}`
-      svgUrlToPng(url)
+      svgUrlToPng(url, 600, 200)
         .then(d => {
           setLogoData({ ...d, previewUrl: url })
           setLogoStatus('ok')
@@ -122,7 +122,7 @@ export default function PqpImport() {
     })
     setLogoStatus('loading')
     try {
-      const d = await svgUrlToPng(dataUrl, 300, 120)
+      const d = await svgUrlToPng(dataUrl, 600, 200)
       setLogoData({ ...d, previewUrl: dataUrl })
       setLogoStatus('ok')
       setField('shipper.logo', '__manual__')
