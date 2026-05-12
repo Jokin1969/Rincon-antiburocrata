@@ -11,6 +11,14 @@ const DOCS = [
     href: '/aduanas/factura-proforma',
     status: 'ready',
   },
+  {
+    id: 'pqp-import',
+    name: 'PQP import',
+    description: 'Certificado de no sujeción a control para la importación de productos químicos (R/UE 649/2012). Dirigido a la Aduana de Irun, con firma y sello.',
+    icon: '🧪',
+    href: '/aduanas/pqp-import',
+    status: 'ready',
+  },
 ]
 
 export default function AduanasHome() {

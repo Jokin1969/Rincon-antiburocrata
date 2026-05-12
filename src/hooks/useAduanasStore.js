@@ -42,3 +42,4 @@ function makeApiHooks(col) {
 }
 
 export const useFacturaProformaStore = makeApiHooks('proforma')
+export const usePqpImportStore       = makeApiHooks('pqp-import')

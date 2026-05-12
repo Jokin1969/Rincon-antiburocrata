@@ -14,6 +14,7 @@ import { generateMohQuestions } from './generators/mohQuestions.js'
 import { generateAdaptarCarta } from './generators/adaptarCarta.js'
 import { generateContratoMenor } from './generators/contratoMenor.js'
 import { generateFacturaProforma } from './generators/facturaProforma.js'
+import { generatePqpImport } from './generators/pqpImport.js'
 import { generateCertificadoExclusividad } from './generators/certificadoExclusividad.js'
 import { docxToPdf } from './utils/pdf.js'
 
@@ -235,6 +236,31 @@ app.post('/api/contrato-menor', async (req, res) => {
 })
 
 // ── Aduanas: Factura Proforma ─────────────────────────────────────────────────
+app.post('/api/aduanas/pqp-import', async (req, res) => {
+  const { proveedor, shipper } = req.body
+
+  if (!proveedor?.trim()) {
+    return res.status(400).json({ error: 'Campo obligatorio: proveedor.' })
+  }
+  if (!shipper || !(shipper.organizacion?.trim() || shipper.nombre?.trim())) {
+    return res.status(400).json({ error: 'Campo obligatorio: empresa emisora (shipper).' })
+  }
+
+  const format = req.query.format === 'pdf' ? 'pdf' : 'docx'
+
+  try {
+    const docxBuffer = await generatePqpImport(req.body)
+    const sn  = (shipper.organizacion || shipper.nombre || 'emisor').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20)
+    const pn  = proveedor.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20)
+    const num = (req.body.numero || '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 20)
+    const base = num ? `PQP_${num}_${sn}_${pn}` : `PQP_${sn}_${pn}`
+    sendDocument(res, docxBuffer, base, format)
+  } catch (err) {
+    console.error('PQP import error:', err)
+    res.status(500).json({ error: 'Error al generar el documento.' })
+  }
+})
+
 app.post('/api/aduanas/factura-proforma', async (req, res) => {
   const { numero, shipper, consignee, lineas } = req.body
 
