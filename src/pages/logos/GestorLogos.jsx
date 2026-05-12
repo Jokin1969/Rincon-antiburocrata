@@ -776,8 +776,6 @@ function LogoCard({ logo, onClick, onDragStart, onDragOver, onDragLeave, onDrop,
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-const PAGE_SIZE_OPTIONS = [12, 24, 48]
-
 export default function GestorLogos() {
   const { logos, loading, saveLogo, deleteLogo, saveOrder, fetchLogoData } = useLogoStore()
   const [search, setSearch] = useState('')
@@ -787,8 +785,6 @@ export default function GestorLogos() {
   const [selected, setSelected] = useState(null)
   const [dragging, setDragging] = useState(false)
   const [dragOverId, setDragOverId] = useState(null)
-  const [pageSize, setPageSize] = useState(12)
-  const [currentPage, setCurrentPage] = useState(1)
   const dragId = useRef(null)
   const dropRef = useRef()
   const fileRef = useRef()
@@ -841,13 +837,8 @@ export default function GestorLogos() {
     return matchSearch && matchCat
   })
 
-  const totalPages = Math.ceil(filtered.length / pageSize)
-  const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
-
-  function handleSearch(v) { setSearch(v); setCurrentPage(1) }
-  function handleCatFilter(id) { setCatFilter(id); setCurrentPage(1) }
-  function handlePageSize(n) { setPageSize(n); setCurrentPage(1) }
-  function goToPage(p) { setCurrentPage(Math.max(1, Math.min(p, totalPages))) }
+  function handleSearch(v) { setSearch(v) }
+  function handleCatFilter(id) { setCatFilter(id) }
 
   function countCat(id) {
     return logos.filter(l => (l.categories ?? []).includes(id)).length
@@ -878,14 +869,6 @@ export default function GestorLogos() {
             onChange={e => handleSearch(e.target.value)}
           />
           <div className={styles.toolbarRight}>
-            <label className={styles.pageSizeLabel}>Por página</label>
-            <select
-              className={styles.pageSizeSelect}
-              value={pageSize}
-              onChange={e => handlePageSize(Number(e.target.value))}
-            >
-              {PAGE_SIZE_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
             <button
               type="button"
               className="btn btn-primary"
@@ -943,7 +926,7 @@ export default function GestorLogos() {
             </p>
           )}
 
-          {paginated.map(logo => (
+          {filtered.map(logo => (
             <LogoCard
               key={logo.id}
               logo={logo}
@@ -957,28 +940,6 @@ export default function GestorLogos() {
             />
           ))}
         </div>
-
-        {totalPages > 1 && (
-          <div className={styles.pagination}>
-            <button
-              className={`btn btn-ghost ${styles.pageBtn}`}
-              onClick={() => goToPage(currentPage - 1)}
-              disabled={currentPage === 1}
-            >←</button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-              <button
-                key={p}
-                className={`btn ${p === currentPage ? 'btn-primary' : 'btn-ghost'} ${styles.pageBtn}`}
-                onClick={() => goToPage(p)}
-              >{p}</button>
-            ))}
-            <button
-              className={`btn btn-ghost ${styles.pageBtn}`}
-              onClick={() => goToPage(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >→</button>
-          </div>
-        )}
       </div>
 
       {showUpload && (
