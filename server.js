@@ -645,6 +645,53 @@ app.post('/api/ia/hs-code', async (req, res) => {
   }
 })
 
+// ── IA: sugerir código TARIC (UE, 10 dígitos) ────────────────────────────────
+
+const TARIC_SYSTEM_PROMPT =
+  'Eres un experto en clasificación arancelaria aduanera con profundo conocimiento ' +
+  'del Arancel Integrado de la Unión Europea (TARIC, 10 dígitos). ' +
+  'Tu especialidad es el material biológico de investigación (priones, proteínas, ' +
+  'tejidos, muestras, reactivos, cultivos, ADN/ARN, anticuerpos, etc.) y los productos ' +
+  'químicos / farmacéuticos asociados. ' +
+  'Responde ÚNICAMENTE con un objeto JSON válido con exactamente estas tres claves: ' +
+  '"codigo" (el código TARIC con puntos separadores en formato NNNN.NN.NN.NN, 10 dígitos), ' +
+  '"certeza" ("alta", "media" o "baja": alta = código claramente aplicable sin ambigüedad; ' +
+  'media = probable pero pueden existir alternativas; baja = tentativo, conviene consultar ' +
+  'con la aduana o un agente), ' +
+  '"justificacion" (1-2 frases breves explicando la partida elegida y por qué encaja). ' +
+  'Responde en español, sin texto fuera del JSON.'
+
+async function taricWithOpenAI(descripcion) {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [
+      { role: 'system', content: TARIC_SYSTEM_PROMPT },
+      { role: 'user',   content: `Clasifica bajo el sistema TARIC de la UE (10 dígitos) el siguiente producto:\n\n${descripcion}` },
+    ],
+    response_format: { type: 'json_object' },
+    max_tokens: 400,
+  })
+  return parseHsJson(completion.choices[0].message.content)
+}
+
+app.post('/api/ia/taric', async (req, res) => {
+  const { descripcion } = req.body
+  if (!descripcion?.trim()) {
+    return res.status(400).json({ error: 'Campo obligatorio: descripcion' })
+  }
+  if (!process.env.OPENAI_API_KEY) {
+    return res.status(503).json({ error: 'OPENAI_API_KEY no configurada en el servidor.' })
+  }
+  try {
+    const data = await taricWithOpenAI(descripcion)
+    res.json(data)
+  } catch (err) {
+    console.error('IA TARIC error:', err)
+    res.status(500).json({ error: classifyAIError(err, 'openai') })
+  }
+})
+
 // ── Persistent data store ─────────────────────────────────────────────────────
 
 const DATA_DIR = process.env.DATA_DIR || '/data'

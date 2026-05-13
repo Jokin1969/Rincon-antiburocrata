@@ -47,6 +47,7 @@ export default function PqpImport() {
   const [logoData, setLogoData] = useState(null)
   const [logoStatus, setLogoStatus] = useState(null)
   const logoFileRef = useRef(null)
+  const numeroRef = useRef(null)
 
   const { records, saveRecord, deleteRecord } = usePqpImportStore()
 
@@ -133,7 +134,11 @@ export default function PqpImport() {
   }
 
   async function handleSave() {
-    if (!form.numero.trim()) return
+    if (!form.numero.trim()) {
+      setError('Para guardar el certificado necesitas asignarle un Número (interno).')
+      numeroRef.current?.focus()
+      return
+    }
     const meta = {
       shipperNombre: form.shipper.organizacion || form.shipper.nombre,
       proveedor:     form.proveedor,
@@ -281,14 +286,16 @@ export default function PqpImport() {
 
         <div className={styles.topControls}>
           <div className="form-group" style={{ maxWidth: '220px' }}>
-            <label htmlFor="numero">Número (interno)</label>
+            <label htmlFor="numero">Número (interno) <span aria-hidden="true" style={{ color: '#c97a00' }}>*</span></label>
             <input
               id="numero"
+              ref={numeroRef}
               type="text"
               value={form.numero}
               onChange={e => setField('numero', e.target.value)}
               placeholder="PQP-2026-001"
               autoComplete="off"
+              style={!form.numero.trim() ? { background: '#fff7d6', borderColor: '#e8b800' } : undefined}
             />
           </div>
 
@@ -409,7 +416,7 @@ export default function PqpImport() {
           <button type="button" className="btn btn-ghost" disabled={!isValid || busy} onClick={() => handleDownload('pdf')}>
             {loadingFmt === 'pdf' ? 'Generando…' : '⬇ PDF'}
           </button>
-          <button type="button" className="btn btn-ghost" disabled={!form.numero.trim()} onClick={handleSave}>
+          <button type="button" className="btn btn-ghost" onClick={handleSave}>
             Guardar certificado
           </button>
           {savedMsg && <span className={styles.savedMsg}>✓ Guardado</span>}
