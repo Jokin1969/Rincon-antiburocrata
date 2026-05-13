@@ -202,7 +202,7 @@ export default function FacturaProforma() {
     }
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.numero.trim()) return
     const meta = {
       shipperNombre:    form.shipper.organizacion || form.shipper.nombre,
@@ -212,9 +212,14 @@ export default function FacturaProforma() {
         (form.consignee.organizacion || '').includes('CIC bioGUNE') ? 'HACIA CIC bioGUNE' : ''
       ),
     }
-    saveRecord(form.numero, { ...form, ...meta })
-    setSavedMsg(true)
-    setTimeout(() => setSavedMsg(false), 2500)
+    const ok = await saveRecord(form.numero, { ...form, ...meta })
+    if (ok) {
+      setError(null)
+      setSavedMsg(true)
+      setTimeout(() => setSavedMsg(false), 2500)
+    } else {
+      setError('No se pudo guardar la factura. Revisa la consola y vuelve a intentarlo.')
+    }
   }
 
   function loadRecord(record) {

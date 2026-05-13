@@ -144,7 +144,7 @@ export default function Documento1403() {
     e.target.value = ''
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.numero.trim()) return
     const meta = {
       shipperNombre: form.shipper.organizacion || form.shipper.nombre,
@@ -152,9 +152,14 @@ export default function Documento1403() {
       producto:      form.producto,
       direccion:     shipperEsCIC ? 'DESDE CIC bioGUNE' : '',
     }
-    saveRecord(form.numero, { ...form, ...meta })
-    setSavedMsg(true)
-    setTimeout(() => setSavedMsg(false), 2500)
+    const ok = await saveRecord(form.numero, { ...form, ...meta })
+    if (ok) {
+      setError(null)
+      setSavedMsg(true)
+      setTimeout(() => setSavedMsg(false), 2500)
+    } else {
+      setError('No se pudo guardar la declaración. Revisa la consola y vuelve a intentarlo.')
+    }
   }
 
   function loadRecord(record) {
