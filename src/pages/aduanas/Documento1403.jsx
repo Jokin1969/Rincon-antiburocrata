@@ -58,6 +58,11 @@ export default function Documento1403() {
   const [logoData, setLogoData] = useState(null)
   const [logoStatus, setLogoStatus] = useState(null)
   const logoFileRef = useRef(null)
+  const numeroRef = useRef(null)
+
+  const [taricIaLoading, setTaricIaLoading] = useState(false)
+  const [taricIaResult,  setTaricIaResult]  = useState(null)
+  const [taricIaError,   setTaricIaError]   = useState(null)
 
   const { records, saveRecord, deleteRecord } = useDocumento1403Store()
 
@@ -145,7 +150,11 @@ export default function Documento1403() {
   }
 
   async function handleSave() {
-    if (!form.numero.trim()) return
+    if (!form.numero.trim()) {
+      setError('Para guardar la declaración necesitas asignarle un Número (interno).')
+      numeroRef.current?.focus()
+      return
+    }
     const meta = {
       shipperNombre: form.shipper.organizacion || form.shipper.nombre,
       proveedor:     form.empresaOrigen,
@@ -159,6 +168,32 @@ export default function Documento1403() {
       setTimeout(() => setSavedMsg(false), 2500)
     } else {
       setError('No se pudo guardar la declaración. Revisa la consola y vuelve a intentarlo.')
+    }
+  }
+
+  async function handleTaricIa() {
+    if (!form.producto.trim()) {
+      setTaricIaError('Rellena primero «Producto denominado» para que la IA pueda clasificarlo.')
+      return
+    }
+    setTaricIaLoading(true)
+    setTaricIaResult(null)
+    setTaricIaError(null)
+    try {
+      const res = await fetch('/api/ia/taric', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ descripcion: form.producto.trim() }),
+      })
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        throw new Error(d.error || `Error ${res.status}`)
+      }
+      setTaricIaResult(await res.json())
+    } catch (err) {
+      setTaricIaError(err.message)
+    } finally {
+      setTaricIaLoading(false)
     }
   }
 
@@ -297,14 +332,16 @@ export default function Documento1403() {
 
         <div className={styles.topControls}>
           <div className="form-group" style={{ maxWidth: '220px' }}>
-            <label htmlFor="numero">Número (interno)</label>
+            <label htmlFor="numero">Número (interno) <span aria-hidden="true" style={{ color: '#c97a00' }}>*</span></label>
             <input
               id="numero"
+              ref={numeroRef}
               type="text"
               value={form.numero}
               onChange={e => setField('numero', e.target.value)}
               placeholder="1403-2026-001"
               autoComplete="off"
+              style={!form.numero.trim() ? { background: '#fff7d6', borderColor: '#e8b800' } : undefined}
             />
           </div>
 
@@ -447,11 +484,59 @@ export default function Documento1403() {
               <input id="pesoNeto" type="text" value={form.pesoNeto} onChange={e => setField('pesoNeto', e.target.value)} placeholder="0,50" autoComplete="off" />
             </div>
 
-            <div className="form-group" style={{ flex: '1 1 220px', maxWidth: '280px' }}>
+            <div className="form-group" style={{ flex: '1 1 260px', maxWidth: '380px' }}>
               <label htmlFor="taric">Partida TARIC</label>
-              <input id="taric" type="text" value={form.taric} onChange={e => setField('taric', e.target.value)} placeholder="p. ej. 3002.90.9090" autoComplete="off" />
+              <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'stretch' }}>
+                <input
+                  id="taric"
+                  type="text"
+                  value={form.taric}
+                  onChange={e => { setField('taric', e.target.value); setTaricIaResult(null) }}
+                  placeholder="p. ej. 3002.90.9090"
+                  autoComplete="off"
+                  style={{ flex: 1 }}
+                />
+                <button
+                  type="button"
+                  className={styles.hsIaBtn}
+                  disabled={!form.producto.trim() || taricIaLoading}
+                  onClick={handleTaricIa}
+                  title="Sugerir código TARIC con IA (GPT-4o) a partir de «Producto denominado»"
+                >
+                  {taricIaLoading ? 'Consultando…' : '✦ IA'}
+                </button>
+              </div>
             </div>
           </div>
+
+          {taricIaError && <p className={styles.hsIaErr}>{taricIaError}</p>}
+
+          {taricIaResult && (
+            <div className={styles.hsIaResult}>
+              <div className={styles.hsIaResultTop}>
+                <span className={styles.hsIaCode}>{taricIaResult.codigo}</span>
+                <span className={`${styles.hsIaCerteza} ${styles[`certeza${taricIaResult.certeza}`]}`}>
+                  {taricIaResult.certeza === 'alta' ? '● Alta certeza'
+                    : taricIaResult.certeza === 'media' ? '◑ Certeza media'
+                    : '○ Certeza baja'}
+                </span>
+                <button
+                  type="button"
+                  className={styles.hsIaApply}
+                  onClick={() => { setField('taric', taricIaResult.codigo); setTaricIaResult(null) }}
+                >
+                  ↑ Aplicar
+                </button>
+                <button
+                  type="button"
+                  className={styles.hsIaDismiss}
+                  onClick={() => setTaricIaResult(null)}
+                  title="Descartar"
+                >×</button>
+              </div>
+              <p className={styles.hsIaJustificacion}>{taricIaResult.justificacion}</p>
+            </div>
+          )}
 
           <div className="form-group">
             <label htmlFor="empresaOrigen">Empresa de origen (proveedor)</label>
@@ -521,7 +606,7 @@ export default function Documento1403() {
           <button type="button" className="btn btn-ghost" disabled={!isValid || busy} onClick={() => handleDownload('pdf')}>
             {loadingFmt === 'pdf' ? 'Generando…' : '⬇ PDF'}
           </button>
-          <button type="button" className="btn btn-ghost" disabled={!form.numero.trim()} onClick={handleSave}>
+          <button type="button" className="btn btn-ghost" onClick={handleSave}>
             Guardar declaración
           </button>
           {savedMsg && <span className={styles.savedMsg}>✓ Guardado</span>}
