@@ -17,16 +17,23 @@ function makeApiHooks(col) {
     useEffect(() => { refresh() }, [refresh])
 
     const saveRecord = useCallback(async (id, formData) => {
+      let ok = false
       try {
-        await fetch(`/api/store/${col}`, {
+        const res = await fetch(`/api/store/${col}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id, savedAt: new Date().toISOString(), form: formData }),
         })
+        ok = res.ok
+        if (!ok) {
+          const body = await res.text().catch(() => '')
+          console.error(`saveRecord ${col} HTTP ${res.status}`, body)
+        }
       } catch (err) {
         console.error('saveRecord:', err)
       }
       await refresh()
+      return ok
     }, [refresh])
 
     const deleteRecord = useCallback(async (id) => {
