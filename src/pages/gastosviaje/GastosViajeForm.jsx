@@ -1,0 +1,961 @@
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import PageHeader from '../../components/PageHeader'
+import styles from './GastosViajeForm.module.css'
+
+const TODAY = new Date().toISOString().split('T')[0]
+
+const CECO_OPTIONS = [
+  { code: '324P0894', label: 'CJD-Foundation (324P0894)' },
+  { code: '324P0862', label: 'PN-2025 (324P0862)' },
+  { code: '324P0887', label: '2026 Proof-of-Concept (324P0887)' },
+]
+
+const TICKET_TIPOS = {
+  autopista: { label: 'Autopista / Peaje', icon: '🛣️' },
+  avion:     { label: 'Avión',             icon: '✈️' },
+  tren:      { label: 'Tren',              icon: '🚂' },
+  autobus:   { label: 'Autobús',           icon: '🚌' },
+  parking:   { label: 'Parking',           icon: '🅿️' },
+}
+
+function uid() {
+  return crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)
+}
+
+function toNum(v) {
+  return parseFloat(String(v).replace(',', '.')) || 0
+}
+
+function eur(v) {
+  const n = toNum(v)
+  return n === 0 ? '0,00 €' : n.toFixed(2).replace('.', ',') + ' €'
+}
+
+function formatDate(d) {
+  if (!d) return ''
+  try {
+    return new Date(d + 'T12:00:00').toLocaleDateString('es-ES', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+    })
+  } catch { return d }
+}
+
+// ── Sub-component: TicketUploader ─────────────────────────────────────────────
+
+function TicketUploader({ tipo, onExtracted }) {
+  const [file, setFile]     = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError]   = useState(null)
+  const fileRef = useRef()
+
+  function handleFile(f) {
+    if (!f) return
+    setFile(f)
+    setError(null)
+  }
+
+  async function handleExtract() {
+    if (!file) return
+    setLoading(true)
+    setError(null)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('tipo', tipo)
+      const res  = await fetch('/api/gastos-viaje/ia-ticket', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
+      onExtracted(data)
+      setFile(null)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className={styles.uploader}>
+      <div
+        className={styles.dropZone}
+        onClick={() => fileRef.current?.click()}
+        onDragOver={e => e.preventDefault()}
+        onDrop={e => { e.preventDefault(); handleFile(e.dataTransfer.files[0]) }}
+      >
+        {file
+          ? <span className={styles.fileName}>{file.name}</span>
+          : <>
+              <span className={styles.dropIcon}>📎</span>
+              <span>Arrastra un archivo o toca para seleccionar</span>
+              <span className={styles.dropHint}>PDF, PNG o JPG · también cámara del móvil</span>
+            </>
+        }
+      </div>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="application/pdf,image/*"
+        capture="environment"
+        className={styles.hiddenInput}
+        onChange={e => handleFile(e.target.files[0])}
+      />
+      {file && (
+        <button
+          className="btn btn-primary"
+          onClick={handleExtract}
+          disabled={loading}
+        >
+          {loading ? 'Extrayendo con IA…' : '✨ Extraer datos con IA'}
+        </button>
+      )}
+      {error && <div className={`alert alert-error ${styles.uploaderError}`}>{error}</div>}
+    </div>
+  )
+}
+
+// ── Sub-component: TicketForm (fields + uploader) ─────────────────────────────
+
+function TicketForm({ tipo, onAdd }) {
+  const [fields, setFields] = useState({ nombre: '', fecha: TODAY, sinIva: '', conIva: '' })
+
+  function set(k, v) { setFields(prev => ({ ...prev, [k]: v })) }
+
+  function handleExtracted(data) {
+    setFields(prev => ({
+      nombre: data.nombre || prev.nombre,
+      fecha:  data.fecha  || prev.fecha,
+      sinIva: data.sinIva || prev.sinIva,
+      conIva: data.conIva || prev.conIva,
+    }))
+  }
+
+  function handleAdd() {
+    if (!fields.conIva) return
+    onAdd({ ...fields, id: uid() })
+    setFields({ nombre: '', fecha: TODAY, sinIva: '', conIva: '' })
+  }
+
+  return (
+    <div className={styles.subForm}>
+      <TicketUploader tipo={tipo} onExtracted={handleExtracted} />
+
+      <div className={styles.fieldRow}>
+        <div className="form-group" style={{ flex: 2 }}>
+          <label>Nombre / descripción</label>
+          <input type="text" value={fields.nombre} onChange={e => set('nombre', e.target.value)}
+            placeholder="Nombre del ticket o establecimiento" autoComplete="off" />
+        </div>
+        <div className="form-group" style={{ flex: 1 }}>
+          <label>Fecha</label>
+          <input type="date" value={fields.fecha} onChange={e => set('fecha', e.target.value)} />
+        </div>
+      </div>
+      <div className={styles.fieldRow}>
+        <div className="form-group">
+          <label>Importe sin IVA</label>
+          <input type="text" inputMode="decimal" value={fields.sinIva}
+            onChange={e => set('sinIva', e.target.value)} placeholder="0.00" autoComplete="off" />
+        </div>
+        <div className="form-group">
+          <label>Importe con IVA</label>
+          <input type="text" inputMode="decimal" value={fields.conIva}
+            onChange={e => set('conIva', e.target.value)} placeholder="0.00" autoComplete="off" />
+        </div>
+        <div className={styles.addBtnWrapper}>
+          <button className="btn btn-primary" onClick={handleAdd} disabled={!fields.conIva}>
+            + Añadir
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Sub-component: TicketList ─────────────────────────────────────────────────
+
+function TicketList({ items, onRemove }) {
+  if (items.length === 0) return null
+  const total = items.reduce((acc, it) => acc + toNum(it.conIva), 0)
+  return (
+    <div className={styles.itemList}>
+      {items.map(it => (
+        <div key={it.id} className={styles.itemRow}>
+          <span className={styles.itemName}>{it.nombre || '—'}</span>
+          <span className={styles.itemDate}>{formatDate(it.fecha)}</span>
+          <span className={styles.itemAmount}>{eur(it.sinIva)} / {eur(it.conIva)}</span>
+          <button className={styles.removeBtn} onClick={() => onRemove(it.id)}>✕</button>
+        </div>
+      ))}
+      <div className={styles.itemTotal}>
+        <span>Total</span>
+        <span>{eur(total)}</span>
+      </div>
+    </div>
+  )
+}
+
+// ── Sub-component: CocheForm ──────────────────────────────────────────────────
+
+function CocheForm({ onAdd }) {
+  const [fields, setFields] = useState({
+    desde: '', hasta: '', kmIda: '', kmVuelta: '', precioPorKm: 0.29, precioCustom: false,
+  })
+
+  function set(k, v) { setFields(prev => ({ ...prev, [k]: v })) }
+
+  const totalKm   = toNum(fields.kmIda) + toNum(fields.kmVuelta)
+  const totalEur  = totalKm * toNum(fields.precioPorKm)
+
+  function handleAdd() {
+    if (!fields.kmIda && !fields.kmVuelta) return
+    onAdd({ desde: fields.desde, hasta: fields.hasta, kmIda: fields.kmIda,
+            kmVuelta: fields.kmVuelta, precioPorKm: fields.precioPorKm, id: uid() })
+    setFields({ desde: '', hasta: '', kmIda: '', kmVuelta: '', precioPorKm: 0.29, precioCustom: false })
+  }
+
+  return (
+    <div className={styles.subForm}>
+      <div className={styles.fieldRow}>
+        <div className="form-group">
+          <label>Desde <span className={styles.optional}>(opcional)</span></label>
+          <input type="text" value={fields.desde} onChange={e => set('desde', e.target.value)}
+            placeholder="Ciudad o lugar de origen" autoComplete="off" />
+        </div>
+        <div className="form-group">
+          <label>Hasta <span className={styles.optional}>(opcional)</span></label>
+          <input type="text" value={fields.hasta} onChange={e => set('hasta', e.target.value)}
+            placeholder="Ciudad o destino" autoComplete="off" />
+        </div>
+      </div>
+      <div className={styles.fieldRow}>
+        <div className="form-group">
+          <label>Km de ida</label>
+          <input type="text" inputMode="decimal" value={fields.kmIda}
+            onChange={e => set('kmIda', e.target.value)} placeholder="0" autoComplete="off" />
+        </div>
+        <div className="form-group">
+          <label>Km de vuelta</label>
+          <input type="text" inputMode="decimal" value={fields.kmVuelta}
+            onChange={e => set('kmVuelta', e.target.value)} placeholder="0" autoComplete="off" />
+        </div>
+        <div className="form-group">
+          <label>€/km</label>
+          <div className={styles.kmToggle}>
+            <button
+              type="button"
+              className={`${styles.toggleBtn} ${!fields.precioCustom && fields.precioPorKm === 0.29 ? styles.toggleActive : ''}`}
+              onClick={() => setFields(p => ({ ...p, precioPorKm: 0.29, precioCustom: false }))}
+            >0,29 €</button>
+            <button
+              type="button"
+              className={`${styles.toggleBtn} ${!fields.precioCustom && fields.precioPorKm === 0.26 ? styles.toggleActive : ''}`}
+              onClick={() => setFields(p => ({ ...p, precioPorKm: 0.26, precioCustom: false }))}
+            >0,26 €</button>
+            <button
+              type="button"
+              className={`${styles.toggleBtn} ${fields.precioCustom ? styles.toggleActive : ''}`}
+              onClick={() => setFields(p => ({ ...p, precioCustom: !p.precioCustom }))}
+            >Otro</button>
+          </div>
+          {fields.precioCustom && (
+            <input type="text" inputMode="decimal" value={fields.precioPorKm}
+              onChange={e => set('precioPorKm', e.target.value)}
+              placeholder="0.29" style={{ marginTop: '0.4rem' }} autoComplete="off" />
+          )}
+        </div>
+      </div>
+      <div className={styles.cocheCalc}>
+        <span>Total km: <strong>{totalKm}</strong></span>
+        <span>Importe: <strong>{eur(totalEur)}</strong></span>
+        <button className="btn btn-primary" onClick={handleAdd}
+          disabled={!fields.kmIda && !fields.kmVuelta}>
+          + Añadir
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function CocheList({ items, onRemove }) {
+  if (items.length === 0) return null
+  const total = items.reduce((acc, it) => {
+    return acc + (toNum(it.kmIda) + toNum(it.kmVuelta)) * toNum(it.precioPorKm ?? 0.29)
+  }, 0)
+  return (
+    <div className={styles.itemList}>
+      {items.map(it => {
+        const km  = toNum(it.kmIda) + toNum(it.kmVuelta)
+        const imp = km * toNum(it.precioPorKm ?? 0.29)
+        return (
+          <div key={it.id} className={styles.itemRow}>
+            <span className={styles.itemName}>
+              {[it.desde, it.hasta].filter(Boolean).join(' → ') || 'Desplazamiento'}
+            </span>
+            <span className={styles.itemDate}>{km} km × {toNum(it.precioPorKm ?? 0.29).toFixed(2)} €</span>
+            <span className={styles.itemAmount}>{eur(imp)}</span>
+            <button className={styles.removeBtn} onClick={() => onRemove(it.id)}>✕</button>
+          </div>
+        )
+      })}
+      <div className={styles.itemTotal}>
+        <span>Total</span>
+        <span>{eur(total)}</span>
+      </div>
+    </div>
+  )
+}
+
+// ── Sub-component: ManutencioForm ─────────────────────────────────────────────
+
+function ManutencioForm({ onAdd }) {
+  const [fields, setFields] = useState({ tipo: 'comida', nombre: '', lugar: '', fecha: TODAY, sinIva: '', conIva: '' })
+
+  function set(k, v) { setFields(prev => ({ ...prev, [k]: v })) }
+
+  function handleExtracted(data) {
+    setFields(prev => ({
+      ...prev,
+      nombre: data.nombre || prev.nombre,
+      fecha:  data.fecha  || prev.fecha,
+      sinIva: data.sinIva || prev.sinIva,
+      conIva: data.conIva || prev.conIva,
+    }))
+  }
+
+  function handleAdd() {
+    if (!fields.conIva) return
+    onAdd({ ...fields, id: uid() })
+    setFields({ tipo: 'comida', nombre: '', lugar: '', fecha: TODAY, sinIva: '', conIva: '' })
+  }
+
+  return (
+    <div className={styles.subForm}>
+      <TicketUploader tipo="manutencion" onExtracted={handleExtracted} />
+
+      <div className={styles.fieldRow}>
+        <div className="form-group">
+          <label>Tipo de comida</label>
+          <div className={styles.tipoSelector}>
+            {['desayuno','comida','cena'].map(t => (
+              <button key={t} type="button"
+                className={`${styles.tipoBtn} ${fields.tipo === t ? styles.tipoBtnActive : ''}`}
+                onClick={() => set('tipo', t)}>
+                {t === 'desayuno' ? '☀️ Desayuno' : t === 'comida' ? '🍽️ Comida' : '🌙 Cena'}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="form-group">
+          <label>Fecha</label>
+          <input type="date" value={fields.fecha} onChange={e => set('fecha', e.target.value)} />
+        </div>
+      </div>
+      <div className={styles.fieldRow}>
+        <div className="form-group" style={{ flex: 2 }}>
+          <label>Establecimiento <span className={styles.optional}>(opcional)</span></label>
+          <input type="text" value={fields.nombre} onChange={e => set('nombre', e.target.value)}
+            placeholder="Nombre del restaurante, cafetería…" autoComplete="off" />
+        </div>
+        <div className="form-group" style={{ flex: 2 }}>
+          <label>Lugar <span className={styles.optional}>(opcional)</span></label>
+          <input type="text" value={fields.lugar} onChange={e => set('lugar', e.target.value)}
+            placeholder="Ciudad o dirección" autoComplete="off" />
+        </div>
+      </div>
+      <div className={styles.fieldRow}>
+        <div className="form-group">
+          <label>Importe sin IVA</label>
+          <input type="text" inputMode="decimal" value={fields.sinIva}
+            onChange={e => set('sinIva', e.target.value)} placeholder="0.00" autoComplete="off" />
+        </div>
+        <div className="form-group">
+          <label>Importe con IVA</label>
+          <input type="text" inputMode="decimal" value={fields.conIva}
+            onChange={e => set('conIva', e.target.value)} placeholder="0.00" autoComplete="off" />
+        </div>
+        <div className={styles.addBtnWrapper}>
+          <button className="btn btn-primary" onClick={handleAdd} disabled={!fields.conIva}>
+            + Añadir
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Sub-component: HotelForm ──────────────────────────────────────────────────
+
+function HotelForm({ onAdd }) {
+  const [fields, setFields] = useState({ nombre: '', fechaCheckin: '', fecha: TODAY, sinIva: '', conIva: '' })
+
+  function set(k, v) { setFields(prev => ({ ...prev, [k]: v })) }
+
+  function handleExtracted(data) {
+    setFields(prev => ({
+      ...prev,
+      nombre: data.nombre || prev.nombre,
+      fecha:  data.fecha  || prev.fecha,
+      sinIva: data.sinIva || prev.sinIva,
+      conIva: data.conIva || prev.conIva,
+    }))
+  }
+
+  function handleAdd() {
+    if (!fields.conIva) return
+    onAdd({ ...fields, id: uid() })
+    setFields({ nombre: '', fechaCheckin: '', fecha: TODAY, sinIva: '', conIva: '' })
+  }
+
+  return (
+    <div className={styles.subForm}>
+      <TicketUploader tipo="hotel" onExtracted={handleExtracted} />
+      <div className={styles.fieldRow}>
+        <div className="form-group" style={{ flex: 2 }}>
+          <label>Hotel / Alojamiento</label>
+          <input type="text" value={fields.nombre} onChange={e => set('nombre', e.target.value)}
+            placeholder="Nombre del hotel" autoComplete="off" />
+        </div>
+      </div>
+      <div className={styles.fieldRow}>
+        <div className="form-group">
+          <label>Fecha check-in <span className={styles.optional}>(opcional)</span></label>
+          <input type="date" value={fields.fechaCheckin} onChange={e => set('fechaCheckin', e.target.value)} />
+        </div>
+        <div className="form-group">
+          <label>Fecha check-out</label>
+          <input type="date" value={fields.fecha} onChange={e => set('fecha', e.target.value)} />
+        </div>
+      </div>
+      <div className={styles.fieldRow}>
+        <div className="form-group">
+          <label>Importe sin IVA</label>
+          <input type="text" inputMode="decimal" value={fields.sinIva}
+            onChange={e => set('sinIva', e.target.value)} placeholder="0.00" autoComplete="off" />
+        </div>
+        <div className="form-group">
+          <label>Importe con IVA</label>
+          <input type="text" inputMode="decimal" value={fields.conIva}
+            onChange={e => set('conIva', e.target.value)} placeholder="0.00" autoComplete="off" />
+        </div>
+        <div className={styles.addBtnWrapper}>
+          <button className="btn btn-primary" onClick={handleAdd} disabled={!fields.conIva}>
+            + Añadir
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Sub-component: OtrosGastoForm ─────────────────────────────────────────────
+
+function OtrosGastoForm({ onAdd }) {
+  const [fields, setFields] = useState({ tipo: '', descripcion: '', fecha: TODAY, sinIva: '', conIva: '' })
+
+  function set(k, v) { setFields(prev => ({ ...prev, [k]: v })) }
+
+  function handleAdd() {
+    if (!fields.conIva && !fields.descripcion) return
+    onAdd({ ...fields, id: uid() })
+    setFields({ tipo: '', descripcion: '', fecha: TODAY, sinIva: '', conIva: '' })
+  }
+
+  return (
+    <div className={styles.subForm}>
+      <div className={styles.fieldRow}>
+        <div className="form-group">
+          <label>Tipo de gasto</label>
+          <input type="text" value={fields.tipo} onChange={e => set('tipo', e.target.value)}
+            placeholder="Ej: taxi, seguro viaje, visado…" autoComplete="off" />
+        </div>
+        <div className="form-group">
+          <label>Fecha</label>
+          <input type="date" value={fields.fecha} onChange={e => set('fecha', e.target.value)} />
+        </div>
+      </div>
+      <div className="form-group">
+        <label>Descripción <span className={styles.optional}>(opcional)</span></label>
+        <input type="text" value={fields.descripcion} onChange={e => set('descripcion', e.target.value)}
+          placeholder="Detalle adicional" autoComplete="off" />
+      </div>
+      <div className={styles.fieldRow}>
+        <div className="form-group">
+          <label>Importe sin IVA</label>
+          <input type="text" inputMode="decimal" value={fields.sinIva}
+            onChange={e => set('sinIva', e.target.value)} placeholder="0.00" autoComplete="off" />
+        </div>
+        <div className="form-group">
+          <label>Importe con IVA</label>
+          <input type="text" inputMode="decimal" value={fields.conIva}
+            onChange={e => set('conIva', e.target.value)} placeholder="0.00" autoComplete="off" />
+        </div>
+        <div className={styles.addBtnWrapper}>
+          <button className="btn btn-primary" onClick={handleAdd}
+            disabled={!fields.conIva && !fields.descripcion}>
+            + Añadir
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Sub-component: OtrosTrForm (Otros transporte) ─────────────────────────────
+
+function OtrosTrForm({ onAdd }) {
+  const [fields, setFields] = useState({ nombre: '', fecha: TODAY, sinIva: '', conIva: '' })
+
+  function set(k, v) { setFields(prev => ({ ...prev, [k]: v })) }
+
+  function handleAdd() {
+    if (!fields.conIva) return
+    onAdd({ ...fields, id: uid() })
+    setFields({ nombre: '', fecha: TODAY, sinIva: '', conIva: '' })
+  }
+
+  return (
+    <div className={styles.subForm}>
+      <div className={styles.fieldRow}>
+        <div className="form-group" style={{ flex: 2 }}>
+          <label>Tipo / descripción de transporte</label>
+          <input type="text" value={fields.nombre} onChange={e => set('nombre', e.target.value)}
+            placeholder="Ej: taxi, ferry, metro, funicular…" autoComplete="off" />
+        </div>
+        <div className="form-group">
+          <label>Fecha</label>
+          <input type="date" value={fields.fecha} onChange={e => set('fecha', e.target.value)} />
+        </div>
+      </div>
+      <div className={styles.fieldRow}>
+        <div className="form-group">
+          <label>Importe sin IVA</label>
+          <input type="text" inputMode="decimal" value={fields.sinIva}
+            onChange={e => set('sinIva', e.target.value)} placeholder="0.00" autoComplete="off" />
+        </div>
+        <div className="form-group">
+          <label>Importe con IVA</label>
+          <input type="text" inputMode="decimal" value={fields.conIva}
+            onChange={e => set('conIva', e.target.value)} placeholder="0.00" autoComplete="off" />
+        </div>
+        <div className={styles.addBtnWrapper}>
+          <button className="btn btn-primary" onClick={handleAdd} disabled={!fields.conIva}>
+            + Añadir
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Collapsible section ───────────────────────────────────────────────────────
+
+function Section({ icon, label, badge, children, defaultOpen = false }) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <div className={`${styles.section} ${open ? styles.sectionOpen : ''}`}>
+      <button type="button" className={styles.sectionBtn} onClick={() => setOpen(o => !o)}>
+        <span className={styles.sectionIcon}>{icon}</span>
+        <span className={styles.sectionLabel}>{label}</span>
+        {badge > 0 && <span className={styles.badge}>{badge}</span>}
+        <span className={styles.chevron}>{open ? '▲' : '▼'}</span>
+      </button>
+      {open && <div className={styles.sectionBody}>{children}</div>}
+    </div>
+  )
+}
+
+function SubSection({ icon, label, badge, children }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className={`${styles.subSection} ${open ? styles.subSectionOpen : ''}`}>
+      <button type="button" className={styles.subSectionBtn} onClick={() => setOpen(o => !o)}>
+        <span>{icon}</span>
+        <span>{label}</span>
+        {badge > 0 && <span className={styles.badge}>{badge}</span>}
+        <span className={styles.chevron}>{open ? '▲' : '▼'}</span>
+      </button>
+      {open && <div className={styles.subSectionBody}>{children}</div>}
+    </div>
+  )
+}
+
+// ── Main form ─────────────────────────────────────────────────────────────────
+
+const EMPTY_VIAJE = {
+  nombre:      '',
+  fechaInicio: TODAY,
+  fechaFin:    '',
+  logoCustom:  null,
+  ceco:        '',
+  transporte: { autopista: [], coche: [], avion: [], tren: [], autobus: [], parking: [], otros: [] },
+  manutencion: [],
+  hotel:       [],
+  otros:       [],
+}
+
+export default function GastosViajeForm() {
+  const { id }   = useParams()
+  const navigate = useNavigate()
+  const isNew    = !id || id === 'nuevo'
+
+  const [viaje, setViaje]   = useState(EMPTY_VIAJE)
+  const [viajeId, setViajeId] = useState(isNew ? null : id)
+  const [loading, setLoading] = useState(!isNew)
+  const [saving, setSaving]   = useState(false)
+  const [saved, setSaved]     = useState(false)
+  const [error, setError]     = useState(null)
+  const [generating, setGenerating] = useState(null)
+  const logoRef = useRef()
+
+  // Load existing viaje
+  useEffect(() => {
+    if (isNew) return
+    setLoading(true)
+    fetch(`/api/gastos-viaje/${id}`)
+      .then(r => r.json())
+      .then(data => {
+        setViaje({
+          ...EMPTY_VIAJE,
+          ...data,
+          transporte: { ...EMPTY_VIAJE.transporte, ...data.transporte },
+        })
+        setViajeId(data.id)
+      })
+      .catch(() => setError('No se pudo cargar el viaje.'))
+      .finally(() => setLoading(false))
+  }, [id, isNew])
+
+  // ── Setters ─────────────────────────────────────────────────────────────────
+  function setField(k, v) {
+    setViaje(prev => ({ ...prev, [k]: v }))
+    setSaved(false)
+  }
+
+  function setTransporte(tipo, fn) {
+    setViaje(prev => ({
+      ...prev,
+      transporte: { ...prev.transporte, [tipo]: fn(prev.transporte[tipo] || []) },
+    }))
+    setSaved(false)
+  }
+
+  function addTransporte(tipo, item) {
+    setTransporte(tipo, list => [...list, item])
+  }
+
+  function removeTransporte(tipo, itemId) {
+    setTransporte(tipo, list => list.filter(i => i.id !== itemId))
+  }
+
+  function setSection(key, fn) {
+    setViaje(prev => ({ ...prev, [key]: fn(prev[key] || []) }))
+    setSaved(false)
+  }
+
+  // ── Logo upload ─────────────────────────────────────────────────────────────
+  function handleLogoChange(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = ev => setField('logoCustom', ev.target.result)
+    reader.readAsDataURL(file)
+  }
+
+  // ── Save ────────────────────────────────────────────────────────────────────
+  async function handleSave() {
+    setSaving(true)
+    setError(null)
+    try {
+      // Apply date defaults
+      const toSave = {
+        ...viaje,
+        fechaInicio: viaje.fechaInicio || TODAY,
+      }
+
+      let res
+      if (!viajeId) {
+        res = await fetch('/api/gastos-viaje', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(toSave),
+        })
+      } else {
+        res = await fetch(`/api/gastos-viaje/${viajeId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(toSave),
+        })
+      }
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
+
+      if (!viajeId) {
+        setViajeId(data.id)
+        navigate(`/gastos-viaje/${data.id}`, { replace: true })
+      }
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // ── Generate report ─────────────────────────────────────────────────────────
+  async function handleGenerate(format) {
+    if (!viajeId) {
+      alert('Guarda el viaje primero antes de generar el informe.')
+      return
+    }
+    setGenerating(format)
+    setError(null)
+    try {
+      const res = await fetch(`/api/gastos-viaje/${viajeId}/generar?format=${format}`, {
+        method: 'POST',
+      })
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        throw new Error(d.error || `Error ${res.status}`)
+      }
+      const blob = await res.blob()
+      const url  = URL.createObjectURL(blob)
+      const a    = document.createElement('a')
+      a.href = url
+      const safe = (viaje.nombre || 'GastosViaje').replace(/[^a-zA-Z0-9_\-]/g, '_').slice(0, 40)
+      a.download = `GastosViaje_${safe}_${viaje.fechaInicio || TODAY}.${format}`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setGenerating(null)
+    }
+  }
+
+  // ── Computed totals for display ─────────────────────────────────────────────
+  const tr = viaje.transporte
+  const totalTransporte = [
+    ...tr.autopista, ...tr.avion, ...tr.tren, ...tr.autobus, ...tr.parking, ...tr.otros,
+  ].reduce((a, it) => a + toNum(it.conIva), 0) +
+  tr.coche.reduce((a, it) => a + (toNum(it.kmIda) + toNum(it.kmVuelta)) * toNum(it.precioPorKm ?? 0.29), 0)
+
+  const totalManutencion = viaje.manutencion.reduce((a, it) => a + toNum(it.conIva), 0)
+  const totalHotel       = viaje.hotel.reduce((a, it) => a + toNum(it.conIva), 0)
+  const totalOtros       = viaje.otros.reduce((a, it) => a + toNum(it.conIva), 0)
+  const totalGeneral     = totalTransporte + totalManutencion + totalHotel + totalOtros
+
+  const countTr = Object.values(tr).reduce((a, arr) => a + arr.length, 0)
+
+  if (loading) return <p style={{ padding: '2rem', color: 'var(--text-muted)' }}>Cargando…</p>
+
+  return (
+    <div>
+      <PageHeader
+        back="/gastos-viaje"
+        backLabel="Gastos de viaje"
+        title={viaje.nombre || (isNew ? 'Nuevo viaje' : 'Editar viaje')}
+        subtitle="Registra todos los gastos del desplazamiento y genera el informe."
+      />
+
+      {/* ── Header fields ─────────────────────────────────────────────────── */}
+      <div className={styles.headerCard}>
+
+        {/* Logo */}
+        <div className={styles.logoRow}>
+          <div className={styles.logoPreview} onClick={() => logoRef.current?.click()}>
+            {viaje.logoCustom
+              ? <img src={viaje.logoCustom} alt="Logo" className={styles.logoImg} />
+              : <img src="/logos/animalario/cicbiogune.png" alt="CIC bioGUNE" className={styles.logoImg} />
+            }
+            <span className={styles.logoHint}>Toca para cambiar</span>
+          </div>
+          <input ref={logoRef} type="file" accept="image/*" className={styles.hiddenInput}
+            onChange={handleLogoChange} />
+          {viaje.logoCustom && (
+            <button className="btn btn-ghost" style={{ fontSize: '0.8rem' }}
+              onClick={() => setField('logoCustom', null)}>
+              Usar logo por defecto
+            </button>
+          )}
+        </div>
+
+        {/* Nombre */}
+        <div className="form-group">
+          <label htmlFor="nombre">Nombre del documento</label>
+          <input id="nombre" type="text" value={viaje.nombre}
+            onChange={e => setField('nombre', e.target.value)}
+            placeholder="Ej: Viaje a Madrid – Congreso PRION 2026"
+            autoComplete="off" maxLength={120} />
+        </div>
+
+        {/* Fechas */}
+        <div className={styles.fieldRow}>
+          <div className="form-group">
+            <label htmlFor="fechaInicio">Fecha de inicio</label>
+            <input id="fechaInicio" type="date" value={viaje.fechaInicio}
+              onChange={e => {
+                setField('fechaInicio', e.target.value)
+                if (viaje.fechaFin && e.target.value > viaje.fechaFin)
+                  setField('fechaFin', '')
+              }} />
+          </div>
+          <div className="form-group">
+            <label htmlFor="fechaFin">
+              Fecha de fin <span className={styles.optional}>(dejar vacío si es un solo día)</span>
+            </label>
+            <input id="fechaFin" type="date" value={viaje.fechaFin}
+              min={viaje.fechaInicio || TODAY}
+              onChange={e => setField('fechaFin', e.target.value)}
+              disabled={!viaje.fechaInicio} />
+          </div>
+        </div>
+
+        {/* CeCO */}
+        <div className="form-group" style={{ maxWidth: '400px' }}>
+          <label htmlFor="ceco">Código CeCO</label>
+          <select id="ceco" value={viaje.ceco} onChange={e => setField('ceco', e.target.value)}>
+            <option value="">— Sin especificar —</option>
+            {CECO_OPTIONS.map(o => (
+              <option key={o.code} value={o.code}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* ── Secciones de gastos ────────────────────────────────────────────── */}
+
+      {/* Transporte */}
+      <Section icon="🚗" label="Transporte" badge={countTr}>
+        {/* Autopista */}
+        <SubSection icon="🛣️" label="Autopista / Peaje" badge={tr.autopista.length}>
+          <TicketForm tipo="autopista" onAdd={item => addTransporte('autopista', item)} />
+          <TicketList items={tr.autopista} onRemove={id => removeTransporte('autopista', id)} />
+        </SubSection>
+
+        {/* Coche */}
+        <SubSection icon="🚗" label="Coche (vehículo propio)" badge={tr.coche.length}>
+          <CocheForm onAdd={item => addTransporte('coche', item)} />
+          <CocheList items={tr.coche} onRemove={id => removeTransporte('coche', id)} />
+        </SubSection>
+
+        {/* Avión */}
+        <SubSection icon="✈️" label="Avión" badge={tr.avion.length}>
+          <TicketForm tipo="avion" onAdd={item => addTransporte('avion', item)} />
+          <TicketList items={tr.avion} onRemove={id => removeTransporte('avion', id)} />
+        </SubSection>
+
+        {/* Tren */}
+        <SubSection icon="🚂" label="Tren" badge={tr.tren.length}>
+          <TicketForm tipo="tren" onAdd={item => addTransporte('tren', item)} />
+          <TicketList items={tr.tren} onRemove={id => removeTransporte('tren', id)} />
+        </SubSection>
+
+        {/* Autobús */}
+        <SubSection icon="🚌" label="Autobús" badge={tr.autobus.length}>
+          <TicketForm tipo="autobus" onAdd={item => addTransporte('autobus', item)} />
+          <TicketList items={tr.autobus} onRemove={id => removeTransporte('autobus', id)} />
+        </SubSection>
+
+        {/* Parking */}
+        <SubSection icon="🅿️" label="Parking" badge={tr.parking.length}>
+          <TicketForm tipo="parking" onAdd={item => addTransporte('parking', item)} />
+          <TicketList items={tr.parking} onRemove={id => removeTransporte('parking', id)} />
+        </SubSection>
+
+        {/* Otros transporte */}
+        <SubSection icon="🚕" label="Otros transportes" badge={tr.otros.length}>
+          <OtrosTrForm onAdd={item => addTransporte('otros', item)} />
+          <TicketList items={tr.otros} onRemove={id => removeTransporte('otros', id)} />
+        </SubSection>
+
+        {totalTransporte > 0 && (
+          <div className={styles.sectionTotal}>
+            Total transporte: <strong>{eur(totalTransporte)}</strong>
+          </div>
+        )}
+      </Section>
+
+      {/* Manutención */}
+      <Section icon="🍽️" label="Manutención" badge={viaje.manutencion.length}>
+        <ManutencioForm onAdd={item => setSection('manutencion', list => [...list, item])} />
+        <TicketList
+          items={viaje.manutencion.map(it => ({ ...it, nombre: [it.tipo ? (it.tipo.charAt(0).toUpperCase() + it.tipo.slice(1)) : '', it.nombre || it.lugar].filter(Boolean).join(' – ') }))}
+          onRemove={id => setSection('manutencion', list => list.filter(i => i.id !== id))}
+        />
+        {totalManutencion > 0 && (
+          <div className={styles.sectionTotal}>
+            Total manutención: <strong>{eur(totalManutencion)}</strong>
+          </div>
+        )}
+      </Section>
+
+      {/* Hotel */}
+      <Section icon="🏨" label="Alojamiento / Hotel" badge={viaje.hotel.length}>
+        <HotelForm onAdd={item => setSection('hotel', list => [...list, item])} />
+        <TicketList
+          items={viaje.hotel}
+          onRemove={id => setSection('hotel', list => list.filter(i => i.id !== id))}
+        />
+        {totalHotel > 0 && (
+          <div className={styles.sectionTotal}>
+            Total alojamiento: <strong>{eur(totalHotel)}</strong>
+          </div>
+        )}
+      </Section>
+
+      {/* Otros gastos */}
+      <Section icon="📋" label="Otros gastos" badge={viaje.otros.length}>
+        <OtrosGastoForm onAdd={item => setSection('otros', list => [...list, item])} />
+        <TicketList
+          items={viaje.otros.map(it => ({
+            ...it,
+            nombre: [it.tipo, it.descripcion].filter(Boolean).join(' – ') || '—',
+          }))}
+          onRemove={id => setSection('otros', list => list.filter(i => i.id !== id))}
+        />
+        {totalOtros > 0 && (
+          <div className={styles.sectionTotal}>
+            Total otros: <strong>{eur(totalOtros)}</strong>
+          </div>
+        )}
+      </Section>
+
+      {/* ── Resumen y acciones ─────────────────────────────────────────────── */}
+      {totalGeneral > 0 && (
+        <div className={styles.totalCard}>
+          <div className={styles.totalRow}>
+            {totalTransporte  > 0 && <span>Transporte: <strong>{eur(totalTransporte)}</strong></span>}
+            {totalManutencion > 0 && <span>Manutención: <strong>{eur(totalManutencion)}</strong></span>}
+            {totalHotel       > 0 && <span>Alojamiento: <strong>{eur(totalHotel)}</strong></span>}
+            {totalOtros       > 0 && <span>Otros: <strong>{eur(totalOtros)}</strong></span>}
+          </div>
+          <div className={styles.totalGeneral}>
+            TOTAL GENERAL: <strong>{eur(totalGeneral)}</strong>
+          </div>
+        </div>
+      )}
+
+      {error && <div className="alert alert-error" style={{ marginTop: '1rem' }}>{error}</div>}
+
+      <div className={styles.actions}>
+        <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+          {saving ? 'Guardando…' : saved ? '✓ Guardado' : '💾 Guardar'}
+        </button>
+        <button className="btn btn-primary" onClick={() => handleGenerate('docx')}
+          disabled={!!generating || !viajeId}>
+          {generating === 'docx' ? 'Generando…' : '⬇ Informe .docx'}
+        </button>
+        <button className="btn btn-ghost" onClick={() => handleGenerate('pdf')}
+          disabled={!!generating || !viajeId}>
+          {generating === 'pdf' ? 'Generando…' : '⬇ Informe PDF'}
+        </button>
+        {!viajeId && (
+          <span className={styles.saveHint}>Guarda primero para poder generar el informe</span>
+        )}
+      </div>
+    </div>
+  )
+}
