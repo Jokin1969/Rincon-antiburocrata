@@ -3,6 +3,7 @@ import animalarioRouter       from './server/routes/animalario.js'
 import animalarioExportRouter from './server/routes/animalario-export.js'
 import animalarioBackupRouter, { initAutoBackup } from './server/routes/animalario-backup.js'
 import gastosViajeRouter      from './server/routes/gastosViaje.js'
+import gastosViajeBackupRouter, { initGastosViajeAutoBackup } from './server/routes/gastosViaje-backup.js'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'fs'
@@ -792,6 +793,8 @@ initAutoBackup()
 
 // ── Gastos de viaje ───────────────────────────────────────────────────────────
 app.use('/api/gastos-viaje', gastosViajeRouter)
+app.use('/api/gastos-viaje', gastosViajeBackupRouter)
+initGastosViajeAutoBackup()
 
 app.post('/api/gastos-viaje/:id/generar', async (req, res) => {
   const DATA_DIR_GV   = process.env.DATA_DIR ?? join(__dirname, 'data')
