@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageHeader from '../../components/PageHeader'
+import BackupManager from './BackupManager'
 import styles from './GastosViajeList.module.css'
 
 function formatDate(d) {
@@ -122,6 +123,8 @@ export default function GastosViajeList() {
           </div>
         )}
       </section>
+
+      <BackupManager />
     </div>
   )
 }
