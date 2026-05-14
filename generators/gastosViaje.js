@@ -347,15 +347,16 @@ function capitalizeFirst(s) {
 
 export async function generateGastosViaje(viaje) {
   const {
-    nombre       = '',
-    fechaInicio  = '',
-    fechaFin     = '',
-    logoCustom   = null,
-    ceco         = '',
-    transporte   = {},
-    manutencion  = [],
-    hotel        = [],
-    otros        = [],
+    nombre        = '',
+    fechaInicio   = '',
+    fechaFin      = '',
+    logoCustom    = null,
+    ceco          = '',
+    numeroPedido  = '',
+    transporte    = {},
+    manutencion   = [],
+    hotel         = [],
+    otros         = [],
   } = viaje
 
   // ── Load images ──────────────────────────────────────────────────────────────
@@ -379,8 +380,9 @@ export async function generateGastosViaje(viaje) {
   const tTren      = sumConIva(tr.tren     || [])
   const tAutobus   = sumConIva(tr.autobus  || [])
   const tParking   = sumConIva(tr.parking  || [])
+  const tTaxi      = sumConIva(tr.taxi     || [])
   const tOtrosTr   = sumConIva(tr.otros    || [])
-  const tTransporte = tAutopista + tCoche + tAvion + tTren + tAutobus + tParking + tOtrosTr
+  const tTransporte = tAutopista + tCoche + tAvion + tTren + tAutobus + tParking + tTaxi + tOtrosTr
   const tManutencion = sumConIva(manutencion)
   const tHotel       = sumConIva(hotel)
   const tOtros       = sumConIva(otros)
@@ -436,6 +438,12 @@ export async function generateGastosViaje(viaje) {
             cell('Joaquín Castilla', { span: 3 }),
           ],
         }),
+        ...(numeroPedido ? [new TableRow({
+          children: [
+            cell('N.º de pedido:', { bold: true, bg: C_ALT }),
+            cell(numeroPedido, { span: 3, bold: true }),
+          ],
+        })] : []),
       ],
     }),
     blank(120),
@@ -457,6 +465,7 @@ export async function generateGastosViaje(viaje) {
   if (tTren      > 0) addResumenRow('Transporte — Tren', tTren)
   if (tAutobus   > 0) addResumenRow('Transporte — Autobús', tAutobus)
   if (tParking   > 0) addResumenRow('Transporte — Parking', tParking)
+  if (tTaxi      > 0) addResumenRow('Transporte — Taxi / VTC', tTaxi)
   if (tOtrosTr   > 0) addResumenRow('Transporte — Otros', tOtrosTr)
   if (tManutencion > 0) addResumenRow('Manutención', tManutencion)
   if (tHotel       > 0) addResumenRow('Alojamiento', tHotel)
@@ -494,9 +503,10 @@ export async function generateGastosViaje(viaje) {
     const trenTbl      = ticketTable(tr.tren, 'TREN')
     const autobusTbl   = ticketTable(tr.autobus, 'AUTOBÚS')
     const parkingTbl   = ticketTable(tr.parking, 'PARKING')
+    const taxiTbl      = ticketTable(tr.taxi, 'TAXI / VTC')
     const otrosTrTbl   = ticketTable(tr.otros, 'OTROS TRANSPORTES')
 
-    for (const tbl of [autopistaTbl, cocheTbl, avionTbl, trenTbl, autobusTbl, parkingTbl, otrosTrTbl]) {
+    for (const tbl of [autopistaTbl, cocheTbl, avionTbl, trenTbl, autobusTbl, parkingTbl, taxiTbl, otrosTrTbl]) {
       if (tbl) { children.push(tbl); children.push(blank(80)) }
     }
   }

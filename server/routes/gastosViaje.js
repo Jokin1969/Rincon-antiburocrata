@@ -11,6 +11,7 @@ const __filename  = fileURLToPath(import.meta.url)
 const __dirname   = dirname(__filename)
 const DATA_DIR    = process.env.DATA_DIR ?? join(__dirname, '..', '..', 'data')
 const VIAJES_DIR  = join(DATA_DIR, 'gastosviaje')
+const ADJUNTOS_BASE = join(VIAJES_DIR, 'adjuntos')
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } })
 const router = Router()
@@ -52,12 +53,15 @@ function emptyViaje() {
       tren:      [],
       autobus:   [],
       parking:   [],
+      taxi:      [],
       otros:     [],
     },
-    manutencion: [],
-    hotel:       [],
-    otros:       [],
-    createdAt:   now,
+    manutencion:  [],
+    hotel:        [],
+    otros:        [],
+    numeroPedido: '',
+    adjuntos:     [],
+    createdAt:    now,
     updatedAt:   now,
   }
 }
@@ -165,6 +169,12 @@ const TIPO_PROMPTS = {
     'o dirección (campo nombre), fecha de salida en YYYY-MM-DD (campo fecha), importe sin IVA en euros ' +
     '(campo sinIva), importe total con IVA en euros (campo conIva). ' +
     'Si no aparece el importe sin IVA calcula sinIva = conIva / 1.21.',
+  taxi:
+    'Este documento es un recibo, ticket o factura de taxi o VTC (Uber, Cabify, etc.). Extrae: ' +
+    'nombre o identificador del servicio (campo nombre, ej: "Taxi Bilbao" o "Uber"), ' +
+    'fecha del trayecto en YYYY-MM-DD (campo fecha), importe sin IVA en euros (campo sinIva), ' +
+    'importe total con IVA en euros (campo conIva). ' +
+    'Si no aparece el importe sin IVA calcula sinIva = conIva / 1.21.',
   manutencion:
     'Este documento es un ticket o factura de restaurante, cafetería, bar o servicio de comidas. ' +
     'Extrae: nombre del establecimiento (campo nombre), fecha en YYYY-MM-DD (campo fecha), importe ' +
@@ -244,6 +254,56 @@ router.post('/ia-ticket', upload.single('file'), async (req, res) => {
     if (status === 429) msg = 'Se ha agotado la cuota de OpenAI. Revisa tu cuenta en platform.openai.com/account/billing'
     if (status === 401 || status === 403) msg = 'La API key de OpenAI no es válida o no está autorizada.'
     res.status(500).json({ error: msg })
+  }
+})
+
+// ── Adjuntos ──────────────────────────────────────────────────────────────────
+
+function adjuntosDir(viajeId) {
+  return join(ADJUNTOS_BASE, viajeId)
+}
+
+// POST /api/gastos-viaje/:id/adjuntos  — sube un fichero
+router.post('/:id/adjuntos', upload.single('file'), (req, res) => {
+  const viaje = readViaje(req.params.id)
+  if (!viaje) return res.status(404).json({ error: 'Viaje no encontrado.' })
+  if (!req.file) return res.status(400).json({ error: 'Se requiere un archivo.' })
+
+  try {
+    const dir      = adjuntosDir(req.params.id)
+    ensureDir(dir)
+    const adjId    = randomUUID()
+    const safeName = req.file.originalname.replace(/[^a-zA-Z0-9._\-]/g, '_').slice(0, 80)
+    const filename = `${adjId}_${safeName}`
+    writeFileSync(join(dir, filename), req.file.buffer)
+
+    const meta = { id: adjId, originalName: req.file.originalname, mime: req.file.mimetype, filename }
+    viaje.adjuntos = [...(viaje.adjuntos || []), meta]
+    writeViaje(viaje)
+    res.status(201).json(meta)
+  } catch (err) {
+    console.error('Adjunto upload error:', err)
+    res.status(500).json({ error: 'Error al guardar el adjunto.' })
+  }
+})
+
+// DELETE /api/gastos-viaje/:id/adjuntos/:adjId
+router.delete('/:id/adjuntos/:adjId', (req, res) => {
+  const viaje = readViaje(req.params.id)
+  if (!viaje) return res.status(404).json({ error: 'Viaje no encontrado.' })
+
+  const meta = (viaje.adjuntos || []).find(a => a.id === req.params.adjId)
+  if (!meta) return res.status(404).json({ error: 'Adjunto no encontrado.' })
+
+  try {
+    const filePath = join(adjuntosDir(req.params.id), meta.filename)
+    if (existsSync(filePath)) unlinkSync(filePath)
+    viaje.adjuntos = viaje.adjuntos.filter(a => a.id !== req.params.adjId)
+    writeViaje(viaje)
+    res.json({ ok: true })
+  } catch (err) {
+    console.error('Adjunto delete error:', err)
+    res.status(500).json({ error: 'Error al eliminar el adjunto.' })
   }
 })
 

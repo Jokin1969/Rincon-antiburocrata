@@ -439,3 +439,32 @@
   font-size: 0.8rem;
   color: var(--text-muted);
 }
+
+/* ── Número de pedido ────────────────────────────────────────────────────── */
+
+.pedidoCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin-top: 1rem;
+}
+
+/* ── Adjuntos ────────────────────────────────────────────────────────────── */
+
+.adjuntosSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.adjuntosHint {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.adjIcon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
