@@ -1,0 +1,436 @@
+/* ── Logos bar (compartido entre AnimalarioHub y ProyectoHub) ─────────────── */
+
+.logosBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.25rem 1.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 2.5rem;
+}
+
+.logosBarCenter {
+  flex: 1;
+  text-align: center;
+}
+
+.logosBarTitle {
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  line-height: 1.1;
+}
+
+.logosBarSub {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+  letter-spacing: 0.04em;
+}
+
+.logoImg {
+  height: 52px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+/* ── Hub cards ────────────────────────────────────────────────────────────── */
+
+.hubGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.hint {
+  font-size: 0.82rem;
+  color: var(--muted-light);
+  text-align: center;
+  padding: 0.5rem 1rem;
+}
+
+/* ── ProyectosList toolbar ────────────────────────────────────────────────── */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+  flex-wrap: wrap;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 200px;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: 0.875rem;
+  color: var(--text);
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* ── Project list ─────────────────────────────────────────────────────────── */
+
+.projectList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.projectCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.75rem 1.5rem;
+  align-items: center;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.projectCard:hover {
+  border-color: rgba(123, 28, 46, 0.35);
+  box-shadow: 0 4px 14px rgba(123, 28, 46, 0.08);
+}
+
+.projectInfo {}
+
+.projectTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.35rem;
+}
+
+.projectMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  font-size: 0.78rem;
+  color: var(--muted-light);
+}
+
+.projectMetaItem {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.projectActions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--muted-light);
+  font-size: 0.9rem;
+}
+
+/* ── ProyectoHub sections ─────────────────────────────────────────────────── */
+
+.projectTitle2 {
+  font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.projectRef {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-top: 0.3rem;
+  margin-bottom: 2rem;
+}
+
+.sectionGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.sectionCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.sectionCard:hover {
+  border-color: rgba(123, 28, 46, 0.3);
+}
+
+.statusDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.statusDotOk       { background: #16a34a; }
+.statusDotPending  { background: var(--border); border: 1px solid var(--muted-light); }
+.statusDotWarn     { background: #ca8a04; }
+
+.sectionInfo {
+  flex: 1;
+}
+
+.sectionLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  margin-bottom: 0.15rem;
+}
+
+.sectionName {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.sectionDetail {
+  font-size: 0.78rem;
+  color: var(--muted-light);
+  margin-top: 0.15rem;
+}
+
+.sectionActions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.statusBadgeOk {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  background: rgba(22, 163, 74, 0.1);
+  color: #15803d;
+  border: 1px solid rgba(22, 163, 74, 0.3);
+  white-space: nowrap;
+}
+
+.statusBadgePending {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  background: rgba(202, 138, 4, 0.1);
+  color: #92400e;
+  border: 1px solid rgba(202, 138, 4, 0.3);
+  white-space: nowrap;
+}
+
+/* ── Hub warning banner ───────────────────────────────────────────────────── */
+
+.warningBanner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 1rem;
+  background: rgba(202, 138, 4, 0.08);
+  border: 1px solid rgba(202, 138, 4, 0.3);
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  color: #92400e;
+  margin-bottom: 1rem;
+}
+
+/* ── Severity badges ──────────────────────────────────────────────────────── */
+
+.severityBadge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.severityNone {
+  background: rgba(107, 114, 128, 0.1);
+  color: #4b5563;
+  border: 1px solid rgba(107, 114, 128, 0.3);
+}
+
+.severityLow {
+  background: rgba(22, 163, 74, 0.1);
+  color: #15803d;
+  border: 1px solid rgba(22, 163, 74, 0.3);
+}
+
+.severityMedium {
+  background: rgba(202, 138, 4, 0.1);
+  color: #92400e;
+  border: 1px solid rgba(202, 138, 4, 0.3);
+}
+
+.severityHigh {
+  background: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+}
+
+/* ── ProcedimientosHub summary bar ───────────────────────────────────────── */
+
+.summaryBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  padding: 0.9rem 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 1.75rem;
+  font-size: 0.82rem;
+  color: var(--muted-light);
+}
+
+.summaryBar strong {
+  color: var(--text);
+  font-size: 1.1rem;
+  display: block;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.summaryBarItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+/* ── Modifications list in ProyectoHub ───────────────────────────────────── */
+
+.modifSection {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.modifSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.modifSectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.modifSectionLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+
+.modifSectionName {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 0.1rem;
+}
+
+.modifEmpty {
+  padding: 1rem 1.5rem;
+  font-size: 0.875rem;
+  color: var(--muted-light);
+  font-style: italic;
+}
+
+.modifItem {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.modifItem:last-child { border-bottom: none; }
+
+.modifItemInfo {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+}
+
+.modifItemNum {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.modifItemDate {
+  font-size: 0.75rem;
+  color: var(--muted-light);
+  white-space: nowrap;
+}
+
+.modifBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.modifBadge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 0.15rem 0.45rem;
+  border-radius: 3px;
+  background: rgba(123, 28, 46, 0.07);
+  color: var(--accent);
+  border: 1px solid rgba(123, 28, 46, 0.18);
+  white-space: nowrap;
+}
+
+.modifItemActions {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}

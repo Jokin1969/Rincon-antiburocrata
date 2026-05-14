@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 100" width="360" height="100">
+  <rect width="360" height="100" fill="white"/>
+  <text x="180" y="44" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="#1a237e" letter-spacing="2">ATLAS</text>
+  <text x="180" y="68" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#4a5568" letter-spacing="0.5">molecular pharma</text>
+</svg>

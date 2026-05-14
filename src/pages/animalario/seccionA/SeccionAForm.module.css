@@ -1,0 +1,323 @@
+/* ── Collapsible blocks ───────────────────────────────────────────────────── */
+
+.block {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 0.875rem;
+}
+
+.blockHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.9rem 1.25rem;
+  background: var(--surface);
+  border: none;
+  text-align: left;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.blockHeader:hover { background: var(--surface-hover); }
+
+.chevron {
+  font-size: 0.6rem;
+  color: var(--muted);
+  transition: transform 0.2s;
+}
+
+.blockBody {
+  padding: 1.4rem 1.5rem;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ── Layout grids ─────────────────────────────────────────────────────────── */
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.grid3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+  flex: 1;
+}
+
+.fullRow { grid-column: 1 / -1; }
+
+/* ── Autocomplete ─────────────────────────────────────────────────────────── */
+
+.acWrap { position: relative; }
+
+.suggestions {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  list-style: none;
+  max-height: 180px;
+  overflow-y: auto;
+  z-index: 200;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.suggestion {
+  padding: 0.5rem 0.9rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.suggestion:hover { background: var(--surface-hover); }
+
+/* ── Radio & checkbox ─────────────────────────────────────────────────────── */
+
+.radioGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  margin-top: 0.15rem;
+}
+
+.radioLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.875rem;
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.radioLabel input[type="radio"],
+.checkboxLabel input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.checkboxGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.15rem;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.875rem;
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* ── Dynamic rows (participants, cepas) ───────────────────────────────────── */
+
+.participantRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.cepaList { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.cepaRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.removeBtn {
+  flex-shrink: 0;
+  align-self: flex-end;
+  height: 38px;
+  padding: 0 0.65rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  margin-bottom: 1px;
+}
+
+.removeBtn:hover {
+  background: rgba(123, 28, 46, 0.07);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ── Word count ───────────────────────────────────────────────────────────── */
+
+.wordCount {
+  font-size: 0.73rem;
+  color: var(--muted-light);
+  text-align: right;
+  margin-top: 0.15rem;
+}
+
+.wordCountOver {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+/* ── Help, warning, error ─────────────────────────────────────────────────── */
+
+.helpText {
+  font-size: 0.78rem;
+  color: var(--muted-light);
+  line-height: 1.5;
+  font-style: italic;
+  margin-top: -0.1rem;
+}
+
+.warning {
+  font-size: 0.78rem;
+  color: #92400e;
+  background: rgba(146, 64, 14, 0.08);
+  padding: 0.3rem 0.65rem;
+  border-radius: 4px;
+  border: 1px solid rgba(146, 64, 14, 0.2);
+  margin-top: 0.2rem;
+}
+
+.error {
+  font-size: 0.78rem;
+  color: #dc2626;
+  margin-top: 0.1rem;
+}
+
+.inputError {
+  border-color: #dc2626 !important;
+  outline-color: #dc2626;
+}
+
+/* ── Validation error panel ───────────────────────────────────────────────── */
+
+.errPanel {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-left: 4px solid #dc2626;
+  border-radius: var(--radius-sm);
+  padding: 0.9rem 1.1rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.875rem;
+  color: #991b1b;
+}
+
+.errList {
+  margin: 0.5rem 0 0;
+  padding-left: 0.25rem;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+/* ── Procedures table ─────────────────────────────────────────────────────── */
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.table th {
+  text-align: left;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  padding: 0.5rem 0.75rem;
+  border-bottom: 2px solid var(--border);
+}
+
+.table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+
+.table tr:last-child td { border-bottom: none; }
+
+/* ── Empty note ───────────────────────────────────────────────────────────── */
+
+.emptyNote {
+  font-size: 0.875rem;
+  color: var(--muted-light);
+  padding: 0.5rem 0;
+  font-style: italic;
+}
+
+/* ── Toast ────────────────────────────────────────────────────────────────── */
+
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: #fff;
+  padding: 0.75rem 1.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  z-index: 1000;
+  box-shadow: 0 6px 24px rgba(123, 28, 46, 0.35);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* ── Save actions bar ─────────────────────────────────────────────────────── */
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.75rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+
+@media (max-width: 700px) {
+  .grid2, .grid3 { grid-template-columns: 1fr; }
+  .fullRow { grid-column: 1; }
+  .participantRow, .cepaRow { flex-direction: column; align-items: stretch; }
+  .removeBtn { width: 100%; height: 36px; margin-bottom: 0; }
+}

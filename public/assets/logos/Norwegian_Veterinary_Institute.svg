@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100" width="400" height="100">
+  <rect width="400" height="100" fill="white"/>
+  <rect x="0" y="0" width="8" height="100" fill="#ef2b2d"/>
+  <text x="220" y="42" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#002868">Norwegian Veterinary Institute</text>
+  <text x="220" y="66" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#555">Veterinærinstituttet</text>
+</svg>

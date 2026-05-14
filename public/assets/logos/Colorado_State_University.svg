@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 100" width="360" height="100">
+  <rect width="360" height="100" fill="white"/>
+  <rect x="0" y="0" width="12" height="100" fill="#1e4d2b"/>
+  <text x="190" y="40" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#1e4d2b" letter-spacing="1">COLORADO STATE</text>
+  <text x="190" y="62" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#c8c372">UNIVERSITY</text>
+</svg>

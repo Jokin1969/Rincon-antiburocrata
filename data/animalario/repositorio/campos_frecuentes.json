@@ -1,0 +1,43 @@
+{
+  "cepa_linea": [],
+  "tecnica_experimental": [],
+  "producto_administrado": [],
+  "parametro_medido": [],
+  "metodo_eutanasia": [],
+  "fuente_financiacion": [],
+  "especie": [
+    "Mus musculus",
+    "Rattus norvegicus"
+  ],
+  "via_administracion": [
+    "oral",
+    "subcutánea",
+    "intraperitoneal",
+    "intravenosa",
+    "intracraneal",
+    "tópica",
+    "inhalatoria",
+    "otra"
+  ],
+  "frecuencia_tecnica": [],
+  "muestra_genotipaje": [
+    "biopsia cola",
+    "sangre",
+    "saliva",
+    "pelo"
+  ],
+  "tipo_modificacion_omg": [
+    "inserción",
+    "deleción",
+    "sustitución",
+    "inversión",
+    "translocación",
+    "fusión celular",
+    "transgénesis",
+    "knock-in",
+    "knock-out",
+    "knock-down"
+  ],
+  "agente_biologico": [],
+  "agente_quimico": []
+}

@@ -1,0 +1,170 @@
+/* ── Backup Manager ──────────────────────────────────────────────────────────── */
+
+.root {
+  margin-bottom: 1.5rem;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.toggle:hover {
+  background: var(--surface-hover);
+  border-color: var(--muted-light);
+  color: var(--text);
+}
+
+.toggleIcon {
+  font-size: 0.65rem;
+  opacity: 0.6;
+}
+
+.toggleCount {
+  margin-left: 0.25rem;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border: 1px solid rgba(123, 28, 46, 0.25);
+  border-radius: 10px;
+  padding: 0.05rem 0.45rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.panel {
+  margin-top: 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+/* Config bar */
+
+.configBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(123, 28, 46, 0.025);
+  font-size: 0.78rem;
+}
+
+.configItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.configLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.configVal {
+  color: var(--text);
+  font-size: 0.8rem;
+}
+
+/* Actions bar */
+
+.actionsBar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Feedback */
+
+.feedbackOk {
+  margin: 0.5rem 1.25rem;
+  padding: 0.5rem 0.8rem;
+  background: rgba(22, 163, 74, 0.06);
+  border: 1px solid rgba(22, 163, 74, 0.25);
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  color: #15803d;
+}
+
+.feedbackErr {
+  margin: 0.5rem 1.25rem;
+  padding: 0.5rem 0.8rem;
+  background: rgba(185, 28, 28, 0.06);
+  border: 1px solid rgba(185, 28, 28, 0.25);
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  color: #b91c1c;
+}
+
+/* Empty state */
+
+.empty {
+  padding: 1.5rem 1.25rem;
+  font-size: 0.85rem;
+  color: var(--muted-light);
+  text-align: center;
+}
+
+/* Backup list */
+
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.item:last-child {
+  border-bottom: none;
+}
+
+.itemInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.itemDate {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.itemSize {
+  font-size: 0.75rem;
+  color: var(--muted-light);
+  white-space: nowrap;
+}
+
+.itemActions {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}

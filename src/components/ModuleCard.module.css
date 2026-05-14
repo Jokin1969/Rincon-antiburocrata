@@ -24,10 +24,10 @@
 }
 
 .card:hover {
-  border-color: rgba(249, 115, 22, 0.45);
+  border-color: rgba(123, 28, 46, 0.4);
   background: var(--surface-hover);
   transform: translateY(-3px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 24px rgba(123, 28, 46, 0.12);
 }
 
 .card:hover::before {

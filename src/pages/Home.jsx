@@ -11,12 +11,44 @@ const MODULES = [
     status: 'ready',
   },
   {
+    id: 'adaptar-carta',
+    name: 'Adaptar carta',
+    description: 'Adapta un texto al modelo de carta oficial de CIC bioGUNE, ATLAS molecular pharma o FEEP. Descarga en .docx o .pdf con firma incluida.',
+    icon: '📝',
+    href: '/adaptar-carta',
+    status: 'ready',
+  },
+  {
+    id: 'logos',
+    name: 'Gestor de logos',
+    description: 'Almacena y organiza los logos de todas las instituciones. Descarga en PNG, WebP, JPG o SVG con tamaño, fondo y color personalizados.',
+    icon: '🖼',
+    href: '/logos',
+    status: 'ready',
+  },
+  {
+    id: 'contrato-menor',
+    name: 'Contrato Menor',
+    description: 'Generación del expediente de contrato menor con justificación, comparativa de proveedores y firma.',
+    icon: '📄',
+    href: '/contrato-menor',
+    status: 'ready',
+  },
+  {
     id: 'aduanas',
     name: 'Aduanas',
     description: 'Documentación para envíos y recepciones internacionales de material biológico.',
     icon: '📦',
     href: '/aduanas',
-    status: 'wip',
+    status: 'ready',
+  },
+  {
+    id: 'animalario',
+    name: 'Animalario',
+    description: 'Gestión de proyectos de experimentación animal: secciones A–D, procedimientos, cría y modificaciones.',
+    icon: '🐭',
+    href: '/animalario',
+    status: 'ready',
   },
 ]
 
@@ -25,8 +57,8 @@ export default function Home() {
     <div>
       <div className={styles.intro}>
         <p className={styles.tagline}>
-          Trámites burocráticos en menos de dos minutos.{' '}
-          <span className="accent">Sin conocimiento previo. Sin errores.</span>
+          ¡Acelera los trámites burocráticos!{' '}
+          <span className="accent">Sin errores.</span>
         </p>
       </div>
 

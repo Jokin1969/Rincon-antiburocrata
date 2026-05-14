@@ -1,8 +1,22 @@
 import express from 'express'
+import animalarioRouter       from './server/routes/animalario.js'
+import animalarioExportRouter from './server/routes/animalario-export.js'
+import animalarioBackupRouter, { initAutoBackup } from './server/routes/animalario-backup.js'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'fs'
+import multer from 'multer'
+import Anthropic from '@anthropic-ai/sdk'
+import OpenAI from 'openai'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 import { generateEndUserStatement } from './generators/endUserStatement.js'
 import { generateMohQuestions } from './generators/mohQuestions.js'
+import { generateAdaptarCarta } from './generators/adaptarCarta.js'
+import { generateContratoMenor } from './generators/contratoMenor.js'
+import { generateFacturaProforma } from './generators/facturaProforma.js'
+import { generatePqpImport } from './generators/pqpImport.js'
+import { generateDocumento1403 } from './generators/documento1403.js'
+import { generateCertificadoExclusividad } from './generators/certificadoExclusividad.js'
 import { docxToPdf } from './utils/pdf.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -11,8 +25,10 @@ const __dirname = dirname(__filename)
 const app = express()
 const PORT = process.env.PORT || 3000
 
-app.use(express.json())
+app.use(express.json({ limit: '20mb' }))
 app.use(express.static(join(__dirname, 'dist')))
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } })
 
 // ── Shared helper ─────────────────────────────────────────────────────────────
 
@@ -30,6 +46,88 @@ function sendDocument(res, docxBuffer, basename, format) {
   res.setHeader('Content-Disposition', `attachment; filename="${basename}.docx"`)
   res.send(docxBuffer)
 }
+
+// ── AI error classifier ───────────────────────────────────────────────────────
+
+const AI_PROVIDER_NAMES = {
+  claude: 'Claude (Anthropic)',
+  openai: 'OpenAI',
+  gemini: 'Google Gemini',
+}
+
+const BILLING_LINKS = {
+  claude: 'https://console.anthropic.com/settings/plans',
+  openai: 'https://platform.openai.com/account/billing',
+  gemini: 'https://aistudio.google.com/apikey',
+}
+
+function classifyAIError(err, provider) {
+  const name = AI_PROVIDER_NAMES[provider] || provider
+  const link = BILLING_LINKS[provider] || ''
+
+  // Extract HTTP status from Anthropic/OpenAI SDK (.status) or from the error message string (Gemini)
+  const msgStatus = err.message?.match(/\[(\d{3})\s/)?.[1]
+  const status = err.status ?? err.statusCode ?? (msgStatus ? parseInt(msgStatus, 10) : null)
+
+  if (
+    status === 429 ||
+    /quota|rate.?limit|too many requests|exceeded.*quota|resource.*exhausted/i.test(err.message)
+  ) {
+    return (
+      `Se ha agotado la cuota de ${name}. ` +
+      `Puede que hayas alcanzado el límite de uso gratuito o necesites recargar saldo. ` +
+      (link ? `Revisa tu cuenta en: ${link}` : '')
+    ).trim()
+  }
+
+  if (
+    status === 401 ||
+    status === 403 ||
+    /invalid.{0,10}api.?key|incorrect.{0,10}api.?key|api.?key.{0,10}invalid|authentication|unauthorized|forbidden|permission denied/i.test(err.message)
+  ) {
+    return `La API key de ${name} no es válida o no está autorizada. Verifica que la clave esté bien configurada en el servidor.`
+  }
+
+  if (status >= 500 || /server.?error|internal.?error/i.test(err.message)) {
+    return `El servidor de ${name} ha devuelto un error. Inténtalo de nuevo en unos minutos.`
+  }
+
+  return `Error al consultar a ${name}. ${err.message || 'Error desconocido.'}`
+}
+
+// ── Logos: galería estática (public/assets/logos/) ────────────────────────────
+app.get('/api/logos', (_req, res) => {
+  const logosDir = join(__dirname, 'public', 'assets', 'logos')
+  try {
+    const metaPath = join(logosDir, 'metadata.json')
+    const meta = existsSync(metaPath)
+      ? JSON.parse(readFileSync(metaPath, 'utf-8'))
+      : {}
+
+    const files = readdirSync(logosDir)
+    const logos = files
+      .filter(f => /\.(png|jpg|jpeg|svg|webp)$/i.test(f))
+      .sort()
+      .map(f => {
+        const name = f.replace(/\.[^.]+$/, '')
+        const entry = meta[name] ?? {}
+        const label = entry.label ?? (name.charAt(0).toUpperCase() + name.slice(1))
+        const category = entry.category ?? 'Sin categoría'
+        const pdfPath = join(__dirname, 'public', 'assets', 'modelos', `${name}.pdf`)
+        return {
+          name,
+          label,
+          category,
+          image: `/assets/logos/${f}`,
+          pdf: existsSync(pdfPath) ? `/assets/modelos/${name}.pdf` : null,
+        }
+      })
+    res.json(logos)
+  } catch (err) {
+    console.error('Logos API error:', err)
+    res.status(500).json({ error: 'Error al leer los logos.' })
+  }
+})
 
 // ── GenScript: End User Statement ────────────────────────────────────────────
 app.post('/api/genscript/end-user-statement', async (req, res) => {
@@ -72,6 +170,622 @@ app.post('/api/genscript/moh-questions', async (req, res) => {
     res.status(500).json({ error: 'Error al generar el documento.' })
   }
 })
+
+// ── Adaptar carta ─────────────────────────────────────────────────────────────
+app.post('/api/adaptar-carta', async (req, res) => {
+  const { template, text } = req.body
+
+  if (!template || !text?.trim()) {
+    return res.status(400).json({ error: 'Campos obligatorios: template, text' })
+  }
+
+  const format = req.query.format === 'pdf' ? 'pdf' : 'docx'
+
+  try {
+    const docxBuffer = await generateAdaptarCarta(req.body)
+    const labels     = { cicbiogune: 'CIC_bioGUNE', atlas: 'ATLAS', feep: 'FEEP' }
+    const label      = labels[template] || template
+    const safeDate   = (req.body.date || '').replace(/[^0-9-]/g, '') || 'sin_fecha'
+    sendDocument(res, docxBuffer, `Carta_${label}_${safeDate}`, format)
+  } catch (err) {
+    console.error('Adaptar carta error:', err)
+    res.status(500).json({ error: 'Error al generar el documento.' })
+  }
+})
+
+// ── Contrato menor: Certificado de exclusividad ──────────────────────────────
+app.post('/api/contrato-menor/certificado-exclusividad', async (req, res) => {
+  const { descripcion, date } = req.body
+
+  if (!descripcion || !date) {
+    return res.status(400).json({ error: 'Campos obligatorios: descripcion, date' })
+  }
+
+  const format = req.query.format === 'pdf' ? 'pdf' : 'docx'
+
+  try {
+    const docxBuffer = await generateCertificadoExclusividad(req.body)
+    const code = (req.body.expediente || descripcion)
+      .replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40)
+    sendDocument(res, docxBuffer, `CertificadoExclusividad_${code}_${date}`, format)
+  } catch (err) {
+    console.error('Certificado de exclusividad error:', err)
+    res.status(500).json({ error: 'Error al generar el documento.' })
+  }
+})
+
+// ── Contrato Menor ────────────────────────────────────────────────────────────
+app.post('/api/contrato-menor', async (req, res) => {
+  const { codigo, objeto, justificacionNecesidad, tipoJustificacion } = req.body
+
+  if (!codigo || !objeto || !justificacionNecesidad || !tipoJustificacion) {
+    return res.status(400).json({
+      error: 'Campos obligatorios: codigo, objeto, justificacionNecesidad, tipoJustificacion',
+    })
+  }
+
+  const format = req.query.format === 'pdf' ? 'pdf' : 'docx'
+
+  try {
+    const docxBuffer = await generateContratoMenor(req.body)
+    const code = codigo.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40)
+    sendDocument(res, docxBuffer, `Contrato_Menor_#${code}`, format)
+  } catch (err) {
+    console.error('Contrato Menor error:', err)
+    res.status(500).json({ error: 'Error al generar el documento.' })
+  }
+})
+
+// ── Aduanas: Factura Proforma ─────────────────────────────────────────────────
+app.post('/api/aduanas/documento-1403', async (req, res) => {
+  const { firmante, producto, empresaOrigen, shipper } = req.body
+
+  if (!firmante?.trim()) {
+    return res.status(400).json({ error: 'Campo obligatorio: firmante.' })
+  }
+  if (!producto?.trim()) {
+    return res.status(400).json({ error: 'Campo obligatorio: producto.' })
+  }
+  if (!empresaOrigen?.trim()) {
+    return res.status(400).json({ error: 'Campo obligatorio: empresa de origen.' })
+  }
+  if (!shipper || !(shipper.organizacion?.trim() || shipper.nombre?.trim())) {
+    return res.status(400).json({ error: 'Campo obligatorio: empresa emisora (shipper).' })
+  }
+
+  const format = req.query.format === 'pdf' ? 'pdf' : 'docx'
+
+  try {
+    const docxBuffer = await generateDocumento1403(req.body)
+    const sn  = (shipper.organizacion || shipper.nombre || 'emisor').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20)
+    const pr  = empresaOrigen.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20)
+    const num = (req.body.numero || '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 20)
+    const base = num ? `Doc1403_${num}_${sn}_${pr}` : `Doc1403_${sn}_${pr}`
+    sendDocument(res, docxBuffer, base, format)
+  } catch (err) {
+    console.error('Documento 1403 error:', err)
+    res.status(500).json({ error: 'Error al generar el documento.' })
+  }
+})
+
+app.post('/api/aduanas/pqp-import', async (req, res) => {
+  const { proveedor, shipper } = req.body
+
+  if (!proveedor?.trim()) {
+    return res.status(400).json({ error: 'Campo obligatorio: proveedor.' })
+  }
+  if (!shipper || !(shipper.organizacion?.trim() || shipper.nombre?.trim())) {
+    return res.status(400).json({ error: 'Campo obligatorio: empresa emisora (shipper).' })
+  }
+
+  const format = req.query.format === 'pdf' ? 'pdf' : 'docx'
+
+  try {
+    const docxBuffer = await generatePqpImport(req.body)
+    const sn  = (shipper.organizacion || shipper.nombre || 'emisor').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20)
+    const pn  = proveedor.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20)
+    const num = (req.body.numero || '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 20)
+    const base = num ? `PQP_${num}_${sn}_${pn}` : `PQP_${sn}_${pn}`
+    sendDocument(res, docxBuffer, base, format)
+  } catch (err) {
+    console.error('PQP import error:', err)
+    res.status(500).json({ error: 'Error al generar el documento.' })
+  }
+})
+
+app.post('/api/aduanas/factura-proforma', async (req, res) => {
+  const { numero, shipper, consignee, lineas } = req.body
+
+  if (!numero || !shipper || !consignee) {
+    return res.status(400).json({ error: 'Campos obligatorios: numero, shipper, consignee' })
+  }
+  if (!lineas?.some(l => l.descripcion?.trim())) {
+    return res.status(400).json({ error: 'Se requiere al menos una línea de producto.' })
+  }
+
+  const format = req.query.format === 'pdf' ? 'pdf' : 'docx'
+
+  try {
+    const docxBuffer = await generateFacturaProforma(req.body)
+    const sn  = (shipper.organizacion  || shipper.nombre  || 'shipper').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20)
+    const cn  = (consignee.organizacion || consignee.nombre || 'consignee').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20)
+    const num = numero.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 20)
+    sendDocument(res, docxBuffer, `Proforma_${num}_${sn}_${cn}`, format)
+  } catch (err) {
+    console.error('Factura Proforma error:', err)
+    res.status(500).json({ error: 'Error al generar el documento.' })
+  }
+})
+
+// ── IA helpers ───────────────────────────────────────────────────────────────
+
+const IA_SYSTEM_PROMPT =
+  'Eres un asistente experto en redacción de expedientes administrativos españoles. ' +
+  'Genera texto para un contrato menor de CIC bioGUNE (centro de investigación biomédica en Derio, Bizkaia). ' +
+  'Responde ÚNICAMENTE con un objeto JSON válido con exactamente estas dos claves: ' +
+  '"objeto" (1-2 frases concisas describiendo el objeto del contrato) y ' +
+  '"justificacionNecesidad" (2-4 frases justificando por qué es necesario el suministro o servicio). ' +
+  'Tono formal y administrativo en español.'
+
+const IA_PROMPT_NO_FILE =
+  'Genera un objeto del contrato y una justificación de la necesidad para un contrato menor típico de material o servicio científico en CIC bioGUNE.'
+
+const IA_PROMPT_WITH_FILE =
+  'Basándote en el documento anterior, genera el objeto del contrato y la justificación de la necesidad.'
+
+function parseIaJson(text) {
+  const match = (text || '{}').match(/\{[\s\S]*\}/)
+  const parsed = JSON.parse(match ? match[0] : '{}')
+  return {
+    objeto:                 parsed.objeto                 || '',
+    justificacionNecesidad: parsed.justificacionNecesidad || '',
+  }
+}
+
+async function iaWithClaude(file) {
+  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  const userContent = []
+
+  if (file) {
+    const base64 = file.buffer.toString('base64')
+    const mime   = file.mimetype
+    if (mime === 'application/pdf') {
+      userContent.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } })
+    } else if (mime.startsWith('image/')) {
+      const mediaType = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(mime) ? mime : 'image/jpeg'
+      userContent.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } })
+    } else if (mime.startsWith('text/')) {
+      userContent.push({ type: 'text', text: `Contenido del documento:\n\n${file.buffer.toString('utf-8').slice(0, 8000)}` })
+    }
+    userContent.push({ type: 'text', text: IA_PROMPT_WITH_FILE })
+  } else {
+    userContent.push({ type: 'text', text: IA_PROMPT_NO_FILE })
+  }
+
+  const message = await anthropic.messages.create({
+    model: 'claude-opus-4-7',
+    max_tokens: 1024,
+    system: [{ type: 'text', text: IA_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+    messages: [{ role: 'user', content: userContent }],
+  })
+
+  return parseIaJson(message.content.find(b => b.type === 'text')?.text)
+}
+
+async function iaWithOpenAI(file) {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  const userContent = []
+
+  if (file) {
+    const base64 = file.buffer.toString('base64')
+    const mime   = file.mimetype
+    if (mime === 'application/pdf') {
+      userContent.push({ type: 'file', file: { filename: file.originalname, file_data: `data:application/pdf;base64,${base64}` } })
+    } else if (mime.startsWith('image/')) {
+      userContent.push({ type: 'image_url', image_url: { url: `data:${mime};base64,${base64}` } })
+    } else if (mime.startsWith('text/')) {
+      userContent.push({ type: 'text', text: `Contenido del documento:\n\n${file.buffer.toString('utf-8').slice(0, 8000)}` })
+    }
+    userContent.push({ type: 'text', text: IA_PROMPT_WITH_FILE })
+  } else {
+    userContent.push({ type: 'text', text: IA_PROMPT_NO_FILE })
+  }
+
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [
+      { role: 'system', content: IA_SYSTEM_PROMPT },
+      { role: 'user',   content: userContent },
+    ],
+    response_format: { type: 'json_object' },
+    max_tokens: 800,
+  })
+
+  return parseIaJson(completion.choices[0].message.content)
+}
+
+async function iaWithGemini(file) {
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-2.0-flash-lite',
+    systemInstruction: IA_SYSTEM_PROMPT,
+    generationConfig: { responseMimeType: 'application/json' },
+  })
+
+  const parts = []
+
+  if (file) {
+    parts.push({ inlineData: { data: file.buffer.toString('base64'), mimeType: file.mimetype } })
+    parts.push({ text: IA_PROMPT_WITH_FILE })
+  } else {
+    parts.push({ text: IA_PROMPT_NO_FILE })
+  }
+
+  const result = await model.generateContent({ contents: [{ role: 'user', parts }] })
+  return parseIaJson(result.response.text())
+}
+
+// ── IA: generar textos para Contrato Menor ────────────────────────────────────
+app.post('/api/ia/contrato', upload.single('file'), async (req, res) => {
+  const provider = req.body.provider || 'claude'
+
+  const KEY_MAP = {
+    claude: 'ANTHROPIC_API_KEY',
+    openai: 'OPENAI_API_KEY',
+    gemini: 'GEMINI_API_KEY',
+  }
+  const keyName = KEY_MAP[provider]
+  if (!keyName) return res.status(400).json({ error: `Proveedor desconocido: ${provider}` })
+  if (!process.env[keyName]) return res.status(503).json({ error: `${keyName} no configurada en el servidor.` })
+
+  try {
+    let data
+    if (provider === 'claude') data = await iaWithClaude(req.file)
+    else if (provider === 'openai') data = await iaWithOpenAI(req.file)
+    else data = await iaWithGemini(req.file)
+    res.json(data)
+  } catch (err) {
+    console.error(`IA Contrato [${provider}] error:`, err)
+    res.status(500).json({ error: classifyAIError(err, provider) })
+  }
+})
+
+// ── Logos: mejorar con OpenAI ─────────────────────────────────────────────────
+
+const LOGO_ENHANCE_SYSTEM =
+  'Eres un experto diseñador gráfico y desarrollador SVG. Tu tarea es analizar el logo ' +
+  'proporcionado y generar código SVG limpio y optimizado que lo reproduzca con la mayor ' +
+  'fidelidad posible: mismos colores, tipografías, proporciones y diseño. Solo puedes reparar ' +
+  'imperfecciones técnicas (bordes dentados, ruido, artefactos de compresión, trazados irregulares). ' +
+  'No añadas ni elimines ningún elemento del diseño original. ' +
+  'Responde ÚNICAMENTE con código SVG válido y completo. Empieza con <svg y termina con </svg>. ' +
+  'No incluyas explicaciones, comentarios ni bloques de código markdown.'
+
+app.post('/api/logos/openai-enhance', async (req, res) => {
+  const { imageBase64, mimeType, nombre, instrucciones } = req.body
+
+  if (!imageBase64 || !mimeType)
+    return res.status(400).json({ error: 'Faltan imageBase64 y mimeType.' })
+  if (!process.env.OPENAI_API_KEY)
+    return res.status(503).json({ error: 'OPENAI_API_KEY no configurada en el servidor.' })
+
+  try {
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+    const isSvg = mimeType === 'image/svg+xml'
+    const userText = instrucciones?.trim()
+      || `Reproduce fielmente el logo "${nombre}", reparando imperfecciones sin alterar el diseño.`
+
+    let userContent
+    if (isSvg) {
+      const svgText = Buffer.from(imageBase64, 'base64').toString('utf-8')
+      userContent = [{ type: 'text', text: `SVG original del logo "${nombre}":\n\n${svgText}\n\n${userText}` }]
+    } else {
+      userContent = [
+        { type: 'image_url', image_url: { url: `data:${mimeType};base64,${imageBase64}`, detail: 'high' } },
+        { type: 'text', text: userText },
+      ]
+    }
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      max_tokens: 4096,
+      messages: [
+        { role: 'system', content: LOGO_ENHANCE_SYSTEM },
+        { role: 'user',   content: userContent },
+      ],
+    })
+
+    const raw = completion.choices[0].message.content?.trim() || ''
+    const match = raw.match(/<svg[\s\S]*<\/svg>/i)
+    if (!match) {
+      return res.status(422).json({
+        error: 'OpenAI no devolvió SVG válido. Prueba con un logo más sencillo o añade instrucciones.',
+      })
+    }
+    res.json({ svg: match[0] })
+  } catch (err) {
+    console.error('OpenAI logo enhance error:', err)
+    res.status(500).json({ error: classifyAIError(err, 'openai') })
+  }
+})
+
+app.post('/api/logos/gemini-enhance', async (req, res) => {
+  const { imageBase64, mimeType, nombre, instrucciones } = req.body
+
+  if (!imageBase64 || !mimeType)
+    return res.status(400).json({ error: 'Faltan imageBase64 y mimeType.' })
+  if (!process.env.GEMINI_API_KEY)
+    return res.status(503).json({ error: 'GEMINI_API_KEY no configurada en el servidor.' })
+
+  try {
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.0-flash-lite',
+      systemInstruction: LOGO_ENHANCE_SYSTEM,
+    })
+
+    const isSvg = mimeType === 'image/svg+xml'
+    const userText = instrucciones?.trim()
+      || `Reproduce fielmente el logo "${nombre}", reparando imperfecciones sin alterar el diseño.`
+
+    let parts
+    if (isSvg) {
+      const svgText = Buffer.from(imageBase64, 'base64').toString('utf-8')
+      parts = [{ text: `SVG original del logo "${nombre}":\n\n${svgText}\n\n${userText}` }]
+    } else {
+      parts = [
+        { inlineData: { data: imageBase64, mimeType } },
+        { text: userText },
+      ]
+    }
+
+    const result = await model.generateContent({ contents: [{ role: 'user', parts }] })
+    const raw = result.response.text()?.trim() || ''
+    const match = raw.match(/<svg[\s\S]*<\/svg>/i)
+    if (!match) {
+      return res.status(422).json({
+        error: 'Gemini no devolvió SVG válido. Prueba con un logo más sencillo o añade instrucciones.',
+      })
+    }
+    res.json({ svg: match[0] })
+  } catch (err) {
+    console.error('Gemini logo enhance error:', err)
+    res.status(500).json({ error: classifyAIError(err, 'gemini') })
+  }
+})
+
+// ── IA: localizar código HS / HTS ────────────────────────────────────────────
+
+const HS_SYSTEM_PROMPT =
+  'Eres un experto en clasificación arancelaria aduanera con profundo conocimiento ' +
+  'del Sistema Armonizado (HS) de la OMA y del Arancel de Aduanas de Estados Unidos (HTS). ' +
+  'Tu especialidad es el material biológico de investigación (priones, proteínas, tejidos, ' +
+  'muestras, reactivos, cultivos, ADN/ARN, anticuerpos, etc.). ' +
+  'Responde ÚNICAMENTE con un objeto JSON válido con exactamente estas cuatro claves: ' +
+  '"codigo" (el código arancelario con puntos separadores: 6 dígitos para HS, 10 para HTS), ' +
+  '"tipo" ("HS" o "HTS" según el sistema solicitado), ' +
+  '"certeza" ("alta", "media" o "baja": alta = código claramente aplicable sin ambigüedad; ' +
+  'media = probable pero puede haber alternativas; baja = tentativo, consultar agente aduanas), ' +
+  '"justificacion" (2-3 frases que expliquen la clasificación y por qué es el código correcto, ' +
+  'mencionando la partida arancelaria y su descripción oficial). Responde en español.'
+
+function hsPrompt(descripcion, tipo) {
+  const digitos = tipo === 'HTS' ? '10' : '6'
+  return `Clasifica el siguiente material biológico de investigación bajo el sistema ${tipo} (${digitos} dígitos):\n\n${descripcion}`
+}
+
+function parseHsJson(text) {
+  const match = (text || '{}').match(/\{[\s\S]*\}/)
+  const parsed = JSON.parse(match ? match[0] : '{}')
+  return {
+    codigo:        parsed.codigo        || '',
+    tipo:          parsed.tipo          || 'HS',
+    certeza:       parsed.certeza       || 'baja',
+    justificacion: parsed.justificacion || '',
+  }
+}
+
+async function hsWithClaude(descripcion, tipo) {
+  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  const message = await anthropic.messages.create({
+    model: 'claude-opus-4-7',
+    max_tokens: 512,
+    system: [{ type: 'text', text: HS_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+    messages: [{ role: 'user', content: hsPrompt(descripcion, tipo) }],
+  })
+  return parseHsJson(message.content.find(b => b.type === 'text')?.text)
+}
+
+async function hsWithOpenAI(descripcion, tipo) {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [
+      { role: 'system', content: HS_SYSTEM_PROMPT },
+      { role: 'user',   content: hsPrompt(descripcion, tipo) },
+    ],
+    response_format: { type: 'json_object' },
+    max_tokens: 512,
+  })
+  return parseHsJson(completion.choices[0].message.content)
+}
+
+async function hsWithGemini(descripcion, tipo) {
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-2.0-flash-lite',
+    systemInstruction: HS_SYSTEM_PROMPT,
+    generationConfig: { responseMimeType: 'application/json' },
+  })
+  const result = await model.generateContent({ contents: [{ role: 'user', parts: [{ text: hsPrompt(descripcion, tipo) }] }] })
+  return parseHsJson(result.response.text())
+}
+
+app.post('/api/ia/hs-code', async (req, res) => {
+  const { descripcion, tipo = 'HS', provider = 'claude' } = req.body
+
+  if (!descripcion?.trim()) {
+    return res.status(400).json({ error: 'Campo obligatorio: descripcion' })
+  }
+
+  const KEY_MAP = { claude: 'ANTHROPIC_API_KEY', openai: 'OPENAI_API_KEY', gemini: 'GEMINI_API_KEY' }
+  const keyName = KEY_MAP[provider]
+  if (!keyName) return res.status(400).json({ error: `Proveedor desconocido: ${provider}` })
+  if (!process.env[keyName]) return res.status(503).json({ error: `${keyName} no configurada en el servidor.` })
+
+  try {
+    let data
+    if (provider === 'claude')      data = await hsWithClaude(descripcion, tipo)
+    else if (provider === 'openai') data = await hsWithOpenAI(descripcion, tipo)
+    else                            data = await hsWithGemini(descripcion, tipo)
+    res.json(data)
+  } catch (err) {
+    console.error(`IA HS-Code [${provider}] error:`, err)
+    res.status(500).json({ error: classifyAIError(err, provider) })
+  }
+})
+
+// ── IA: sugerir código TARIC (UE, 10 dígitos) ────────────────────────────────
+
+const TARIC_SYSTEM_PROMPT =
+  'Eres un experto en clasificación arancelaria aduanera con profundo conocimiento ' +
+  'del Arancel Integrado de la Unión Europea (TARIC, 10 dígitos). ' +
+  'Tu especialidad es el material biológico de investigación (priones, proteínas, ' +
+  'tejidos, muestras, reactivos, cultivos, ADN/ARN, anticuerpos, etc.) y los productos ' +
+  'químicos / farmacéuticos asociados. ' +
+  'Responde ÚNICAMENTE con un objeto JSON válido con exactamente estas tres claves: ' +
+  '"codigo" (el código TARIC con puntos separadores en formato NNNN.NN.NN.NN, 10 dígitos), ' +
+  '"certeza" ("alta", "media" o "baja": alta = código claramente aplicable sin ambigüedad; ' +
+  'media = probable pero pueden existir alternativas; baja = tentativo, conviene consultar ' +
+  'con la aduana o un agente), ' +
+  '"justificacion" (1-2 frases breves explicando la partida elegida y por qué encaja). ' +
+  'Responde en español, sin texto fuera del JSON.'
+
+async function taricWithOpenAI(descripcion) {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [
+      { role: 'system', content: TARIC_SYSTEM_PROMPT },
+      { role: 'user',   content: `Clasifica bajo el sistema TARIC de la UE (10 dígitos) el siguiente producto:\n\n${descripcion}` },
+    ],
+    response_format: { type: 'json_object' },
+    max_tokens: 400,
+  })
+  return parseHsJson(completion.choices[0].message.content)
+}
+
+app.post('/api/ia/taric', async (req, res) => {
+  const { descripcion } = req.body
+  if (!descripcion?.trim()) {
+    return res.status(400).json({ error: 'Campo obligatorio: descripcion' })
+  }
+  if (!process.env.OPENAI_API_KEY) {
+    return res.status(503).json({ error: 'OPENAI_API_KEY no configurada en el servidor.' })
+  }
+  try {
+    const data = await taricWithOpenAI(descripcion)
+    res.json(data)
+  } catch (err) {
+    console.error('IA TARIC error:', err)
+    res.status(500).json({ error: classifyAIError(err, 'openai') })
+  }
+})
+
+// ── Persistent data store ─────────────────────────────────────────────────────
+
+const DATA_DIR = process.env.DATA_DIR || '/data'
+try { mkdirSync(DATA_DIR, { recursive: true }) } catch {}
+
+function readData(file, fallback) {
+  try {
+    const p = join(DATA_DIR, file)
+    if (!existsSync(p)) return fallback
+    return JSON.parse(readFileSync(p, 'utf-8'))
+  } catch { return fallback }
+}
+
+function writeData(file, value) {
+  writeFileSync(join(DATA_DIR, file), JSON.stringify(value), 'utf-8')
+}
+
+const VALID_COLS = new Set(['contrato', 'proforma', 'genscript-eus', 'genscript-moh', 'pqp-import', 'documento-1403'])
+
+// Logos (binary stored as base64 strings inside JSON)
+app.get('/api/store/logos', (_req, res) => {
+  const list = readData('logos.json', [])
+  // Strip binary payload — client loads each image individually via /:id/image
+  res.json(list.map(({ data, ...meta }) => ({ ...meta, imageUrl: `/api/store/logos/${meta.id}/image` })))
+})
+app.get('/api/store/logos/:id/image', (req, res) => {
+  const list = readData('logos.json', [])
+  const logo = list.find(l => l.id === req.params.id)
+  if (!logo?.data) return res.status(404).end()
+  const buf = Buffer.from(logo.data, 'base64')
+  res.setHeader('Content-Type', logo.mimeType)
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+  res.send(buf)
+})
+app.post('/api/store/logos', (req, res) => {
+  const { imageUrl, ...entry } = req.body
+  if (!entry?.id) return res.status(400).json({ error: 'id requerido' })
+  const list = readData('logos.json', [])
+  const idx = list.findIndex(l => l.id === entry.id)
+  if (idx >= 0) {
+    // Preserve existing binary when only metadata changes
+    list[idx] = entry.data ? entry : { ...entry, data: list[idx].data }
+  } else {
+    list.push(entry)
+  }
+  writeData('logos.json', list)
+  res.json({ ok: true })
+})
+app.delete('/api/store/logos/:id', (req, res) => {
+  const list = readData('logos.json', [])
+  writeData('logos.json', list.filter(l => l.id !== req.params.id))
+  res.json({ ok: true })
+})
+app.post('/api/store/logos/reorder', (req, res) => {
+  const { ids } = req.body
+  if (!Array.isArray(ids)) return res.status(400).json({ error: 'ids debe ser un array' })
+  const list = readData('logos.json', [])
+  const map = new Map(list.map(l => [l.id, l]))
+  const reordered = ids.map(id => map.get(id)).filter(Boolean)
+  const inIds = new Set(ids)
+  list.filter(l => !inIds.has(l.id)).forEach(l => reordered.push(l))
+  writeData('logos.json', reordered)
+  res.json({ ok: true })
+})
+
+// Generic JSON collections (contrato, proforma, genscript-eus, genscript-moh)
+app.get('/api/store/:col', (req, res) => {
+  if (!VALID_COLS.has(req.params.col)) return res.status(404).json({ error: 'Colección desconocida' })
+  res.json(readData(`${req.params.col}.json`, []))
+})
+app.post('/api/store/:col', (req, res) => {
+  const { col } = req.params
+  if (!VALID_COLS.has(col)) return res.status(404).json({ error: 'Colección desconocida' })
+  const record = req.body
+  if (!record?.id) return res.status(400).json({ error: 'id requerido' })
+  const list = readData(`${col}.json`, [])
+  const idx = list.findIndex(r => r.id === record.id)
+  if (idx >= 0) list[idx] = record; else list.unshift(record)
+  writeData(`${col}.json`, list)
+  res.json({ ok: true })
+})
+app.delete('/api/store/:col/:id', (req, res) => {
+  const { col, id } = req.params
+  if (!VALID_COLS.has(col)) return res.status(404).json({ error: 'Colección desconocida' })
+  const list = readData(`${col}.json`, [])
+  writeData(`${col}.json`, list.filter(r => r.id !== id))
+  res.json({ ok: true })
+})
+
+// ── Animalario ────────────────────────────────────────────────────────────────
+app.use('/api/animalario', animalarioRouter)
+app.use('/api/animalario', animalarioExportRouter)
+app.use('/api/animalario', animalarioBackupRouter)
+initAutoBackup()
 
 // ── SPA fallback ─────────────────────────────────────────────────────────────
 app.get('*', (_req, res) => {

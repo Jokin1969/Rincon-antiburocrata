@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 100" width="360" height="100">
+  <rect width="360" height="100" fill="white"/>
+  <rect x="2" y="2" width="356" height="96" rx="4" fill="none" stroke="#d4e4f0" stroke-width="1.5"/>
+  <text x="180" y="38" text-anchor="middle" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#003366">CIC bioGUNE</text>
+  <text x="180" y="66" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#5588aa" letter-spacing="1">Centro de Investigación Cooperativa en Biociencias</text>
+  <line x1="60" y1="78" x2="300" y2="78" stroke="#003366" stroke-width="1.5"/>
+</svg>
