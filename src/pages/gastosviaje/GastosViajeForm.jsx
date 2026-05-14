@@ -501,6 +501,94 @@ function OtrosGastoForm({ onAdd }) {
   )
 }
 
+// ── Sub-component: AdjuntosSection ───────────────────────────────────────────
+
+function AdjuntosSection({ viajeId, adjuntos, onChange }) {
+  const [uploading, setUploading] = useState(false)
+  const [error, setError]         = useState(null)
+  const fileRef = useRef()
+
+  async function handleUpload(file) {
+    if (!file) return
+    setUploading(true)
+    setError(null)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res  = await fetch(`/api/gastos-viaje/${viajeId}/adjuntos`, { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
+      onChange([...adjuntos, data])
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  async function handleRemove(adj) {
+    if (!window.confirm(`¿Eliminar "${adj.originalName}"?`)) return
+    try {
+      await fetch(`/api/gastos-viaje/${viajeId}/adjuntos/${adj.id}`, { method: 'DELETE' })
+      onChange(adjuntos.filter(a => a.id !== adj.id))
+    } catch {
+      setError('Error al eliminar el adjunto.')
+    }
+  }
+
+  const MIME_ICON = mime => {
+    if (mime === 'application/pdf') return '📄'
+    if (mime.startsWith('image/')) return '🖼️'
+    if (mime.includes('word')) return '📝'
+    return '📎'
+  }
+
+  return (
+    <div className={styles.adjuntosSection}>
+      <p className={styles.adjuntosHint}>
+        Añade imágenes, PDF o documentos Word que se incluirán como páginas al final del informe PDF.
+      </p>
+      <div
+        className={styles.dropZone}
+        onClick={() => fileRef.current?.click()}
+        onDragOver={e => e.preventDefault()}
+        onDrop={e => { e.preventDefault(); handleUpload(e.dataTransfer.files[0]) }}
+      >
+        {uploading
+          ? <span>Subiendo…</span>
+          : <>
+              <span className={styles.dropIcon}>📎</span>
+              <span>Arrastra o toca para añadir documento</span>
+              <span className={styles.dropHint}>PDF · PNG · JPG · DOCX · también cámara del móvil</span>
+            </>
+        }
+      </div>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="application/pdf,image/*,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        capture="environment"
+        className={styles.hiddenInput}
+        onChange={e => handleUpload(e.target.files[0])}
+        disabled={uploading}
+      />
+      {error && <div className={`alert alert-error ${styles.uploaderError}`}>{error}</div>}
+      {adjuntos.length > 0 && (
+        <div className={styles.itemList}>
+          {adjuntos.map((adj, i) => (
+            <div key={adj.id} className={styles.itemRow}>
+              <span className={styles.adjIcon}>{MIME_ICON(adj.mime)}</span>
+              <span className={styles.itemName}>{adj.originalName}</span>
+              <span className={styles.itemDate}>Página {i + 2}</span>
+              <button className={styles.removeBtn} onClick={() => handleRemove(adj)}>✕</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Sub-component: OtrosTrForm (Otros transporte) ─────────────────────────────
 
 function OtrosTrForm({ onAdd }) {
@@ -583,15 +671,17 @@ function SubSection({ icon, label, badge, children }) {
 // ── Main form ─────────────────────────────────────────────────────────────────
 
 const EMPTY_VIAJE = {
-  nombre:      '',
-  fechaInicio: TODAY,
-  fechaFin:    '',
-  logoCustom:  null,
-  ceco:        '',
-  transporte: { autopista: [], coche: [], avion: [], tren: [], autobus: [], parking: [], otros: [] },
-  manutencion: [],
-  hotel:       [],
-  otros:       [],
+  nombre:       '',
+  fechaInicio:  TODAY,
+  fechaFin:     '',
+  logoCustom:   null,
+  ceco:         '',
+  numeroPedido: '',
+  transporte:   { autopista: [], coche: [], avion: [], tren: [], autobus: [], parking: [], taxi: [], otros: [] },
+  manutencion:  [],
+  hotel:        [],
+  otros:        [],
+  adjuntos:     [],
 }
 
 export default function GastosViajeForm() {
@@ -619,6 +709,7 @@ export default function GastosViajeForm() {
           ...EMPTY_VIAJE,
           ...data,
           transporte: { ...EMPTY_VIAJE.transporte, ...data.transporte },
+          adjuntos:   data.adjuntos || [],
         })
         setViajeId(data.id)
       })
@@ -738,7 +829,7 @@ export default function GastosViajeForm() {
   // ── Computed totals for display ─────────────────────────────────────────────
   const tr = viaje.transporte
   const totalTransporte = [
-    ...tr.autopista, ...tr.avion, ...tr.tren, ...tr.autobus, ...tr.parking, ...tr.otros,
+    ...tr.autopista, ...tr.avion, ...tr.tren, ...tr.autobus, ...tr.parking, ...tr.taxi, ...tr.otros,
   ].reduce((a, it) => a + toNum(it.conIva), 0) +
   tr.coche.reduce((a, it) => a + (toNum(it.kmIda) + toNum(it.kmVuelta)) * toNum(it.precioPorKm ?? 0.29), 0)
 
@@ -865,8 +956,14 @@ export default function GastosViajeForm() {
           <TicketList items={tr.parking} onRemove={id => removeTransporte('parking', id)} />
         </SubSection>
 
+        {/* Taxi */}
+        <SubSection icon="🚕" label="Taxi / VTC" badge={tr.taxi.length}>
+          <TicketForm tipo="taxi" onAdd={item => addTransporte('taxi', item)} />
+          <TicketList items={tr.taxi} onRemove={id => removeTransporte('taxi', id)} />
+        </SubSection>
+
         {/* Otros transporte */}
-        <SubSection icon="🚕" label="Otros transportes" badge={tr.otros.length}>
+        <SubSection icon="🛺" label="Otros transportes" badge={tr.otros.length}>
           <OtrosTrForm onAdd={item => addTransporte('otros', item)} />
           <TicketList items={tr.otros} onRemove={id => removeTransporte('otros', id)} />
         </SubSection>
@@ -937,6 +1034,37 @@ export default function GastosViajeForm() {
           </div>
         </div>
       )}
+
+      {/* ── Número de pedido ──────────────────────────────────────────────── */}
+      <div className={styles.pedidoCard}>
+        <div className="form-group" style={{ maxWidth: '360px' }}>
+          <label htmlFor="numeroPedido">
+            N.º de pedido <span className={styles.optional}>(opcional — aparece en el informe)</span>
+          </label>
+          <input
+            id="numeroPedido"
+            type="text"
+            value={viaje.numeroPedido || ''}
+            onChange={e => setField('numeroPedido', e.target.value)}
+            placeholder="Ej. PO-2026-0123"
+            autoComplete="off"
+          />
+        </div>
+      </div>
+
+      {/* ── Documentos adjuntos ────────────────────────────────────────────── */}
+      <Section icon="📎" label="Documentos adjuntos" badge={viaje.adjuntos.length}>
+        {!viajeId
+          ? <p className={styles.adjuntosHint} style={{ color: 'var(--text-muted)', padding: '0.5rem 0' }}>
+              Guarda el viaje primero para poder añadir documentos adjuntos.
+            </p>
+          : <AdjuntosSection
+              viajeId={viajeId}
+              adjuntos={viaje.adjuntos}
+              onChange={list => { setField('adjuntos', list); setSaved(false) }}
+            />
+        }
+      </Section>
 
       {error && <div className="alert alert-error" style={{ marginTop: '1rem' }}>{error}</div>}
 

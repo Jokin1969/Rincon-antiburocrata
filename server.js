@@ -19,7 +19,8 @@ import { generatePqpImport } from './generators/pqpImport.js'
 import { generateDocumento1403 } from './generators/documento1403.js'
 import { generateCertificadoExclusividad } from './generators/certificadoExclusividad.js'
 import { generateGastosViaje }             from './generators/gastosViaje.js'
-import { docxToPdf } from './utils/pdf.js'
+import { docxToPdf }                       from './utils/pdf.js'
+import { mergePdfs, attachmentToPdf }      from './utils/mergePdf.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -793,22 +794,46 @@ initAutoBackup()
 app.use('/api/gastos-viaje', gastosViajeRouter)
 
 app.post('/api/gastos-viaje/:id/generar', async (req, res) => {
-  const { readFileSync: rfs, existsSync: exs } = await import('fs')
-  const { join: pjoin, dirname: pdir }          = await import('path')
-  const { fileURLToPath: furl }                 = await import('url')
+  const DATA_DIR_GV   = process.env.DATA_DIR ?? join(__dirname, 'data')
+  const viajesDir     = join(DATA_DIR_GV, 'gastosviaje')
+  const viajeJsonPath = join(viajesDir, `viaje_${req.params.id}.json`)
+  if (!existsSync(viajeJsonPath)) return res.status(404).json({ error: 'Viaje no encontrado.' })
 
-  const DATA_DIR_GV = process.env.DATA_DIR ?? pjoin(__dirname, 'data')
-  const viajesDir   = pjoin(DATA_DIR_GV, 'gastosviaje')
-  const path        = pjoin(viajesDir, `viaje_${req.params.id}.json`)
-  if (!exs(path)) return res.status(404).json({ error: 'Viaje no encontrado.' })
-
-  const viaje  = JSON.parse(rfs(path, 'utf-8'))
+  const viaje  = JSON.parse(readFileSync(viajeJsonPath, 'utf-8'))
   const format = req.query.format === 'pdf' ? 'pdf' : 'docx'
+  const safe   = (viaje.nombre || 'GastosViaje').replace(/[^a-zA-Z0-9_\-áéíóúÁÉÍÓÚüÜñÑ]/g, '_').slice(0, 50)
+  const base   = `GastosViaje_${safe}_${viaje.fechaInicio || 'sin_fecha'}`
 
   try {
     const docxBuffer = await generateGastosViaje(viaje)
-    const safe = (viaje.nombre || 'GastosViaje').replace(/[^a-zA-Z0-9_\-áéíóúÁÉÍÓÚüÜñÑ]/g, '_').slice(0, 50)
-    sendDocument(res, docxBuffer, `GastosViaje_${safe}_${viaje.fechaInicio || 'sin_fecha'}`, format)
+
+    // Sin adjuntos o formato DOCX: enviar directamente
+    const adjuntos = viaje.adjuntos || []
+    if (format === 'docx' || adjuntos.length === 0) {
+      return sendDocument(res, docxBuffer, base, format)
+    }
+
+    // Con adjuntos en PDF: convertir informe + adjuntos y fusionar
+    const adjuntosDir = join(viajesDir, 'adjuntos', req.params.id)
+    const mainPdf     = docxToPdf(docxBuffer)
+    const parts       = [mainPdf]
+
+    for (const meta of adjuntos) {
+      const filePath = join(adjuntosDir, meta.filename)
+      if (!existsSync(filePath)) continue
+      try {
+        const buf    = readFileSync(filePath)
+        const pdfBuf = await attachmentToPdf(buf, meta.mime)
+        parts.push(pdfBuf)
+      } catch (err) {
+        console.error(`Adjunto omitido (${meta.originalName}):`, err.message)
+      }
+    }
+
+    const mergedPdf = await mergePdfs(parts)
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `attachment; filename="${base}.pdf"`)
+    res.send(mergedPdf)
   } catch (err) {
     console.error('Gastos viaje generar error:', err)
     res.status(500).json({ error: 'Error al generar el informe.' })
