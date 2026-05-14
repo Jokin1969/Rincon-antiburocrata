@@ -409,34 +409,38 @@ export async function generateGastosViaje(viaje) {
   )
 
   // Info table
+  // Columnas (DXA, total ≈ 8842): label-fecha | valor-fecha | label-ceco | valor-ceco
+  const INFO_COLS = [1500, 3400, 900, 3042]
+  const INFO_W23  = INFO_COLS[1] + INFO_COLS[2] + INFO_COLS[3] // span=3 en filas de 1+3
   children.push(
     new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
+      width:        { size: 100, type: WidthType.PERCENTAGE },
+      columnWidths: INFO_COLS,
       rows: [
         new TableRow({
           children: [
-            cell('Concepto / Destino:', { bold: true, bg: C_ALT }),
-            cell(nombre || '—', { span: 3 }),
+            cell('Concepto / Destino:', { bold: true, bg: C_ALT, width: INFO_COLS[0] }),
+            cell(nombre || '—',         { span: 3,               width: INFO_W23 }),
           ],
         }),
         new TableRow({
           children: [
-            cell('Fecha(s) del viaje:', { bold: true, bg: C_ALT }),
-            cell(fechasStr),
-            cell('CeCO:', { bold: true, bg: C_ALT }),
-            cell(cecoLabel),
+            cell('Fecha(s) del viaje:', { bold: true, bg: C_ALT, width: INFO_COLS[0] }),
+            cell(fechasStr,             {                         width: INFO_COLS[1] }),
+            cell('CeCO:',              { bold: true, bg: C_ALT, width: INFO_COLS[2] }),
+            cell(cecoLabel,             {                         width: INFO_COLS[3] }),
           ],
         }),
         new TableRow({
           children: [
-            cell('Firmante:', { bold: true, bg: C_ALT }),
-            cell('Joaquín Castilla', { span: 3 }),
+            cell('Firmante:', { bold: true, bg: C_ALT, width: INFO_COLS[0] }),
+            cell('Joaquín Castilla', { span: 3,        width: INFO_W23 }),
           ],
         }),
         ...(numeroPedido ? [new TableRow({
           children: [
-            cell('N.º de pedido:', { bold: true, bg: C_ALT }),
-            cell(numeroPedido, { span: 3, bold: true }),
+            cell('N.º de pedido:', { bold: true, bg: C_ALT, width: INFO_COLS[0] }),
+            cell(numeroPedido,     { span: 3, bold: true,   width: INFO_W23 }),
           ],
         })] : []),
       ],
@@ -444,41 +448,49 @@ export async function generateGastosViaje(viaje) {
     blank(120),
   )
 
-  // Resumen table
+  // Resumen table — ancho total, Concepto ≈ 78%, Importe ≈ 22%
+  const RES_COLS = [6900, 1942]
+
   const resumenRows = []
   const addResumenRow = (label, val) => {
     if (val > 0) resumenRows.push(new TableRow({
       children: [
-        cell(label, { bg: C_ALT }),
-        cell(eur(val), { align: AlignmentType.RIGHT, bg: C_ALT }),
+        cell(label,    { bg: C_ALT,                                 width: RES_COLS[0] }),
+        cell(eur(val), { bg: C_ALT, align: AlignmentType.RIGHT,     width: RES_COLS[1] }),
       ],
     }))
   }
-  if (tAutopista > 0) addResumenRow('Transporte — Autopistas / Peajes', tAutopista)
-  if (tCoche     > 0) addResumenRow('Transporte — Vehículo propio', tCoche)
-  if (tAvion     > 0) addResumenRow('Transporte — Avión', tAvion)
-  if (tTren      > 0) addResumenRow('Transporte — Tren', tTren)
-  if (tAutobus   > 0) addResumenRow('Transporte — Autobús', tAutobus)
-  if (tParking   > 0) addResumenRow('Transporte — Parking', tParking)
-  if (tTaxi      > 0) addResumenRow('Transporte — Taxi / VTC', tTaxi)
-  if (tOtrosTr   > 0) addResumenRow('Transporte — Otros', tOtrosTr)
-  if (tManutencion > 0) addResumenRow('Manutención', tManutencion)
-  if (tHotel       > 0) addResumenRow('Alojamiento', tHotel)
-  if (tOtros       > 0) addResumenRow('Otros gastos', tOtros)
+  if (tAutopista   > 0) addResumenRow('Transporte — Autopistas / Peajes', tAutopista)
+  if (tCoche       > 0) addResumenRow('Transporte — Vehículo propio',     tCoche)
+  if (tAvion       > 0) addResumenRow('Transporte — Avión',               tAvion)
+  if (tTren        > 0) addResumenRow('Transporte — Tren',                tTren)
+  if (tAutobus     > 0) addResumenRow('Transporte — Autobús',             tAutobus)
+  if (tParking     > 0) addResumenRow('Transporte — Parking',             tParking)
+  if (tTaxi        > 0) addResumenRow('Transporte — Taxi / VTC',          tTaxi)
+  if (tOtrosTr     > 0) addResumenRow('Transporte — Otros',               tOtrosTr)
+  if (tManutencion > 0) addResumenRow('Manutención',                      tManutencion)
+  if (tHotel       > 0) addResumenRow('Alojamiento',                      tHotel)
+  if (tOtros       > 0) addResumenRow('Otros gastos',                     tOtros)
 
   if (resumenRows.length > 0) {
     children.push(
       sectionTitle('RESUMEN'),
       blank(40),
       new Table({
-        width: { size: 60, type: WidthType.PERCENTAGE },
+        width:        { size: 100, type: WidthType.PERCENTAGE },
+        columnWidths: RES_COLS,
         rows: [
-          new TableRow({ children: [headerCell('Concepto'), headerCell('Importe (IVA incl.)', { align: AlignmentType.RIGHT })] }),
+          new TableRow({
+            children: [
+              headerCell('Concepto',           {                              width: RES_COLS[0] }),
+              headerCell('Importe (IVA incl.)', { align: AlignmentType.RIGHT, width: RES_COLS[1] }),
+            ],
+          }),
           ...resumenRows,
           new TableRow({
             children: [
-              totalCell('TOTAL GENERAL', { bold: true, size: SZ_LG }),
-              totalCell(eur(tTotal), { bold: true, size: SZ_LG, align: AlignmentType.RIGHT }),
+              totalCell('TOTAL GENERAL', { bold: true, size: SZ_LG,                              width: RES_COLS[0] }),
+              totalCell(eur(tTotal),     { bold: true, size: SZ_LG, align: AlignmentType.RIGHT,  width: RES_COLS[1] }),
             ],
           }),
         ],
