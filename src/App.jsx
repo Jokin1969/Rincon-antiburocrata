@@ -21,6 +21,8 @@ import SeccionBForm from './pages/animalario/seccionB/SeccionBForm'
 import SeccionCForm from './pages/animalario/seccionC/SeccionCForm'
 import SeccionDForm from './pages/animalario/seccionD/SeccionDForm'
 import ModificacionForm from './pages/animalario/modificacion/ModificacionForm'
+import GastosViajeList from './pages/gastosviaje/GastosViajeList'
+import GastosViajeForm from './pages/gastosviaje/GastosViajeForm'
 import NotFound from './pages/NotFound'
 
 export default function App() {
@@ -39,6 +41,11 @@ export default function App() {
         <Route path="/aduanas/documento-1403" element={<Documento1403 />} />
         <Route path="/contrato-menor" element={<ContratoMenorPage />} />
         <Route path="/contrato-menor/certificado-exclusividad" element={<CertificadoExclusividad />} />
+
+        {/* Gastos de viaje */}
+        <Route path="/gastos-viaje" element={<GastosViajeList />} />
+        <Route path="/gastos-viaje/nuevo" element={<GastosViajeForm />} />
+        <Route path="/gastos-viaje/:id" element={<GastosViajeForm />} />
 
         {/* Animalario */}
         <Route path="/animalario" element={<AnimalarioHub />} />

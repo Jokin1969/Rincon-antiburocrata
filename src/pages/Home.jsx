@@ -43,6 +43,14 @@ const MODULES = [
     status: 'ready',
   },
   {
+    id: 'gastos-viaje',
+    name: 'Gastos de viaje',
+    description: 'Registra y gestiona los gastos de desplazamiento: transporte, manutención, alojamiento y otros. Genera el informe firmado en DOCX o PDF.',
+    icon: '✈️',
+    href: '/gastos-viaje',
+    status: 'ready',
+  },
+  {
     id: 'animalario',
     name: 'Animalario',
     description: 'Gestión de proyectos de experimentación animal: secciones A–D, procedimientos, cría y modificaciones.',

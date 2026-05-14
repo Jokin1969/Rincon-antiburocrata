@@ -2,6 +2,7 @@ import express from 'express'
 import animalarioRouter       from './server/routes/animalario.js'
 import animalarioExportRouter from './server/routes/animalario-export.js'
 import animalarioBackupRouter, { initAutoBackup } from './server/routes/animalario-backup.js'
+import gastosViajeRouter      from './server/routes/gastosViaje.js'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'fs'
@@ -17,6 +18,7 @@ import { generateFacturaProforma } from './generators/facturaProforma.js'
 import { generatePqpImport } from './generators/pqpImport.js'
 import { generateDocumento1403 } from './generators/documento1403.js'
 import { generateCertificadoExclusividad } from './generators/certificadoExclusividad.js'
+import { generateGastosViaje }             from './generators/gastosViaje.js'
 import { docxToPdf } from './utils/pdf.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -786,6 +788,32 @@ app.use('/api/animalario', animalarioRouter)
 app.use('/api/animalario', animalarioExportRouter)
 app.use('/api/animalario', animalarioBackupRouter)
 initAutoBackup()
+
+// ── Gastos de viaje ───────────────────────────────────────────────────────────
+app.use('/api/gastos-viaje', gastosViajeRouter)
+
+app.post('/api/gastos-viaje/:id/generar', async (req, res) => {
+  const { readFileSync: rfs, existsSync: exs } = await import('fs')
+  const { join: pjoin, dirname: pdir }          = await import('path')
+  const { fileURLToPath: furl }                 = await import('url')
+
+  const DATA_DIR_GV = process.env.DATA_DIR ?? pjoin(__dirname, 'data')
+  const viajesDir   = pjoin(DATA_DIR_GV, 'gastosviaje')
+  const path        = pjoin(viajesDir, `viaje_${req.params.id}.json`)
+  if (!exs(path)) return res.status(404).json({ error: 'Viaje no encontrado.' })
+
+  const viaje  = JSON.parse(rfs(path, 'utf-8'))
+  const format = req.query.format === 'pdf' ? 'pdf' : 'docx'
+
+  try {
+    const docxBuffer = await generateGastosViaje(viaje)
+    const safe = (viaje.nombre || 'GastosViaje').replace(/[^a-zA-Z0-9_\-áéíóúÁÉÍÓÚüÜñÑ]/g, '_').slice(0, 50)
+    sendDocument(res, docxBuffer, `GastosViaje_${safe}_${viaje.fechaInicio || 'sin_fecha'}`, format)
+  } catch (err) {
+    console.error('Gastos viaje generar error:', err)
+    res.status(500).json({ error: 'Error al generar el informe.' })
+  }
+})
 
 // ── SPA fallback ─────────────────────────────────────────────────────────────
 app.get('*', (_req, res) => {
