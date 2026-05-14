@@ -814,6 +814,16 @@ export default function GastosViajeForm() {
     }
   }
 
+  // ── Clear all data ──────────────────────────────────────────────────────────
+  function handleClear() {
+    if (!window.confirm('¿Seguro que quieres limpiar todos los datos del formulario? Esta acción no se puede deshacer.')) return
+    setViaje(EMPTY_VIAJE)
+    setViajeId(null)
+    setSaved(false)
+    setError(null)
+    navigate('/gastos-viaje/nuevo', { replace: true })
+  }
+
   // ── Generate report ─────────────────────────────────────────────────────────
   async function handleGenerate(format) {
     if (!viajeId) {
@@ -1129,6 +1139,9 @@ export default function GastosViajeForm() {
         <button className="btn btn-ghost" onClick={() => handleGenerate('pdf')}
           disabled={!!generating || !viajeId}>
           {generating === 'pdf' ? 'Generando…' : '⬇ Informe PDF'}
+        </button>
+        <button className={styles.btnClear} onClick={handleClear}>
+          🗑 Limpiar / Borrar
         </button>
         {!viajeId && (
           <span className={styles.saveHint}>Guarda primero para poder generar el informe</span>
