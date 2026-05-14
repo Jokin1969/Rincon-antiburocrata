@@ -41,11 +41,6 @@ const NO_BORDERS    = { top: BORDER_NONE, bottom: BORDER_NONE, left: BORDER_NONE
 const ALL_BORDERS   = { top: BORDER_THIN, bottom: BORDER_THIN, left: BORDER_THIN, right: BORDER_THIN }
 const BOTTOM_ONLY   = { top: BORDER_NONE, bottom: BORDER_MED,  left: BORDER_NONE, right: BORDER_NONE }
 
-const CECO_MAP = {
-  '324P0894': 'CJD-Foundation (324P0894)',
-  '324P0862': 'PN-2025 (324P0862)',
-  '324P0887': '2026 Proof-of-Concept (324P0887)',
-}
 
 // ── Text helpers ──────────────────────────────────────────────────────────────
 
@@ -392,7 +387,7 @@ export async function generateGastosViaje(viaje) {
     ? `${formatDate(fechaInicio)} – ${formatDate(fechaFin)}`
     : formatDate(fechaInicio)
 
-  const cecoLabel = CECO_MAP[ceco] || ceco || '—'
+  const cecoLabel = ceco || '—'
 
   // ── Build doc children ────────────────────────────────────────────────────────
   const children = []
