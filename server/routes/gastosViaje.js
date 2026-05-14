@@ -6,6 +6,7 @@ import { fileURLToPath }                                   from 'url'
 import { randomUUID }                                      from 'crypto'
 import multer                                              from 'multer'
 import OpenAI                                              from 'openai'
+import { PDFDocument }                                     from 'pdf-lib'
 
 const __filename  = fileURLToPath(import.meta.url)
 const __dirname   = dirname(__filename)
@@ -264,7 +265,7 @@ function adjuntosDir(viajeId) {
 }
 
 // POST /api/gastos-viaje/:id/adjuntos  — sube un fichero
-router.post('/:id/adjuntos', upload.single('file'), (req, res) => {
+router.post('/:id/adjuntos', upload.single('file'), async (req, res) => {
   const viaje = readViaje(req.params.id)
   if (!viaje) return res.status(404).json({ error: 'Viaje no encontrado.' })
   if (!req.file) return res.status(400).json({ error: 'Se requiere un archivo.' })
@@ -277,7 +278,16 @@ router.post('/:id/adjuntos', upload.single('file'), (req, res) => {
     const filename = `${adjId}_${safeName}`
     writeFileSync(join(dir, filename), req.file.buffer)
 
-    const meta = { id: adjId, originalName: req.file.originalname, mime: req.file.mimetype, filename }
+    // Contar páginas reales si es PDF
+    let pageCount = 1
+    if (req.file.mimetype === 'application/pdf') {
+      try {
+        const pdfDoc = await PDFDocument.load(req.file.buffer, { ignoreEncryption: true })
+        pageCount = pdfDoc.getPageCount()
+      } catch { pageCount = 1 }
+    }
+
+    const meta = { id: adjId, originalName: req.file.originalname, mime: req.file.mimetype, filename, pageCount }
     viaje.adjuntos = [...(viaje.adjuntos || []), meta]
     writeViaje(viaje)
     res.status(201).json(meta)

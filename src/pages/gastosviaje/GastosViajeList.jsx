@@ -14,9 +14,9 @@ function formatDate(d) {
 
 export default function GastosViajeList() {
   const navigate = useNavigate()
-  const [viajes, setViajes] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError]     = useState(null)
+  const [viajes, setViajes]     = useState([])
+  const [loading, setLoading]   = useState(true)
+  const [error, setError]       = useState(null)
   const [deleting, setDeleting] = useState(null)
 
   async function loadViajes() {
@@ -63,58 +63,65 @@ export default function GastosViajeList() {
         </button>
       </div>
 
-      {loading && <p className={styles.status}>Cargando viajes…</p>}
-      {error   && <div className="alert alert-error">{error}</div>}
+      {/* Repositorio */}
+      <section>
+        <h2 className={styles.sectionLabel}>
+          📂 Viajes guardados
+        </h2>
 
-      {!loading && !error && viajes.length === 0 && (
-        <div className={styles.empty}>
-          <span className={styles.emptyIcon}>✈️</span>
-          <p>No hay ningún viaje registrado todavía.</p>
-          <button className="btn btn-primary" onClick={() => navigate('/gastos-viaje/nuevo')}>
-            Registrar primer viaje
-          </button>
-        </div>
-      )}
+        {loading && <p className={styles.status}>Cargando viajes…</p>}
+        {error   && <div className="alert alert-error">{error}</div>}
 
-      {!loading && viajes.length > 0 && (
-        <div className={styles.list}>
-          {viajes.map(v => (
-            <div key={v.id} className={styles.card}>
-              <div className={styles.cardMain} onClick={() => navigate(`/gastos-viaje/${v.id}`)}>
-                <div className={styles.cardTitle}>{v.nombre || <em>Sin título</em>}</div>
-                <div className={styles.cardMeta}>
-                  {v.fechaInicio && (
-                    <span>
-                      {formatDate(v.fechaInicio)}
-                      {v.fechaFin ? ` – ${formatDate(v.fechaFin)}` : ''}
-                    </span>
-                  )}
-                  {v.updatedAt && (
-                    <span className={styles.updatedAt}>
-                      Guardado: {new Date(v.updatedAt).toLocaleDateString('es-ES')}
-                    </span>
-                  )}
+        {!loading && !error && viajes.length === 0 && (
+          <div className={styles.empty}>
+            <span className={styles.emptyIcon}>✈️</span>
+            <p>No hay ningún viaje registrado todavía.</p>
+            <p className={styles.emptyHint}>
+              Pulsa <strong>+ Nuevo viaje</strong> para empezar a registrar los gastos de tu próximo desplazamiento.
+            </p>
+          </div>
+        )}
+
+        {!loading && viajes.length > 0 && (
+          <div className={styles.list}>
+            {viajes.map(v => (
+              <div key={v.id} className={styles.card}>
+                <div className={styles.cardMain} onClick={() => navigate(`/gastos-viaje/${v.id}`)}>
+                  <div className={styles.cardTitle}>{v.nombre || <em>Sin título</em>}</div>
+                  <div className={styles.cardMeta}>
+                    {v.fechaInicio && (
+                      <span>
+                        📅 {formatDate(v.fechaInicio)}
+                        {v.fechaFin ? ` – ${formatDate(v.fechaFin)}` : ''}
+                      </span>
+                    )}
+                    {v.updatedAt && (
+                      <span className={styles.updatedAt}>
+                        Última edición: {new Date(v.updatedAt).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className={styles.cardActions}>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => navigate(`/gastos-viaje/${v.id}`)}
+                  >
+                    Abrir
+                  </button>
+                  <button
+                    className={`btn btn-ghost ${styles.deleteBtn}`}
+                    onClick={() => handleDelete(v.id, v.nombre)}
+                    disabled={deleting === v.id}
+                  >
+                    {deleting === v.id ? '…' : 'Eliminar'}
+                  </button>
                 </div>
               </div>
-              <div className={styles.cardActions}>
-                <button
-                  className="btn btn-ghost"
-                  onClick={() => navigate(`/gastos-viaje/${v.id}`)}
-                >
-                  Editar
-                </button>
-                <button
-                  className={`btn btn-ghost ${styles.deleteBtn}`}
-                  onClick={() => handleDelete(v.id, v.nombre)}
-                  disabled={deleting === v.id}
-                >
-                  {deleting === v.id ? '…' : 'Eliminar'}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   )
 }

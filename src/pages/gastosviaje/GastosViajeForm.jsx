@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
+import { useNavigate, useParams, Link } from 'react-router-dom'
 import PageHeader from '../../components/PageHeader'
 import styles from './GastosViajeForm.module.css'
 
@@ -9,6 +9,7 @@ const CECO_OPTIONS = [
   { code: '324P0894', label: 'CJD-Foundation (324P0894)' },
   { code: '324P0862', label: 'PN-2025 (324P0862)' },
   { code: '324P0887', label: '2026 Proof-of-Concept (324P0887)' },
+  { code: '324P0749', label: 'POCTEFA (2024-2027) (324P0749)' },
 ]
 
 const TICKET_TIPOS = {
@@ -575,14 +576,26 @@ function AdjuntosSection({ viajeId, adjuntos, onChange }) {
       {error && <div className={`alert alert-error ${styles.uploaderError}`}>{error}</div>}
       {adjuntos.length > 0 && (
         <div className={styles.itemList}>
-          {adjuntos.map((adj, i) => (
-            <div key={adj.id} className={styles.itemRow}>
-              <span className={styles.adjIcon}>{MIME_ICON(adj.mime)}</span>
-              <span className={styles.itemName}>{adj.originalName}</span>
-              <span className={styles.itemDate}>Página {i + 2}</span>
-              <button className={styles.removeBtn} onClick={() => handleRemove(adj)}>✕</button>
-            </div>
-          ))}
+          {(() => {
+            let pageOffset = 2 // informe es página 1
+            return adjuntos.map(adj => {
+              const pages   = adj.pageCount || 1
+              const fromPg  = pageOffset
+              const toPg    = pageOffset + pages - 1
+              pageOffset   += pages
+              const pageLabel = pages === 1
+                ? `Pág. ${fromPg}`
+                : `Págs. ${fromPg}–${toPg} (${pages} pág.)`
+              return (
+                <div key={adj.id} className={styles.itemRow}>
+                  <span className={styles.adjIcon}>{MIME_ICON(adj.mime)}</span>
+                  <span className={styles.itemName}>{adj.originalName}</span>
+                  <span className={styles.itemDate}>{pageLabel}</span>
+                  <button className={styles.removeBtn} onClick={() => handleRemove(adj)}>✕</button>
+                </div>
+              )
+            })
+          })()}
         </div>
       )}
     </div>
@@ -689,14 +702,17 @@ export default function GastosViajeForm() {
   const navigate = useNavigate()
   const isNew    = !id || id === 'nuevo'
 
-  const [viaje, setViaje]   = useState(EMPTY_VIAJE)
-  const [viajeId, setViajeId] = useState(isNew ? null : id)
-  const [loading, setLoading] = useState(!isNew)
-  const [saving, setSaving]   = useState(false)
-  const [saved, setSaved]     = useState(false)
-  const [error, setError]     = useState(null)
+  const [viaje, setViaje]       = useState(EMPTY_VIAJE)
+  const [viajeId, setViajeId]   = useState(isNew ? null : id)
+  const [loading, setLoading]   = useState(!isNew)
+  const [saving, setSaving]     = useState(false)
+  const [saved, setSaved]       = useState(false)
+  const [error, setError]       = useState(null)
   const [generating, setGenerating] = useState(null)
+  const [cecoManual, setCecoManual] = useState(false)
   const logoRef = useRef()
+
+  const isStandardCeco = code => CECO_OPTIONS.some(o => o.code === code)
 
   // Load existing viaje
   useEffect(() => {
@@ -712,6 +728,9 @@ export default function GastosViajeForm() {
           adjuntos:   data.adjuntos || [],
         })
         setViajeId(data.id)
+        if (data.ceco && !CECO_OPTIONS.some(o => o.code === data.ceco)) {
+          setCecoManual(true)
+        }
       })
       .catch(() => setError('No se pudo cargar el viaje.'))
       .finally(() => setLoading(false))
@@ -851,6 +870,11 @@ export default function GastosViajeForm() {
         subtitle="Registra todos los gastos del desplazamiento y genera el informe."
       />
 
+      {/* ── Acceso al repositorio ──────────────────────────────────────────── */}
+      <Link to="/gastos-viaje" className={styles.repoLink}>
+        📂 Ver todos los viajes guardados
+      </Link>
+
       {/* ── Header fields ─────────────────────────────────────────────────── */}
       <div className={styles.headerCard}>
 
@@ -905,14 +929,40 @@ export default function GastosViajeForm() {
         </div>
 
         {/* CeCO */}
-        <div className="form-group" style={{ maxWidth: '400px' }}>
+        <div className="form-group" style={{ maxWidth: '480px' }}>
           <label htmlFor="ceco">Código CeCO</label>
-          <select id="ceco" value={viaje.ceco} onChange={e => setField('ceco', e.target.value)}>
+          <select
+            id="ceco"
+            value={cecoManual ? '__custom__' : (viaje.ceco || '')}
+            onChange={e => {
+              if (e.target.value === '__custom__') {
+                setCecoManual(true)
+                setField('ceco', '')
+              } else {
+                setCecoManual(false)
+                setField('ceco', e.target.value)
+              }
+            }}
+          >
             <option value="">— Sin especificar —</option>
             {CECO_OPTIONS.map(o => (
               <option key={o.code} value={o.code}>{o.label}</option>
             ))}
+            <option value="__custom__">✏️ Introducir código manualmente…</option>
           </select>
+          {cecoManual && (
+            <input
+              type="text"
+              value={viaje.ceco}
+              onChange={e => setField('ceco', e.target.value)}
+              placeholder="Ej. 324P0123"
+              autoComplete="off"
+              style={{ marginTop: '0.5rem' }}
+            />
+          )}
+          <span className={styles.hint}>
+            En el informe aparece solo el código (ej. 324P0749)
+          </span>
         </div>
       </div>
 
