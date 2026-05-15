@@ -125,3 +125,31 @@
   color: var(--text);
   word-break: break-word;
 }
+
+/* ── Save row ────────────────────────────────────────────────────────────── */
+
+.saveRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.saveInput {
+  flex: 1;
+  min-width: 200px;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.88rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: inherit;
+}
+
+.saveOk {
+  font-size: 0.82rem;
+  color: #16a34a;
+  font-weight: 600;
+}
