@@ -114,6 +114,29 @@ export default function DeclaracionExenta() {
     }
   }
 
+  // ── Repository: preview ────────────────────────────────────────────────────
+  const [previewLoading, setPreviewLoading] = useState(null)
+
+  async function handlePreview(r) {
+    setPreviewLoading(r.id)
+    try {
+      const res = await fetch('/api/aduanas/declaracion-exenta?format=pdf', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(r.form),
+      })
+      if (!res.ok) throw new Error(`Error ${res.status}`)
+      const blob = await res.blob()
+      const url  = URL.createObjectURL(blob)
+      window.open(url, '_blank')
+      setTimeout(() => URL.revokeObjectURL(url), 60000)
+    } catch (err) {
+      setError(`No se pudo generar la vista previa: ${err.message}`)
+    } finally {
+      setPreviewLoading(null)
+    }
+  }
+
   // ── Repository: load ────────────────────────────────────────────────────────
   function loadRecord(r) {
     setForm({ ...DEFAULTS, ...r.form, fecha: r.form.fecha || TODAY })
@@ -219,6 +242,15 @@ export default function DeclaracionExenta() {
                         </span>
                       </div>
                       <div className={styles.repoItemActions}>
+                        <button
+                          className={styles.repoLoadBtn}
+                          style={{ minWidth: '4.5rem' }}
+                          onClick={() => handlePreview(r)}
+                          disabled={previewLoading === r.id}
+                          title="Abrir PDF en nueva pestaña"
+                        >
+                          {previewLoading === r.id ? '…' : '👁 Ver'}
+                        </button>
                         <button
                           className={styles.repoLoadBtn}
                           onClick={() => loadRecord(r)}
