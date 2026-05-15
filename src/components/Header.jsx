@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { href: '/contrato-menor', label: 'Contrato Menor',  icon: '📄', end: false },
   { href: '/aduanas',        label: 'Aduanas',          icon: '📦', end: false },
   { href: '/animalario',    label: 'Animalario',       icon: '🐭', end: false },
+  { href: '/gastos-viaje', label: 'Gastos de viaje',  icon: '✈️', end: false },
 ]
 
 export default function Header() {
