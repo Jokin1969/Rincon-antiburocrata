@@ -299,7 +299,7 @@ export async function generateDeclaracionExenta(data) {
   children.push(pp([
     tr('Al mismo tiempo, declara que conoce que la importación de mercancías está sujeta a controles oficiales '),
     tr('Reglamento (UE) 2017/625 del Parlamento Europeo y del Consejo, de 15 de marzo de 2017, relativo a los controles y otras actividades realizados para garantizar la aplicación de la legislación sobre alimentos y piensos, y de las normas sobre salud y bienestar de los animales, sanidad vegetal y productos sanitarios y la Orden PJC/756/2024 por la que se delimitan las actuaciones a realizar en los servicios de control oficial en frontera dependientes funcionalmente del Ministerio de Agricultura, Pesca y Alimentación y del Ministerio de Sanidad.', { bold: true }),
-  ], { align: AlignmentType.JUSTIFIED, before: 80, after: 200 }))
+  ], { align: AlignmentType.JUSTIFIED, before: 80, after: 480 }))
 
   // 7. Signature block
   children.push(pp([
@@ -308,7 +308,7 @@ export async function generateDeclaracionExenta(data) {
     tr(' a '),
     tr(fechaFinal, { bold: true }),
     tr('.'),
-  ], { align: AlignmentType.CENTER, before: 80, after: 120 }))
+  ], { align: AlignmentType.CENTER, before: 0, after: 240 }))
 
   const sigImages = []
   if (sigBuffer)   sigImages.push(new ImageRun({ data: sigBuffer,   transformation: { width: 110, height: 70 }, type: 'png' }))
@@ -318,15 +318,16 @@ export async function generateDeclaracionExenta(data) {
     children.push(new Paragraph({
       children: sigImages,
       alignment: AlignmentType.CENTER,
-      spacing: { before: 40, after: 40 },
+      spacing: { before: 0, after: 120 },
     }))
   } else {
-    children.push(emptyLine(180))
-    children.push(emptyLine(180))
+    children.push(emptyLine(280))
+    children.push(emptyLine(280))
+    children.push(emptyLine(280))
   }
 
-  if (firmante) children.push(pp([tr(firmante, { bold: true })], { align: AlignmentType.CENTER, before: 40, after: 0 }))
-  if (cargo)    children.push(pp([tr(cargo, { size: SZ_SM, color: '555555' })], { align: AlignmentType.CENTER, before: 0, after: 120 }))
+  if (firmante) children.push(pp([tr(firmante, { bold: true })], { align: AlignmentType.CENTER, before: 0, after: 0 }))
+  if (cargo)    children.push(pp([tr(cargo, { size: SZ_SM, color: '555555' })], { align: AlignmentType.CENTER, before: 40, after: 200 }))
 
   // 8. NOTA
   children.push(pp([

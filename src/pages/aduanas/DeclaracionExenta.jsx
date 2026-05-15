@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import PageHeader from '../../components/PageHeader'
 import styles from './FacturaProforma.module.css'
 import dec from './DeclaracionExenta.module.css'
+import { useDeclaracionExentaStore } from '../../hooks/useAduanasStore'
 
 const TODAY = new Date().toISOString().split('T')[0]
 
@@ -34,6 +35,14 @@ export default function DeclaracionExenta() {
   const [iaLoading,     setIaLoading]     = useState(false)
   const [iaSuggestion,  setIaSuggestion]  = useState(null)
   const [iaError,       setIaError]       = useState(null)
+
+  // Repository
+  const { records, saveRecord, deleteRecord } = useDeclaracionExentaStore()
+  const [repoOpen,   setRepoOpen]   = useState(false)
+  const [repoSearch, setRepoSearch] = useState('')
+  const [saving,     setSaving]     = useState(false)
+  const [saveOk,     setSaveOk]     = useState(false)
+  const [repoId,     setRepoId]     = useState('')
 
   const logoInputRef = useRef(null)
 
@@ -81,6 +90,39 @@ export default function DeclaracionExenta() {
     }
   }
 
+  // ── Repository: save ────────────────────────────────────────────────────────
+  async function handleSave() {
+    const id = repoId.trim() || form.awb?.trim() || form.naturaleza?.trim().slice(0, 40) || TODAY
+    setSaving(true)
+    setSaveOk(false)
+    setError(null)
+    const ok = await saveRecord(id, {
+      ...form,
+      awb:        form.awb,
+      aduana:     form.aduana,
+      naturaleza: form.naturaleza,
+      importador: form.importador,
+      exportador: form.exportador,
+    })
+    setSaving(false)
+    if (ok) {
+      setSaveOk(true)
+      setRepoId(id)
+      setTimeout(() => setSaveOk(false), 3000)
+    } else {
+      setError('Error al guardar en el repositorio.')
+    }
+  }
+
+  // ── Repository: load ────────────────────────────────────────────────────────
+  function loadRecord(r) {
+    setForm({ ...DEFAULTS, ...r.form, fecha: r.form.fecha || TODAY })
+    setRepoId(r.id)
+    setRepoOpen(false)
+    setError(null)
+    setSaveOk(false)
+  }
+
   // ── Generate & download ─────────────────────────────────────────────────────
   async function handleDownload(format) {
     if (!form.firmante?.trim()) {
@@ -114,6 +156,19 @@ export default function DeclaracionExenta() {
     }
   }
 
+  // ── Filtered records ────────────────────────────────────────────────────────
+  const filteredRecords = records.filter(r => {
+    if (!repoSearch) return true
+    const q = repoSearch.toLowerCase()
+    return r.id.toLowerCase().includes(q) ||
+      r.form?.aduana?.toLowerCase().includes(q) ||
+      r.form?.naturaleza?.toLowerCase().includes(q) ||
+      r.form?.importador?.toLowerCase().includes(q) ||
+      r.form?.exportador?.toLowerCase().includes(q) ||
+      r.form?.awb?.toLowerCase().includes(q) ||
+      r.form?.paisOrigen?.toLowerCase().includes(q)
+  })
+
   return (
     <div>
       <PageHeader
@@ -122,6 +177,71 @@ export default function DeclaracionExenta() {
         title="Declaración de mercancías exentas"
         subtitle="Declaración ante la aduana de que las mercancías importadas no están sujetas a control oficial en frontera (MAPA/DGSPABA). Remisión 02 362."
       />
+
+      {/* ── Repositorio ───────────────────────────────────────────────────── */}
+      <div className={styles.repoPanel}>
+        <button
+          type="button"
+          className={styles.repoPanelToggle}
+          onClick={() => setRepoOpen(o => !o)}
+        >
+          <span>📂 Repositorio</span>
+          <span className={styles.repoBadge}>{records.length}</span>
+          <span style={{ marginLeft: 'auto' }}>{repoOpen ? '▲' : '▼'}</span>
+        </button>
+
+        {repoOpen && (
+          <div className={styles.repoPanelBody}>
+            {records.length === 0 ? (
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>
+                Aún no hay declaraciones guardadas.
+              </p>
+            ) : (
+              <>
+                <input
+                  className={styles.repoSearch}
+                  placeholder="Buscar por AWB, aduana, naturaleza, importador…"
+                  value={repoSearch}
+                  onChange={e => setRepoSearch(e.target.value)}
+                />
+                <ul className={styles.repoList}>
+                  {filteredRecords.map(r => (
+                    <li key={r.id} className={styles.repoItem}>
+                      <div className={styles.repoItemMeta}>
+                        <span className={styles.repoItemCode}>
+                          {r.id}
+                          {r.form?.aduana && ` · ${r.form.aduana}`}
+                        </span>
+                        <span className={styles.repoItemSub}>
+                          {r.form?.naturaleza && <>{r.form.naturaleza.slice(0, 50)}{r.form.naturaleza.length > 50 ? '…' : ''} · </>}
+                          {r.form?.awb && <>AWB: {r.form.awb} · </>}
+                          Guardado el {new Date(r.savedAt).toLocaleDateString('es-ES')}
+                        </span>
+                      </div>
+                      <div className={styles.repoItemActions}>
+                        <button
+                          className={styles.repoLoadBtn}
+                          onClick={() => loadRecord(r)}
+                        >
+                          Cargar
+                        </button>
+                        <button
+                          className={styles.repoDeleteBtn}
+                          onClick={() => {
+                            if (window.confirm(`¿Eliminar "${r.id}" del repositorio?`)) deleteRecord(r.id)
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+        )}
+      </div>
 
       <form className={styles.form} onSubmit={e => e.preventDefault()}>
 
@@ -323,6 +443,27 @@ export default function DeclaracionExenta() {
         </fieldset>
 
         {error && <div className="alert alert-error">{error}</div>}
+
+        {/* ── Guardar en repositorio ────────────────────────────────────── */}
+        <div className={dec.saveRow}>
+          <input
+            className={dec.saveInput}
+            type="text"
+            placeholder="Identificador para guardar (ej: AWB-12345, 2026-05-EEUU)"
+            value={repoId}
+            onChange={e => setRepoId(e.target.value)}
+            maxLength={80}
+          />
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {saving ? 'Guardando…' : '💾 Guardar'}
+          </button>
+          {saveOk && <span className={dec.saveOk}>✓ Guardado</span>}
+        </div>
 
         <div className={styles.actions}>
           <button type="button" className="btn btn-primary"
