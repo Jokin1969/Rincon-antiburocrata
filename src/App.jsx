@@ -8,6 +8,7 @@ import AduanasHome from './pages/aduanas/AduanasHome'
 import FacturaProforma from './pages/aduanas/FacturaProforma'
 import PqpImport from './pages/aduanas/PqpImport'
 import Documento1403 from './pages/aduanas/Documento1403'
+import DeclaracionExenta from './pages/aduanas/DeclaracionExenta'
 import AdaptarCarta from './pages/adaptarcarta/AdaptarCarta'
 import GestorLogos from './pages/logos/GestorLogos'
 import ContratoMenorPage from './pages/contratomenos/ContratoMenorPage'
@@ -39,6 +40,7 @@ export default function App() {
         <Route path="/aduanas/factura-proforma" element={<FacturaProforma />} />
         <Route path="/aduanas/pqp-import" element={<PqpImport />} />
         <Route path="/aduanas/documento-1403" element={<Documento1403 />} />
+        <Route path="/aduanas/declaracion-exenta" element={<DeclaracionExenta />} />
         <Route path="/contrato-menor" element={<ContratoMenorPage />} />
         <Route path="/contrato-menor/certificado-exclusividad" element={<CertificadoExclusividad />} />
 

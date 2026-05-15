@@ -27,6 +27,14 @@ const DOCS = [
     href: '/aduanas/documento-1403',
     status: 'ready',
   },
+  {
+    id: 'declaracion-exenta',
+    name: 'Declaración de mercancías exentas',
+    description: 'Declaración ante la aduana de que las mercancías importadas no están sujetas a control oficial en frontera por el MAPA (DGSPABA/SGASCF). Remisión 02 362.',
+    icon: '🛃',
+    href: '/aduanas/declaracion-exenta',
+    status: 'ready',
+  },
 ]
 
 export default function AduanasHome() {

@@ -18,6 +18,7 @@ import { generateContratoMenor } from './generators/contratoMenor.js'
 import { generateFacturaProforma } from './generators/facturaProforma.js'
 import { generatePqpImport } from './generators/pqpImport.js'
 import { generateDocumento1403 } from './generators/documento1403.js'
+import { generateDeclaracionExenta } from './generators/declaracionExenta.js'
 import { generateCertificadoExclusividad } from './generators/certificadoExclusividad.js'
 import { generateGastosViaje }             from './generators/gastosViaje.js'
 import { docxToPdf }                       from './utils/pdf.js'
@@ -268,6 +269,22 @@ app.post('/api/aduanas/documento-1403', async (req, res) => {
     sendDocument(res, docxBuffer, base, format)
   } catch (err) {
     console.error('Documento 1403 error:', err)
+    res.status(500).json({ error: 'Error al generar el documento.' })
+  }
+})
+
+app.post('/api/aduanas/declaracion-exenta', async (req, res) => {
+  const { firmante } = req.body
+  if (!firmante?.trim()) {
+    return res.status(400).json({ error: 'Campo obligatorio: firmante.' })
+  }
+  const format = req.query.format === 'pdf' ? 'pdf' : 'docx'
+  try {
+    const docxBuffer = await generateDeclaracionExenta(req.body)
+    const safe = firmante.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 30)
+    sendDocument(res, docxBuffer, `DeclaracionExenta_${safe}`, format)
+  } catch (err) {
+    console.error('Declaración Exenta error:', err)
     res.status(500).json({ error: 'Error al generar el documento.' })
   }
 })

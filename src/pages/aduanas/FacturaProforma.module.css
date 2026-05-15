@@ -5,6 +5,27 @@
   gap: 2rem;
 }
 
+/* ── Generic field row ─────────────────────────────────────────────────────── */
+
+.fieldRow {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.fieldRow > .form-group,
+.fieldRow > div {
+  flex: 1;
+  min-width: 160px;
+}
+
+.hint {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--text-muted, #6b7280);
+  margin-top: 0.25rem;
+}
+
 /* ── Top controls ─────────────────────────────────────────────────────────── */
 
 .topControls {
