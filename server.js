@@ -289,6 +289,48 @@ app.post('/api/aduanas/declaracion-exenta', async (req, res) => {
   }
 })
 
+app.post('/api/aduanas/ia-naturaleza', async (req, res) => {
+  if (!process.env.OPENAI_API_KEY) {
+    return res.status(503).json({ error: 'OPENAI_API_KEY no está configurada en el servidor.' })
+  }
+  const { description } = req.body
+  if (!description?.trim()) {
+    return res.status(400).json({ error: 'Se requiere una descripción del producto.' })
+  }
+  try {
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'system',
+          content:
+            'Eres un experto en clasificación aduanera de la UE. ' +
+            'Dado un texto descriptivo de mercancías, responde ÚNICAMENTE con una sola línea en este formato exacto: ' +
+            '"XXXX.XX.XX — Descripción oficial en español" (usando el código NC de 8 dígitos y guión largo). ' +
+            'Si no puedes determinar el código exacto, usa el código más aproximado. ' +
+            'No incluyas nada más que esa línea.',
+        },
+        {
+          role: 'user',
+          content: `Mercancía a clasificar: ${description}`,
+        },
+      ],
+      max_tokens: 120,
+      temperature: 0.2,
+    })
+    const naturaleza = (completion.choices[0].message.content || '').trim()
+    res.json({ naturaleza })
+  } catch (err) {
+    console.error('IA Naturaleza error:', err)
+    const status = err.status ?? err.statusCode
+    let msg = `Error al consultar OpenAI: ${err.message || 'error desconocido'}`
+    if (status === 429) msg = 'Se ha agotado la cuota de OpenAI. Revisa tu cuenta en platform.openai.com/account/billing'
+    if (status === 401 || status === 403) msg = 'La API key de OpenAI no es válida o no está autorizada.'
+    res.status(500).json({ error: msg })
+  }
+})
+
 app.post('/api/aduanas/pqp-import', async (req, res) => {
   const { proveedor, shipper } = req.body
 
