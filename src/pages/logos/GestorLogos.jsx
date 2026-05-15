@@ -384,6 +384,21 @@ function UploadPanel({ onSave, onClose, existingNames, initialFile }) {
   )
 }
 
+// ── Standard size helper ──────────────────────────────────────────────────────
+
+const STANDARD_MAX_PX = 720
+
+function standardDims(logo) {
+  const w = logo.width, h = logo.height
+  if (!w || !h) return { w: '', h: '' }
+  const longest = Math.max(w, h)
+  if (longest <= STANDARD_MAX_PX) return { w: String(w), h: String(h) }
+  const scale = STANDARD_MAX_PX / longest
+  return w >= h
+    ? { w: String(STANDARD_MAX_PX), h: String(Math.round(h * scale)) }
+    : { w: String(Math.round(w * scale)), h: String(STANDARD_MAX_PX) }
+}
+
 // ── Detail / download panel ───────────────────────────────────────────────────
 
 function DetailPanel({ logo, onClose, onSave, onSaveNew, onDelete, fetchLogoData }) {
@@ -398,8 +413,9 @@ function DetailPanel({ logo, onClose, onSave, onSaveNew, onDelete, fetchLogoData
   const [bg, setBg] = useState('transparent')
   const [mono, setMono] = useState(false)
   const [lockAR, setLockAR] = useState(true)
-  const [dlW, setDlW] = useState(logo.width  ? String(logo.width)  : '')
-  const [dlH, setDlH] = useState(logo.height ? String(logo.height) : '')
+  const initDims = standardDims(logo)
+  const [dlW, setDlW] = useState(initDims.w)
+  const [dlH, setDlH] = useState(initDims.h)
 
   // Live preview state and refs
   const [previewSrc, setPreviewSrc] = useState(null)
@@ -637,6 +653,29 @@ function DetailPanel({ logo, onClose, onSave, onSaveNew, onDelete, fetchLogoData
 
               <div>
                 <div className={styles.optLabel}>Tamaño (px)</div>
+                <div style={{ display: 'flex', gap: '0.35rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    style={{ fontSize: '0.72rem', padding: '0.2rem 0.55rem' }}
+                    title={`Lado más largo ≤ ${STANDARD_MAX_PX} px (sin ampliar si es más pequeño)`}
+                    onClick={() => { const s = standardDims(logo); setDlW(s.w); setDlH(s.h) }}
+                  >
+                    ⊙ Estándar
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    style={{ fontSize: '0.72rem', padding: '0.2rem 0.55rem' }}
+                    title="Tamaño original del archivo"
+                    onClick={() => {
+                      setDlW(logo.width  ? String(logo.width)  : '')
+                      setDlH(logo.height ? String(logo.height) : '')
+                    }}
+                  >
+                    ↩ Original
+                  </button>
+                </div>
                 <div className={styles.sizeRow}>
                   <input
                     className={styles.sizeInput}
@@ -682,8 +721,17 @@ function DetailPanel({ logo, onClose, onSave, onSaveNew, onDelete, fetchLogoData
             type="button"
             className="btn btn-ghost"
             onClick={handleDownload}
+            title={`Descargar con el tamaño seleccionado (estándar ≤ ${STANDARD_MAX_PX} px)`}
           >
             ⬇ Descargar
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            title="Descargar al tamaño natural del archivo"
+            onClick={() => downloadLogo(logo, { format: fmt, width: null, height: null, mono, background: bg })}
+          >
+            ⬇ Original
           </button>
           <button
             type="button"
