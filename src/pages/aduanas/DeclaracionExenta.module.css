@@ -1,0 +1,127 @@
+/* ── Logo upload ─────────────────────────────────────────────────────────── */
+
+.logoUploadRow {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.logoPreview {
+  flex: 1;
+  min-width: 240px;
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+}
+
+.logoPreview:hover {
+  border-color: var(--accent, #2563eb);
+}
+
+.logoImg {
+  max-width: 100%;
+  max-height: 120px;
+  object-fit: contain;
+}
+
+.logoPlaceholder {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.6;
+}
+
+.logoPlaceholder small {
+  display: block;
+  opacity: 0.75;
+  margin-top: 0.25rem;
+}
+
+.logoControls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.logoHint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 0.5rem 0 0;
+}
+
+/* ── IA box ──────────────────────────────────────────────────────────────── */
+
+.iaBox {
+  margin-top: 0.5rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.iaBoxHeader {
+  padding: 0.5rem 1rem;
+  background: rgba(37,99,235,0.04);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.iaBoxBody {
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.iaTextarea {
+  width: 100%;
+  font-size: 0.88rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  resize: vertical;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.iaActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.iaSuggestion {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.75rem;
+  background: rgba(22,163,74,0.05);
+  border: 1px solid rgba(22,163,74,0.2);
+  border-radius: 6px;
+  font-size: 0.82rem;
+}
+
+.iaSuggestionLabel {
+  font-weight: 600;
+  color: #15803d;
+  flex-shrink: 0;
+}
+
+.iaSuggestionCode {
+  flex: 1;
+  font-size: 0.82rem;
+  color: var(--text);
+  word-break: break-word;
+}
