@@ -673,9 +673,20 @@ async function genSeccionA(proyectoId) {
 // SECCIÓN B
 // ═══════════════════════════════════════════════════════════════════════════════
 
-async function genSeccionB(procId) {
+async function genSeccionB(procId, numeroOverride) {
   const proc = readProc(procId)
   if (!proc) throw new Error('Procedimiento no encontrado')
+
+  // Derive procedure number from position in project if not supplied
+  let numeroProcedimiento = numeroOverride
+  if (numeroProcedimiento == null) {
+    const proyecto = proc.proyecto_id ? readProyecto(proc.proyecto_id) : null
+    if (proyecto && Array.isArray(proyecto.procedimientos)) {
+      const idx = proyecto.procedimientos.indexOf(procId)
+      if (idx !== -1) numeroProcedimiento = idx + 1
+    }
+  }
+  const numeroLabel = numeroProcedimiento != null ? String(numeroProcedimiento) : '—'
 
   const dg  = proc.datos_generales     ?? {}
   const met = proc.metodologia         ?? {}
@@ -746,7 +757,7 @@ async function genSeccionB(procId) {
     // ── Número de procedimiento (fondo azul, texto blanco) ────────────────────
     tbl([tr(
       dbc([par([txBW('Número de procedimiento:')])], { w: w(70) }),
-      dbc([par([txW(String(proc.numero ?? '—'))])],  { w: w(30) }),
+      dbc([par([txW(numeroLabel)])], { w: w(30) }),
     )]),
     emptyLine(),
 
@@ -1416,7 +1427,7 @@ router.get('/proyectos/:id/exportar/completo', async (req, res) => {
     for (let i = 0; i < procs.length; i++) {
       const proc = procs[i]
       const bt   = safeName(proc.datos_generales?.titulo_procedimiento ?? `Proc${i + 1}`)
-      await addFile(() => genSeccionB(proc.id), `SeccionB_Proc${i + 1}_${bt}`)
+      await addFile(() => genSeccionB(proc.id, i + 1), `SeccionB_Proc${i + 1}_${bt}`)
     }
 
     // Secciones C
