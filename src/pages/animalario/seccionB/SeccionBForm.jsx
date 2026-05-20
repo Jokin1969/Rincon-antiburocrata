@@ -32,6 +32,7 @@ const EMPTY_FORM = {
     justificacion_procedimiento: '',
   },
   tamano_muestral: {
+    numero_total: '',
     metodo: '',
     justificacion: '',
     grupos: [],
@@ -502,6 +503,17 @@ export default function SeccionBForm() {
         storageKey="secB:B3"
         requiredFields={[form.tamano_muestral.metodo, form.tamano_muestral.justificacion]}
       >
+        <div className="form-group">
+          <label>Número total de animales dividido en grupos experimentales (incluyendo controles)</label>
+          <AutoExpandTextarea
+            storageKey="tamano_muestral.numero_total"
+            rows={3}
+            copyFrom={true}
+            value={form.tamano_muestral.numero_total}
+            onChange={e => update('tamano_muestral.numero_total', e.target.value)}
+            placeholder="Indicar el número total de animales y cómo se distribuyen en los grupos experimentales e incluyendo controles"
+          />
+        </div>
         <div className="form-group">
           <label>Método de cálculo del tamaño muestral</label>
           <div className={s.radioGroup}>
