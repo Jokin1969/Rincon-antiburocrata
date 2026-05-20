@@ -703,6 +703,26 @@ async function genSeccionB(procId) {
   // Helper: section heading like A.1, A.2, etc.
   const secHead = text => new Paragraph({ children: [txB(text)], spacing: { before: 120, after: 40 } })
 
+  // kvRow with light-blue label (SeccionB style)
+  const kvRowB = (label, value, lw = 30) => tr(
+    lbc([par([txB(label)])], { w: w(lw) }),
+    tct([par(String(value ?? '—'))], { w: w(100 - lw) })
+  )
+
+  // Analgesia/anestesia table helper (6-col, one empty row if no data)
+  const ANA_COLS_W = [12, 20, 24, 14, 14, 16]
+  const ANA_HDRS   = ['Frecuencia', 'Grupo / Nº animales', 'Producto / Concentración', 'Dosis (mg/kg)', 'Volumen (ml/kg)', 'Vía']
+  function anaTable(rows) {
+    const dataRows = rows && rows.length
+      ? rows.map(r => tr(...[r.frecuencia, r.grupo_animales, r.producto_concentracion, r.dosis_mg_kg, r.volumen_ml_kg, r.via]
+          .map((v, i) => tct([par(dash(v))], { w: w(ANA_COLS_W[i]) }))))
+      : [tr(...ANA_COLS_W.map(cw => tct([par('')], { w: w(cw) })))]
+    return tbl([
+      tr(...ANA_HDRS.map((h, i) => lbc([par([txB(h)])], { w: w(ANA_COLS_W[i]) }))),
+      ...dataRows,
+    ])
+  }
+
   // Reutilización destino label
   const reuDestinos = {
     'Sacrifica los animales por requerimientos del procedimiento': 'Sacrificio por requerimientos del procedimiento',
@@ -716,11 +736,10 @@ async function genSeccionB(procId) {
 
     // ── B. PROCEDIMIENTO ──────────────────────────────────────────────────────
     new Paragraph({
-      children: [new TextRun({
-        text: 'B.\tPROCEDIMIENTO',
-        font: FONT, size: SZ, bold: true,
-        underline: { type: UnderlineType.SINGLE },
-      })],
+      children: [
+        new TextRun({ text: 'B.\t', font: FONT, size: SZ, bold: true }),
+        new TextRun({ text: 'PROCEDIMIENTO', font: FONT, size: SZ, bold: true, underline: { type: UnderlineType.SINGLE } }),
+      ],
       spacing: { before: 80, after: 60 },
     }),
 
@@ -734,16 +753,16 @@ async function genSeccionB(procId) {
     // ── B.1 DATOS GENERALES DEL PROCEDIMIENTO ────────────────────────────────
     secHead('B.1 DATOS GENERALES DEL PROCEDIMIENTO'),
     tbl([
-      kvRow('Título',                  dg.titulo_procedimiento),
-      kvRow('Especie/s animal/es',     (dg.especies ?? []).join(', ')),
-      kvRow('Cepa/línea',              dg.cepa_linea),
-      kvRow('Sexo',                    dg.sexo),
-      kvRow('Edad',                    dg.edad_peso),
-      kvRow('Nº total de animales',    dg.num_animales),
-      kvRow('Severidad',               sevLabel),
+      kvRowB('Título',                  dg.titulo_procedimiento),
+      kvRowB('Especie/s animal/es',     (dg.especies ?? []).join(', ')),
+      kvRowB('Cepa/línea',              dg.cepa_linea),
+      kvRowB('Sexo',                    dg.sexo),
+      kvRowB('Edad',                    dg.edad_peso),
+      kvRowB('Nº total de animales',    dg.num_animales),
+      kvRowB('Severidad',               sevLabel),
       tr(
-        gc([par([txB('Duración'), sup(1)])], { w: w(30) }),
-        tc([par(dash(dg.duracion))],         { w: w(70) }),
+        lbc([par([txB('Duración'), sup(1)])], { w: w(30) }),
+        tct([par(dash(dg.duracion))],          { w: w(70) }),
       ),
     ]),
     emptyLine(),
@@ -753,73 +772,81 @@ async function genSeccionB(procId) {
     tbl([
       secRowBlue([txB('Fases del procedimiento'), sup(2)]),
       fullTcThin([par(dash(met.descripcion))]),
-      secRowBlue('Justificación del procedimiento'),
+      secRowBlue('Describa en qué fases del procedimiento se prevé que el animal pueda experimentar sufrimiento, dolor, angustia o malestar'),
       fullTcThin([par(dash(met.justificacion_procedimiento))]),
     ]),
     emptyLine(),
 
     // ── B.3 TAMAÑO MUESTRAL ───────────────────────────────────────────────────
     secHead('B.3 TAMAÑO MUESTRAL'),
-    tbl([
-      kvRow('Número total de animales (incluyendo controles)', dash(tm.numero_total)),
-      kvRow('Método de cálculo',   dash(tm.metodo)),
-      kvRow('Justificación',       dash(tm.justificacion)),
-    ]),
-    ...((tm.grupos ?? []).length ? [
-      emptyLine(),
-      ...dynTable(
-        ['Grupo', 'N animales', 'Justificación'],
-        (tm.grupos).map(g => [g.nombre, g.n, g.justificacion]),
-        [30, 15, 55]
-      ),
-    ] : []),
+    (() => {
+      const grupos = tm.grupos ?? []
+      const gruposText = grupos.length
+        ? '\nGrupos experimentales: ' + grupos.map(g => `${g.nombre} (${g.n})`).join(', ')
+        : ''
+      const totalText = dash(tm.numero_total) + gruposText
+      return tbl([
+        secRowBlue('Indicar el número total de animales y los grupos experimentales (incluyendo controles) que se van a utilizar'),
+        fullTcThin([par(totalText)]),
+        secRowBlue('Método de cálculo del tamaño muestral'),
+        fullTcThin([par(dash(tm.metodo))]),
+        secRowBlue('Justificación del tamaño muestral'),
+        fullTcThin([par(dash(tm.justificacion))]),
+      ])
+    })(),
     emptyLine(),
 
     // ── B.4 AISLAMIENTO Y AYUNO ───────────────────────────────────────────────
     secHead('B.4 AISLAMIENTO Y AYUNO'),
     tbl([
-      kvRow('¿Aislamiento?',        yn(aa.hay_aislamiento)),
-      ...(aa.hay_aislamiento === 'Sí' || aa.hay_aislamiento === 'si'
-        ? [kvRow('Duración aislamiento', aa.duracion_aislamiento)] : []),
-      kvRow('¿Ayuno?',              yn(aa.hay_ayuno)),
-      ...(aa.hay_ayuno === 'Sí' || aa.hay_ayuno === 'si'
-        ? [kvRow('Duración ayuno', aa.duracion_ayuno)] : []),
-      kvRow('Justificación',        dash(aa.justificacion)),
+      tr(lbc([par([txB('Aislamiento')])], { w: w(100), span: 2 })),
+      kvRowB('Duración',     dash(aa.duracion_aislamiento)),
+      kvRowB('Justificación', dash(aa.justificacion_aislamiento ?? aa.justificacion)),
+      tr(lbc([par([txB('Ayuno')])], { w: w(100), span: 2 })),
+      tr(
+        tct([par([tx(chk(aa.hay_ayuno_alimento === true || aa.hay_ayuno === 'Sí')), tx(' Alimento')])], { w: w(50) }),
+        tct([par([tx(chk(aa.hay_ayuno_agua === true)),                              tx(' Agua')])],     { w: w(50) }),
+      ),
+      kvRowB('Duración',     dash(aa.duracion_ayuno)),
+      kvRowB('Justificación', dash(aa.justificacion_ayuno ?? '')),
     ]),
     emptyLine(),
 
     // ── B.5 TÉCNICAS ──────────────────────────────────────────────────────────
-    secHead('B.5 TÉCNICAS'),
+    secHead('B.5 TÉCNICAS EXPERIMENTALES Y QUIRÚRGICAS'),
     ...dynTable(
-      ['Técnica', 'Frecuencia', 'Vía', 'Volumen', 'Duración', 'Observaciones'],
-      (proc.tecnicas ?? []).map(t => [t.nombre, t.frecuencia, t.via, t.volumen, t.duracion, t.observaciones]),
-      [22, 14, 12, 12, 12, 28]
+      ['Frecuencia', 'Grupo / Nº animales', 'Técnica experimental/quirúrgica'],
+      (proc.tecnicas ?? []).map(t => [t.frecuencia, t.grupo_animales ?? t.observaciones, t.nombre]),
+      [15, 30, 55]
     ),
     emptyLine(),
 
     // ── B.6 ANALGESIA Y ANESTESIA ─────────────────────────────────────────────
     secHead('B.6 ANALGESIA Y ANESTESIA'),
     tbl([
-      kvRow('¿Analgesia?',          yn(ana.hay_analgesia)),
-      kvRow('Protocolo analgesia',  dash(ana.protocolo_analgesia)),
-      kvRow('¿Anestesia?',          yn(ana.hay_anestesia)),
-      kvRow('Protocolo anestesia',  dash(ana.protocolo_anestesia)),
-      kvRow('Monitorización',       dash(ana.monitorizacion)),
-      kvRow('Recuperación',         dash(ana.recuperacion)),
+      tr(lbc([par([txB('Analgesia')])], { w: w(100), span: 6 })),
+      tr(...ANA_HDRS.map((h, i) => lbc([par([txB(h)])], { w: w(ANA_COLS_W[i]) }))),
+      ...((ana.analgesia ?? []).length
+        ? (ana.analgesia).map(r => tr(...[r.frecuencia, r.grupo_animales, r.producto_concentracion, r.dosis_mg_kg, r.volumen_ml_kg, r.via].map((v, i) => tct([par(dash(v))], { w: w(ANA_COLS_W[i]) }))))
+        : [tr(...ANA_COLS_W.map(cw => tct([par('')], { w: w(cw) })))]),
+      tr(lbc([par([txB('Anestesia')])], { w: w(100), span: 6 })),
+      tr(...ANA_HDRS.map((h, i) => lbc([par([txB(h)])], { w: w(ANA_COLS_W[i]) }))),
+      ...((ana.anestesia ?? []).length
+        ? (ana.anestesia).map(r => tr(...[r.frecuencia, r.grupo_animales, r.producto_concentracion, r.dosis_mg_kg, r.volumen_ml_kg, r.via].map((v, i) => tct([par(dash(v))], { w: w(ANA_COLS_W[i]) }))))
+        : [tr(...ANA_COLS_W.map(cw => tct([par('')], { w: w(cw) })))]),
     ]),
     emptyLine(),
 
-    // ── B.7 OTRAS SUSTANCIAS Y PRODUCTOS CON RIESGO ───────────────────────────
-    secHead('B.7 OTRAS SUSTANCIAS Y PRODUCTOS CON RIESGO'),
-    tbl([kvRow('¿Sustancias con declaración de riesgo?', yn(os.hay_riesgo))]),
-    ...((os.sustancias ?? []).length ? [
-      emptyLine(),
-      ...dynTable(
-        ['Sustancia', 'Tipo', 'Cantidad', 'Vía', 'Frecuencia', 'Volumen (ml/Kg)'],
-        os.sustancias.map(s => [s.nombre, s.tipo, s.cantidad, s.via, s.frecuencia, s.riesgo_desc]),
-        [20, 12, 12, 12, 14, 30]
-      ),
-    ] : []),
+    // ── B.7 ADMINISTRACIÓN DE OTRAS SUSTANCIAS ────────────────────────────────
+    secHead('B.7 ADMINISTRACIÓN DE OTRAS SUSTANCIAS'),
+    anaTable(os.sustancias),
+    emptyLine(),
+    par([txB('¿Alguno de los productos supone un riesgo para la salud o el medio ambiente (citotóxico, biológico, etc.)?')]),
+    tbl([tr(
+      tct([par([tx(chk(os.hay_riesgo !== true)), tx(' No')])], { w: w(50) }),
+      tct([par([tx(chk(os.hay_riesgo === true)), tx(' Sí')])], { w: w(50) }),
+    )]),
+    ...(os.hay_riesgo === true ? [par([tx('Si ha contestado que sí, necesita rellenar un formulario D.')])] : []),
     emptyLine(),
 
     // ── B.8 PARÁMETROS A MEDIR ────────────────────────────────────────────────
@@ -840,37 +867,45 @@ async function genSeccionB(procId) {
     ),
     emptyLine(),
 
-    // ── B.10 FINALIZACIÓN Y EUTANASIA ─────────────────────────────────────────
-    secHead('B.10 FINALIZACIÓN Y EUTANASIA'),
+    // ── B.10 FINALIZACIÓN DEL PROCEDIMIENTO ──────────────────────────────────
+    secHead('B.10 FINALIZACIÓN DEL PROCEDIMIENTO'),
     tbl([
-      kvRow('Criterios humanitarios de finalización', dash(fin.criterios_humanos)),
-      kvRow('Método(s) de eutanasia',                 (fin.metodos_eutanasia ?? []).join(', ')),
-      ...((fin.metodos_eutanasia ?? []).includes('Otro')
-        ? [kvRow('Justificación del método de eutanasia', dash(fin.justificacion_eutanasia))] : []),
+      kvRowB('Criterios humanitarios de finalización', dash(fin.criterios_humanos)),
+      tr(lbc([par([
+        txB('Métodos de eutanasia'), tx('. La eutanasia de los animales que tengan que ser sacrificados al finalizar el procedimiento o que se descarten del procedimiento debido a su estado de salud, se realizará por:'),
+      ])], { w: w(100), span: 2 })),
+      tr(tct([
+        par([tx(chk((fin.metodos_eutanasia ?? []).includes('Dislocación cervical'))),         tx(' Dislocación cervical')]),
+        par([tx(chk((fin.metodos_eutanasia ?? []).includes('CO₂') || (fin.metodos_eutanasia ?? []).includes('Inhalación de dióxido de carbono'))), tx(' Inhalación de dióxido de carbono')]),
+        par([tx(chk((fin.metodos_eutanasia ?? []).includes('Otro'))),                         tx(' Otra técnica')]),
+      ], { w: w(100), span: 2 })),
+      ...((fin.metodos_eutanasia ?? []).includes('Otro') ? [
+        kvRowB('Justificar', dash(fin.justificacion_eutanasia)),
+      ] : []),
     ]),
     emptyLine(),
 
     // ── B.11 REUTILIZACIÓN DE ANIMALES ────────────────────────────────────────
     secHead('B.11 REUTILIZACIÓN DE ANIMALES'),
     tbl([
-      kvRow('Destino de los animales', reuDestinoLabel),
-      ...(reu.destino === 'Sacrifica los animales por requerimientos del procedimiento' && reu.tejidos
-        ? [kvRow('Tejido u órganos a utilizar', dash(reu.tejidos))] : []),
-      ...(reu.destino === 'Mantener los animales vivos para utilizarlos en otro procedimiento' && reu.num_procedimiento
-        ? [kvRow('Número de procedimiento', dash(reu.num_procedimiento))] : []),
-      ...(reu.destino === 'Mantener los animales vivos por otros procedimientos' && reu.justificacion_vivos
-        ? [kvRow('Justificación', dash(reu.justificacion_vivos))] : []),
+      tr(lbc([par([txB('Al finalizar el procedimiento está previsto:')])], { w: w(100), span: 2 })),
+      tr(tct([
+        par([tx(chk(reu.destino === 'Sacrifica los animales por requerimientos del procedimiento')), tx(' Sacrificar los animales por requerimientos del procedimiento')]),
+      ], { w: w(100), span: 2 })),
+      tr(tct([
+        par([tx(chk(reu.destino === 'Mantener los animales vivos para utilizarlos en otro procedimiento')), tx(' Mantener los animales vivos para utilizarlos en otro procedimiento')]),
+      ], { w: w(100), span: 2 })),
+      ...(reu.destino === 'Mantener los animales vivos para utilizarlos en otro procedimiento' ? [
+        kvRowB('Número de procedimiento', dash(reu.num_procedimiento)),
+      ] : []),
+      tr(tct([
+        par([tx(chk(reu.destino === 'Mantener los animales vivos por otros procedimientos')), tx(' Mantener los animales vivos por otros motivos')]),
+      ], { w: w(100), span: 2 })),
+      ...(reu.destino === 'Mantener los animales vivos por otros procedimientos' ? [
+        kvRowB('Justificar', dash(reu.justificacion_vivos)),
+      ] : []),
     ]),
     emptyLine(),
-
-    // ── B.12 CLASIFICACIÓN DE SEVERIDAD ──────────────────────────────────────
-    secHead('B.12 CLASIFICACIÓN DE SEVERIDAD'),
-    tbl([kvRow('Severidad según Directiva 2010/63/UE', sevLabel)]),
-    ...((proc.clasificacion_severidad ?? []).length > 1 && dg.severidad
-      ? [tbl([kvRow('Detalle de severidad', dash(dg.severidad))])] : []),
-    emptyLine(),
-
-    ...makeFirmaBlock(frm.nombre),
 
     // ── Notas a pie de página ─────────────────────────────────────────────────
     notesPar('1 Debe indicarse el tiempo entre la primera y la última utilización (sacrificio) de cada animal. No confundir con la duración total del estudio.'),
