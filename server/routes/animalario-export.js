@@ -603,7 +603,7 @@ async function genSeccionA(proyectoId) {
             tct([par(proc.datos_generales?.titulo_procedimiento ?? '')],                                  { w: w(34) }),
             tct([par((proc.datos_generales?.especies ?? []).join(', '))],                                 { w: w(22) }),
             tct([par(String(proc.datos_generales?.num_animales ?? ''))],                                  { w: w(18) }),
-            tct([par(SEV_LABELS[proc.clasificacion_severidad] ?? (proc.clasificacion_severidad ?? ''))], { w: w(18) }),
+            tct([par((Array.isArray(proc.clasificacion_severidad) ? proc.clasificacion_severidad : [proc.clasificacion_severidad]).map(v => SEV_LABELS[v] ?? v).join(', '))], { w: w(18) }),
           ))
         : [tr(
             tct([par('')], { w: w(8)  }),
@@ -816,7 +816,7 @@ async function genSeccionB(procId) {
     emptyLine(),
 
     h2('Clasificación de severidad'),
-    tbl([kvRow('Severidad', proc.clasificacion_severidad ?? 'none')]),
+    tbl([kvRow('Severidad', (Array.isArray(proc.clasificacion_severidad) ? proc.clasificacion_severidad : [proc.clasificacion_severidad]).map(v => SEV_LABELS[v] ?? v).filter(Boolean).join(', ') || 'Sin clasificar')]),
     emptyLine(),
 
     ...makeFirmaBlock(frm.nombre),
@@ -1116,7 +1116,7 @@ async function genModificacion(modifId) {
           tc([par(String(i + 1))], { w: w(8) }),
           tc([par(proc.datos_generales?.titulo_procedimiento ?? '')], { w: w(55) }),
           tc([par(String(proc.datos_generales?.num_animales ?? ''))], { w: w(20) }),
-          tc([par(proc.clasificacion_severidad ?? '')], { w: w(17) }),
+          tc([par((Array.isArray(proc.clasificacion_severidad) ? proc.clasificacion_severidad : [proc.clasificacion_severidad]).map(v => SEV_LABELS[v] ?? v).filter(Boolean).join(', '))], { w: w(17) }),
         )),
       ]))
     } else {

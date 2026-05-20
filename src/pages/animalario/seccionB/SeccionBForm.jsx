@@ -32,6 +32,7 @@ const EMPTY_FORM = {
     justificacion_procedimiento: '',
   },
   tamano_muestral: {
+    numero_total: '',
     metodo: '',
     justificacion: '',
     grupos: [],
@@ -62,14 +63,14 @@ const EMPTY_FORM = {
     criterios_humanos: '',
     metodos_eutanasia: [],
     justificacion_eutanasia: '',
-    destino_carcasas: '',
   },
   reutilizacion: {
-    hay_reutilizacion: '',
-    descripcion: '',
-    justificacion: '',
+    destino: '',
+    tejidos: '',
+    num_procedimiento: '',
+    justificacion_vivos: '',
   },
-  clasificacion_severidad: 'none',
+  clasificacion_severidad: [],
   firma: {
     nombre: '',
     fecha: '',
@@ -503,6 +504,17 @@ export default function SeccionBForm() {
         requiredFields={[form.tamano_muestral.metodo, form.tamano_muestral.justificacion]}
       >
         <div className="form-group">
+          <label>Número total de animales dividido en grupos experimentales (incluyendo controles)</label>
+          <AutoExpandTextarea
+            storageKey="tamano_muestral.numero_total"
+            rows={3}
+            copyFrom={true}
+            value={form.tamano_muestral.numero_total}
+            onChange={e => update('tamano_muestral.numero_total', e.target.value)}
+            placeholder="Indicar el número total de animales y cómo se distribuyen en los grupos experimentales e incluyendo controles"
+          />
+        </div>
+        <div className="form-group">
           <label>Método de cálculo del tamaño muestral</label>
           <div className={s.radioGroup}>
             {['Análisis de potencia estadística', 'Datos históricos / literatura', 'Estudio piloto', 'Estimación experta', 'Otro'].map(opt => (
@@ -784,7 +796,7 @@ export default function SeccionBForm() {
               { key: 'cantidad',  label: 'Cantidad / dosis', flex: 1, ph: 'Ej. 1×10⁹ vp/ml' },
               { key: 'via',       label: 'Vía admin.',     flex: 1, tipo: 'autocomplete', campo: 'via_administracion', ph: 'Vía', initialSuggestions: vias },
               { key: 'frecuencia', label: 'Frecuencia',    flex: 1, ph: 'Ej. única dosis' },
-              { key: 'riesgo_desc', label: 'Riesgo',       flex: 2, ph: 'Descripción del riesgo si procede' },
+              { key: 'riesgo_desc', label: 'Volumen (ml/Kg)', flex: 2, ph: 'Descripción del riesgo si procede' },
             ]}
             rows={form.otras_sustancias.sustancias ?? []}
             onUpdate={updSustancia}
@@ -874,25 +886,18 @@ export default function SeccionBForm() {
             ))}
           </div>
         </div>
-        <div className="form-group">
-          <label>Justificación del método de eutanasia</label>
-          <AutoExpandTextarea
-            storageKey="finalizacion.justificacion_eutanasia"
-            rows={2}
-            value={form.finalizacion.justificacion_eutanasia}
-            onChange={e => update('finalizacion.justificacion_eutanasia', e.target.value)}
-            placeholder="Justificación según las 3Rs (Refinamiento)"
-          />
-        </div>
-        <div className="form-group">
-          <label>Destino de las carcasas</label>
-          <input
-            className="form-group input"
-            value={form.finalizacion.destino_carcasas}
-            onChange={e => update('finalizacion.destino_carcasas', e.target.value)}
-            placeholder="Ej. incineración, archivo histológico, muestras para otros proyectos…"
-          />
-        </div>
+        {(form.finalizacion.metodos_eutanasia ?? []).includes('Otro') && (
+          <div className="form-group">
+            <label>Justificación del método de eutanasia</label>
+            <AutoExpandTextarea
+              storageKey="finalizacion.justificacion_eutanasia"
+              rows={2}
+              value={form.finalizacion.justificacion_eutanasia}
+              onChange={e => update('finalizacion.justificacion_eutanasia', e.target.value)}
+              placeholder="Justificación según las 3Rs (Refinamiento)"
+            />
+          </div>
+        )}
       </CollapsibleBlock>
 
       {/* ── 11. Reutilización ──────────────────────────────────── */}
@@ -900,48 +905,62 @@ export default function SeccionBForm() {
         title="11. Reutilización de animales"
         storageKey="secB:B11"
         defaultOpen={false}
-        requiredFields={[form.reutilizacion.hay_reutilizacion]}
+        requiredFields={[form.reutilizacion.destino]}
       >
         <div className="form-group">
-          <label>¿Se reutilizan animales de otro procedimiento?</label>
           <div className={s.radioGroup}>
-            {['Sí', 'No'].map(opt => (
+            {[
+              'Sacrifica los animales por requerimientos del procedimiento',
+              'Mantener los animales vivos para utilizarlos en otro procedimiento',
+              'Mantener los animales vivos por otros procedimientos',
+            ].map(opt => (
               <label key={opt} className={s.radioLabel}>
                 <input
                   type="radio"
-                  name="hay_reutilizacion"
+                  name="reutilizacion_destino"
                   value={opt}
-                  checked={form.reutilizacion.hay_reutilizacion === opt}
-                  onChange={() => update('reutilizacion.hay_reutilizacion', opt)}
+                  checked={form.reutilizacion.destino === opt}
+                  onChange={() => update('reutilizacion.destino', opt)}
                 />
                 {opt}
               </label>
             ))}
           </div>
         </div>
-        {form.reutilizacion.hay_reutilizacion === 'Sí' && (
-          <>
-            <div className="form-group">
-              <label>Descripción de la reutilización</label>
-              <AutoExpandTextarea
-                storageKey="reutilizacion.descripcion"
-                rows={2}
-                value={form.reutilizacion.descripcion}
-                onChange={e => update('reutilizacion.descripcion', e.target.value)}
-                placeholder="De qué procedimiento provienen y qué se hizo previamente"
-              />
-            </div>
-            <div className="form-group">
-              <label>Justificación de la reutilización</label>
-              <AutoExpandTextarea
-                storageKey="reutilizacion.justificacion"
-                rows={2}
-                value={form.reutilizacion.justificacion}
-                onChange={e => update('reutilizacion.justificacion', e.target.value)}
-                placeholder="Por qué es necesario reutilizar y cómo se garantiza el bienestar"
-              />
-            </div>
-          </>
+        {form.reutilizacion.destino === 'Sacrifica los animales por requerimientos del procedimiento' && (
+          <div className="form-group">
+            <label>¿Qué tejido u órganos van a utilizarse?</label>
+            <AutoExpandTextarea
+              storageKey="reutilizacion.tejidos"
+              rows={2}
+              value={form.reutilizacion.tejidos}
+              onChange={e => update('reutilizacion.tejidos', e.target.value)}
+              placeholder="Indicar los tejidos u órganos que se extraerán"
+            />
+          </div>
+        )}
+        {form.reutilizacion.destino === 'Mantener los animales vivos para utilizarlos en otro procedimiento' && (
+          <div className="form-group">
+            <label>Número de procedimiento</label>
+            <input
+              className="form-group input"
+              value={form.reutilizacion.num_procedimiento}
+              onChange={e => update('reutilizacion.num_procedimiento', e.target.value)}
+              placeholder="Código del procedimiento"
+            />
+          </div>
+        )}
+        {form.reutilizacion.destino === 'Mantener los animales vivos por otros procedimientos' && (
+          <div className="form-group">
+            <label>Justificar</label>
+            <AutoExpandTextarea
+              storageKey="reutilizacion.justificacion_vivos"
+              rows={2}
+              value={form.reutilizacion.justificacion_vivos}
+              onChange={e => update('reutilizacion.justificacion_vivos', e.target.value)}
+              placeholder="Justificación de por qué se mantienen vivos los animales"
+            />
+          </div>
         )}
       </CollapsibleBlock>
 
@@ -949,31 +968,50 @@ export default function SeccionBForm() {
       <CollapsibleBlock
         title="12. Clasificación de severidad"
         storageKey="secB:B12"
-        requiredFields={[form.clasificacion_severidad !== 'none' ? 'ok' : '']}
+        requiredFields={[(form.clasificacion_severidad ?? []).length > 0 ? 'ok' : '']}
       >
         <div className="form-group">
           <label>Severidad del procedimiento según la Directiva 2010/63/UE</label>
           <div className={s.severityRow}>
             {[
-              { value: 'none',   label: 'Sin clasificar' },
               { value: 'low',    label: 'Leve' },
               { value: 'medium', label: 'Moderado' },
               { value: 'high',   label: 'Severo' },
-            ].map(opt => (
-              <button
-                key={opt.value}
-                type="button"
-                className={`${s.severityBtn} ${s[`severityBtn${opt.value.charAt(0).toUpperCase()+opt.value.slice(1)}`]} ${form.clasificacion_severidad === opt.value ? s.active : ''}`}
-                onClick={() => update('clasificacion_severidad', opt.value)}
-              >
-                {opt.label}
-              </button>
-            ))}
+            ].map(opt => {
+              const selected = (form.clasificacion_severidad ?? []).includes(opt.value)
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  className={`${s.severityBtn} ${s[`severityBtn${opt.value.charAt(0).toUpperCase()+opt.value.slice(1)}`]} ${selected ? s.active : ''}`}
+                  onClick={() => {
+                    const cur = form.clasificacion_severidad ?? []
+                    const next = selected ? cur.filter(v => v !== opt.value) : [...cur, opt.value]
+                    update('clasificacion_severidad', next)
+                  }}
+                >
+                  {opt.label}
+                </button>
+              )
+            })}
           </div>
           <p className={s.helpText} style={{ marginTop: '0.5rem' }}>
             Leve: mínimo sufrimiento. Moderado: sufrimiento significativo de corta duración. Severo: sufrimiento intenso o prolongado.
           </p>
         </div>
+        {(form.clasificacion_severidad ?? []).length > 1 && (
+          <div className="form-group">
+            <label>Severidad</label>
+            <AutoExpandTextarea
+              storageKey="datos_generales.severidad"
+              rows={3}
+              copyFrom={true}
+              value={form.datos_generales.severidad}
+              onChange={e => update('datos_generales.severidad', e.target.value)}
+              placeholder="Indicar la severidad del procedimiento"
+            />
+          </div>
+        )}
       </CollapsibleBlock>
 
       {/* ── 13. Firma ──────────────────────────────────────────── */}
