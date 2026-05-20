@@ -70,7 +70,7 @@ const EMPTY_FORM = {
     num_procedimiento: '',
     justificacion_vivos: '',
   },
-  clasificacion_severidad: 'none',
+  clasificacion_severidad: [],
   firma: {
     nombre: '',
     fecha: '',
@@ -968,31 +968,50 @@ export default function SeccionBForm() {
       <CollapsibleBlock
         title="12. Clasificación de severidad"
         storageKey="secB:B12"
-        requiredFields={[form.clasificacion_severidad !== 'none' ? 'ok' : '']}
+        requiredFields={[(form.clasificacion_severidad ?? []).length > 0 ? 'ok' : '']}
       >
         <div className="form-group">
           <label>Severidad del procedimiento según la Directiva 2010/63/UE</label>
           <div className={s.severityRow}>
             {[
-              { value: 'none',   label: 'Sin clasificar' },
               { value: 'low',    label: 'Leve' },
               { value: 'medium', label: 'Moderado' },
               { value: 'high',   label: 'Severo' },
-            ].map(opt => (
-              <button
-                key={opt.value}
-                type="button"
-                className={`${s.severityBtn} ${s[`severityBtn${opt.value.charAt(0).toUpperCase()+opt.value.slice(1)}`]} ${form.clasificacion_severidad === opt.value ? s.active : ''}`}
-                onClick={() => update('clasificacion_severidad', opt.value)}
-              >
-                {opt.label}
-              </button>
-            ))}
+            ].map(opt => {
+              const selected = (form.clasificacion_severidad ?? []).includes(opt.value)
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  className={`${s.severityBtn} ${s[`severityBtn${opt.value.charAt(0).toUpperCase()+opt.value.slice(1)}`]} ${selected ? s.active : ''}`}
+                  onClick={() => {
+                    const cur = form.clasificacion_severidad ?? []
+                    const next = selected ? cur.filter(v => v !== opt.value) : [...cur, opt.value]
+                    update('clasificacion_severidad', next)
+                  }}
+                >
+                  {opt.label}
+                </button>
+              )
+            })}
           </div>
           <p className={s.helpText} style={{ marginTop: '0.5rem' }}>
             Leve: mínimo sufrimiento. Moderado: sufrimiento significativo de corta duración. Severo: sufrimiento intenso o prolongado.
           </p>
         </div>
+        {(form.clasificacion_severidad ?? []).length > 1 && (
+          <div className="form-group">
+            <label>Severidad</label>
+            <AutoExpandTextarea
+              storageKey="datos_generales.severidad"
+              rows={3}
+              copyFrom={true}
+              value={form.datos_generales.severidad}
+              onChange={e => update('datos_generales.severidad', e.target.value)}
+              placeholder="Indicar la severidad del procedimiento"
+            />
+          </div>
+        )}
       </CollapsibleBlock>
 
       {/* ── 13. Firma ──────────────────────────────────────────── */}
