@@ -749,9 +749,9 @@ async function genSeccionB(procId) {
     emptyLine(),
 
     // ── B.2 METODOLOGÍA Y FASES ───────────────────────────────────────────────
-    secHead('B.2 METODOLOGÍA Y FASES'),
+    secHead('B.2 METODOLOGÍA Y FASES DEL PROCEDIMIENTO'),
     tbl([
-      secRowBlue('Descripción del procedimiento'),
+      secRowBlue([txB('Fases del procedimiento'), sup(2)]),
       fullTcThin([par(dash(met.descripcion))]),
       secRowBlue('Justificación del procedimiento'),
       fullTcThin([par(dash(met.justificacion_procedimiento))]),
