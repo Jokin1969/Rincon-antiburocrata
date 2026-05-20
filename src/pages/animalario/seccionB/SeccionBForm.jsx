@@ -974,9 +974,10 @@ export default function SeccionBForm() {
           <label>Severidad del procedimiento según la Directiva 2010/63/UE</label>
           <div className={s.severityRow}>
             {[
-              { value: 'low',    label: 'Leve' },
-              { value: 'medium', label: 'Moderado' },
-              { value: 'high',   label: 'Severo' },
+              { value: 'norecovery', label: 'Sin recuperación' },
+              { value: 'low',        label: 'Leve' },
+              { value: 'medium',     label: 'Moderado' },
+              { value: 'high',       label: 'Severo' },
             ].map(opt => {
               const selected = (form.clasificacion_severidad ?? []).includes(opt.value)
               return (
@@ -996,7 +997,7 @@ export default function SeccionBForm() {
             })}
           </div>
           <p className={s.helpText} style={{ marginTop: '0.5rem' }}>
-            Leve: mínimo sufrimiento. Moderado: sufrimiento significativo de corta duración. Severo: sufrimiento intenso o prolongado.
+            Sin recuperación: animal en anestesia general hasta el sacrificio. Leve: mínimo sufrimiento. Moderado: sufrimiento significativo de corta duración. Severo: sufrimiento intenso o prolongado.
           </p>
         </div>
         {(form.clasificacion_severidad ?? []).length > 1 && (

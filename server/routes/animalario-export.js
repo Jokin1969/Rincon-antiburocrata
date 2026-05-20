@@ -323,7 +323,7 @@ const FINALIDAD_LABELS_A = {
   g: 'g. Investigaciones forenses',
 }
 
-const SEV_LABELS = { none: 'Sin clasificar', low: 'Leve', medium: 'Moderada', high: 'Severa' }
+const SEV_LABELS = { none: 'Sin clasificar', norecovery: 'Sin recuperación', low: 'Leve', medium: 'Moderada', high: 'Severa' }
 
 // Single-cell full-width grey header row (span = number of cols in that table)
 function secRow(title, span = 1) {
