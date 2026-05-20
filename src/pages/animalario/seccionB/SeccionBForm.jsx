@@ -63,12 +63,12 @@ const EMPTY_FORM = {
     criterios_humanos: '',
     metodos_eutanasia: [],
     justificacion_eutanasia: '',
-    destino_carcasas: '',
   },
   reutilizacion: {
-    hay_reutilizacion: '',
-    descripcion: '',
-    justificacion: '',
+    destino: '',
+    tejidos: '',
+    num_procedimiento: '',
+    justificacion_vivos: '',
   },
   clasificacion_severidad: 'none',
   firma: {
@@ -886,25 +886,18 @@ export default function SeccionBForm() {
             ))}
           </div>
         </div>
-        <div className="form-group">
-          <label>Justificación del método de eutanasia</label>
-          <AutoExpandTextarea
-            storageKey="finalizacion.justificacion_eutanasia"
-            rows={2}
-            value={form.finalizacion.justificacion_eutanasia}
-            onChange={e => update('finalizacion.justificacion_eutanasia', e.target.value)}
-            placeholder="Justificación según las 3Rs (Refinamiento)"
-          />
-        </div>
-        <div className="form-group">
-          <label>Destino de las carcasas</label>
-          <input
-            className="form-group input"
-            value={form.finalizacion.destino_carcasas}
-            onChange={e => update('finalizacion.destino_carcasas', e.target.value)}
-            placeholder="Ej. incineración, archivo histológico, muestras para otros proyectos…"
-          />
-        </div>
+        {(form.finalizacion.metodos_eutanasia ?? []).includes('Otro') && (
+          <div className="form-group">
+            <label>Justificación del método de eutanasia</label>
+            <AutoExpandTextarea
+              storageKey="finalizacion.justificacion_eutanasia"
+              rows={2}
+              value={form.finalizacion.justificacion_eutanasia}
+              onChange={e => update('finalizacion.justificacion_eutanasia', e.target.value)}
+              placeholder="Justificación según las 3Rs (Refinamiento)"
+            />
+          </div>
+        )}
       </CollapsibleBlock>
 
       {/* ── 11. Reutilización ──────────────────────────────────── */}
@@ -912,48 +905,62 @@ export default function SeccionBForm() {
         title="11. Reutilización de animales"
         storageKey="secB:B11"
         defaultOpen={false}
-        requiredFields={[form.reutilizacion.hay_reutilizacion]}
+        requiredFields={[form.reutilizacion.destino]}
       >
         <div className="form-group">
-          <label>¿Se reutilizan animales de otro procedimiento?</label>
           <div className={s.radioGroup}>
-            {['Sí', 'No'].map(opt => (
+            {[
+              'Sacrifica los animales por requerimientos del procedimiento',
+              'Mantener los animales vivos para utilizarlos en otro procedimiento',
+              'Mantener los animales vivos por otros procedimientos',
+            ].map(opt => (
               <label key={opt} className={s.radioLabel}>
                 <input
                   type="radio"
-                  name="hay_reutilizacion"
+                  name="reutilizacion_destino"
                   value={opt}
-                  checked={form.reutilizacion.hay_reutilizacion === opt}
-                  onChange={() => update('reutilizacion.hay_reutilizacion', opt)}
+                  checked={form.reutilizacion.destino === opt}
+                  onChange={() => update('reutilizacion.destino', opt)}
                 />
                 {opt}
               </label>
             ))}
           </div>
         </div>
-        {form.reutilizacion.hay_reutilizacion === 'Sí' && (
-          <>
-            <div className="form-group">
-              <label>Descripción de la reutilización</label>
-              <AutoExpandTextarea
-                storageKey="reutilizacion.descripcion"
-                rows={2}
-                value={form.reutilizacion.descripcion}
-                onChange={e => update('reutilizacion.descripcion', e.target.value)}
-                placeholder="De qué procedimiento provienen y qué se hizo previamente"
-              />
-            </div>
-            <div className="form-group">
-              <label>Justificación de la reutilización</label>
-              <AutoExpandTextarea
-                storageKey="reutilizacion.justificacion"
-                rows={2}
-                value={form.reutilizacion.justificacion}
-                onChange={e => update('reutilizacion.justificacion', e.target.value)}
-                placeholder="Por qué es necesario reutilizar y cómo se garantiza el bienestar"
-              />
-            </div>
-          </>
+        {form.reutilizacion.destino === 'Sacrifica los animales por requerimientos del procedimiento' && (
+          <div className="form-group">
+            <label>¿Qué tejido u órganos van a utilizarse?</label>
+            <AutoExpandTextarea
+              storageKey="reutilizacion.tejidos"
+              rows={2}
+              value={form.reutilizacion.tejidos}
+              onChange={e => update('reutilizacion.tejidos', e.target.value)}
+              placeholder="Indicar los tejidos u órganos que se extraerán"
+            />
+          </div>
+        )}
+        {form.reutilizacion.destino === 'Mantener los animales vivos para utilizarlos en otro procedimiento' && (
+          <div className="form-group">
+            <label>Número de procedimiento</label>
+            <input
+              className="form-group input"
+              value={form.reutilizacion.num_procedimiento}
+              onChange={e => update('reutilizacion.num_procedimiento', e.target.value)}
+              placeholder="Código del procedimiento"
+            />
+          </div>
+        )}
+        {form.reutilizacion.destino === 'Mantener los animales vivos por otros procedimientos' && (
+          <div className="form-group">
+            <label>Justificar</label>
+            <AutoExpandTextarea
+              storageKey="reutilizacion.justificacion_vivos"
+              rows={2}
+              value={form.reutilizacion.justificacion_vivos}
+              onChange={e => update('reutilizacion.justificacion_vivos', e.target.value)}
+              placeholder="Justificación de por qué se mantienen vivos los animales"
+            />
+          </div>
         )}
       </CollapsibleBlock>
 
