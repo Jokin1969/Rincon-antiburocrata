@@ -796,7 +796,7 @@ export default function SeccionBForm() {
               { key: 'cantidad',  label: 'Cantidad / dosis', flex: 1, ph: 'Ej. 1×10⁹ vp/ml' },
               { key: 'via',       label: 'Vía admin.',     flex: 1, tipo: 'autocomplete', campo: 'via_administracion', ph: 'Vía', initialSuggestions: vias },
               { key: 'frecuencia', label: 'Frecuencia',    flex: 1, ph: 'Ej. única dosis' },
-              { key: 'riesgo_desc', label: 'Riesgo',       flex: 2, ph: 'Descripción del riesgo si procede' },
+              { key: 'riesgo_desc', label: 'Volumen (ml/Kg)', flex: 2, ph: 'Descripción del riesgo si procede' },
             ]}
             rows={form.otras_sustancias.sustancias ?? []}
             onUpdate={updSustancia}
