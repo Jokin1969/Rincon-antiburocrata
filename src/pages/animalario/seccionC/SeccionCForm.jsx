@@ -64,7 +64,7 @@ const EMPTY_SECCION_C = {
     clasificacion_actividad: '',
     descripcion_operaciones: '',
     lugar_manipulacion: {
-      tipo: 'animalario_cicbiogune',
+      tipo: [],
       descripcion: '',
     },
     donde_manipulacion_genetica: '',
@@ -680,7 +680,7 @@ export default function SeccionCForm() {
       {omgActivo && (
         <>
           {/* OMG-0: ¿Usado anteriormente? */}
-          <CollapsibleBlock title="OMG-0 · ¿Utilizado anteriormente en procedimiento aprobado?" storageKey="secC:omg0">
+          <CollapsibleBlock title="OMG-0 · ¿Utilizado anteriormente en procedimiento aprobado?" storageKey="secC:omg0" requiredFields={['ok']}>
             <div className="form-group">
               <label>
                 ¿Ha sido utilizado anteriormente este OMG, en las mismas condiciones, en otro
@@ -740,7 +740,11 @@ export default function SeccionCForm() {
           {!usadoAnteriormente && (
             <>
               {/* OMG-1: Información general */}
-              <CollapsibleBlock title="OMG-1 · Información general del OMG" storageKey="secC:omg1">
+              <CollapsibleBlock
+                title="OMG-1 · Información general del OMG"
+                storageKey="secC:omg1"
+                requiredFields={[form.omg.clasificacion_actividad, form.omg.descripcion_operaciones, (form.omg.lugar_manipulacion.tipo ?? []).length > 0 ? 'ok' : '']}
+              >
                 <div className="form-group">
                   <label>Clasificación de la actividad (según Directivas 98/81/CE y 2000/608/CE)</label>
                   <input
@@ -763,42 +767,46 @@ export default function SeccionCForm() {
                 <div className="form-group">
                   <label>Lugar de manipulación del OMG</label>
                   <div className={s.radioGroup}>
-                    <label className={s.radioLabel}>
-                      <input
-                        type="radio"
-                        name="lugar_manip"
-                        value="animalario_cicbiogune"
-                        checked={form.omg.lugar_manipulacion.tipo === 'animalario_cicbiogune'}
-                        onChange={() => update('omg.lugar_manipulacion.tipo', 'animalario_cicbiogune')}
-                      />
-                      Animalario CIC bioGUNE
-                    </label>
-                    <label className={s.radioLabel}>
-                      <input
-                        type="radio"
-                        name="lugar_manip"
-                        value="otro"
-                        checked={form.omg.lugar_manipulacion.tipo === 'otro'}
-                        onChange={() => update('omg.lugar_manipulacion.tipo', 'otro')}
-                      />
-                      Otro
-                    </label>
+                    {[
+                      { value: 'animalario_cicbiogune', label: 'Animalario CIC bioGUNE' },
+                      { value: 'otro', label: 'Otro' },
+                    ].map(opt => {
+                      const tipos = form.omg.lugar_manipulacion.tipo ?? []
+                      return (
+                        <label key={opt.value} className={s.radioLabel}>
+                          <input
+                            type="checkbox"
+                            checked={tipos.includes(opt.value)}
+                            onChange={() => {
+                              const next = tipos.includes(opt.value)
+                                ? tipos.filter(v => v !== opt.value)
+                                : [...tipos, opt.value]
+                              update('omg.lugar_manipulacion.tipo', next)
+                            }}
+                          />
+                          {opt.label}
+                        </label>
+                      )
+                    })}
                   </div>
-                  {form.omg.lugar_manipulacion.tipo === 'otro' && (
-                    <input
-                      className="form-group input"
-                      style={{ marginTop: '0.5rem' }}
-                      value={form.omg.lugar_manipulacion.descripcion}
-                      onChange={e => update('omg.lugar_manipulacion.descripcion', e.target.value)}
-                      placeholder="Especificar el lugar"
-                    />
+                  {(form.omg.lugar_manipulacion.tipo ?? []).includes('otro') && (
+                    <div style={{ marginTop: '0.5rem' }}>
+                      <label>Especificar el lugar</label>
+                      <AutoExpandTextarea
+                        storageKey="secC:omg.lugar_manipulacion.descripcion"
+                        rows={3}
+                        value={form.omg.lugar_manipulacion.descripcion}
+                        onChange={e => update('omg.lugar_manipulacion.descripcion', e.target.value)}
+                        placeholder="Indicar el lugar de manipulación del OMG"
+                      />
+                    </div>
                   )}
                   <p className={s.helpText}>Especifique la zona del animalario si procede</p>
                 </div>
               </CollapsibleBlock>
 
               {/* OMG-2: Origen de la manipulación genética */}
-              <CollapsibleBlock title="OMG-2 · Origen de la manipulación genética" storageKey="secC:omg2" defaultOpen={false}>
+              <CollapsibleBlock title="OMG-2 · Origen de la manipulación genética" storageKey="secC:omg2" defaultOpen={false} requiredFields={[form.omg.donde_manipulacion_genetica]}>
                 <div className="form-group">
                   <label>¿Dónde se realizó la manipulación genética?</label>
                   <AutoExpandTextarea
@@ -812,7 +820,7 @@ export default function SeccionCForm() {
               </CollapsibleBlock>
 
               {/* OMG-3: Cruce entre OMGs */}
-              <CollapsibleBlock title="OMG-3 · ¿Es resultado de un cruce entre OMGs?" storageKey="secC:omg3" defaultOpen={false}>
+              <CollapsibleBlock title="OMG-3 · ¿Es resultado de un cruce entre OMGs?" storageKey="secC:omg3" defaultOpen={false} requiredFields={['ok']}>
                 <div className="form-group">
                   <div className={s.radioGroup}>
                     <label className={s.radioLabel}>
@@ -874,7 +882,7 @@ export default function SeccionCForm() {
               </CollapsibleBlock>
 
               {/* OMG-4: Modificación genética */}
-              <CollapsibleBlock title="OMG-4 · Modificación genética" storageKey="secC:omg4" defaultOpen={false}>
+              <CollapsibleBlock title="OMG-4 · Modificación genética" storageKey="secC:omg4" defaultOpen={false} requiredFields={[form.omg.modificacion_genetica.tipo_modificacion, form.omg.modificacion_genetica.metodo_descripcion]}>
                 <div className={s.grid2}>
                   <div className="form-group">
                     <label>Tipo de modificación</label>
@@ -1003,7 +1011,7 @@ export default function SeccionCForm() {
               </CollapsibleBlock>
 
               {/* OMG-5: OMG resultante */}
-              <CollapsibleBlock title="OMG-5 · OMG resultante" storageKey="secC:omg5" defaultOpen={false}>
+              <CollapsibleBlock title="OMG-5 · OMG resultante" storageKey="secC:omg5" defaultOpen={false} requiredFields={[form.omg.omg_resultante.denominacion, form.omg.omg_resultante.descripcion_breve]}>
                 <div className={s.grid2}>
                   <div className="form-group">
                     <label>Denominación del OMG</label>
@@ -1187,8 +1195,9 @@ export default function SeccionCForm() {
                     </div>
                     <div className="form-group">
                       <label>Marcadores específicos del OMG</label>
-                      <input
-                        className="form-group input"
+                      <AutoExpandTextarea
+                        storageKey="secC:omg.omg_resultante.marcadores_especificos"
+                        rows={3}
                         value={form.omg.omg_resultante.identificacion.marcadores_especificos}
                         onChange={e => update('omg.omg_resultante.identificacion.marcadores_especificos', e.target.value)}
                         placeholder="Ej. GFP, resistencia a neomicina…"
