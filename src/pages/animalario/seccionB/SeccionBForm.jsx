@@ -46,12 +46,8 @@ const EMPTY_FORM = {
   },
   tecnicas: [],
   analgesia_anestesia: {
-    hay_analgesia: '',
-    protocolo_analgesia: '',
-    hay_anestesia: '',
-    protocolo_anestesia: '',
-    monitorizacion: '',
-    recuperacion: '',
+    analgesia: [],
+    anestesia: [],
   },
   otras_sustancias: {
     hay_riesgo: false,
@@ -79,8 +75,9 @@ const EMPTY_FORM = {
 }
 
 const EMPTY_GRUPO     = { nombre: '', n: '', justificacion: '' }
-const EMPTY_TECNICA   = { nombre: '', frecuencia: '', via: '', volumen: '', duracion: '', observaciones: '' }
-const EMPTY_SUSTANCIA = { nombre: '', tipo: '', cantidad: '', via: '', frecuencia: '', riesgo_desc: '' }
+const EMPTY_TECNICA   = { nombre: '', frecuencia: '', grupo_animales: '' }
+const EMPTY_ANA_ROW   = { frecuencia: '', grupo_animales: '', producto_concentracion: '', dosis_mg_kg: '', volumen_ml_kg: '', via: '' }
+const EMPTY_SUSTANCIA = { frecuencia: '', grupo_animales: '', producto_concentracion: '', dosis_mg_kg: '', volumen_ml_kg: '', via: '' }
 const EMPTY_PARAMETRO = { parametro: '', metodo_medida: '', frecuencia: '', unidad: '', n_por_grupo: '' }
 const EMPTY_MUESTRA   = { tipo: '', volumen_cantidad: '', frecuencia: '', procedimiento: '' }
 
@@ -257,6 +254,13 @@ export default function SeccionBForm() {
   function addSustancia()       { setForm(p => { const n = clone(p); n.otras_sustancias.sustancias.push(clone(EMPTY_SUSTANCIA)); return n }) }
   function removeSustancia(i)   { setForm(p => { const n = clone(p); n.otras_sustancias.sustancias = n.otras_sustancias.sustancias.filter((_,j)=>j!==i); return n }) }
   function updSustancia(i,k,v)  { setForm(p => { const n = clone(p); n.otras_sustancias.sustancias[i][k] = v; return n }) }
+
+  function addAna()       { setForm(p => { const n = clone(p); n.analgesia_anestesia.analgesia.push(clone(EMPTY_ANA_ROW)); return n }) }
+  function removeAna(i)   { setForm(p => { const n = clone(p); n.analgesia_anestesia.analgesia = n.analgesia_anestesia.analgesia.filter((_,j)=>j!==i); return n }) }
+  function updAna(i,k,v)  { setForm(p => { const n = clone(p); n.analgesia_anestesia.analgesia[i][k] = v; return n }) }
+  function addAnes()       { setForm(p => { const n = clone(p); n.analgesia_anestesia.anestesia.push(clone(EMPTY_ANA_ROW)); return n }) }
+  function removeAnes(i)   { setForm(p => { const n = clone(p); n.analgesia_anestesia.anestesia = n.analgesia_anestesia.anestesia.filter((_,j)=>j!==i); return n }) }
+  function updAnes(i,k,v)  { setForm(p => { const n = clone(p); n.analgesia_anestesia.anestesia[i][k] = v; return n }) }
 
   function addGrupo()      { setForm(p => { const n = clone(p); n.tamano_muestral.grupos.push(clone(EMPTY_GRUPO)); return n }) }
   function removeGrupo(i)  { setForm(p => { const n = clone(p); n.tamano_muestral.grupos = n.tamano_muestral.grupos.filter((_,j)=>j!==i); return n }) }
@@ -650,12 +654,9 @@ export default function SeccionBForm() {
       >
         <DynTable
           columns={[
-            { key: 'nombre',       label: 'Técnica / sustancia',  flex: 2, tipo: 'autocomplete', campo: 'tecnica_experimental', ph: 'Nombre de la técnica' },
-            { key: 'via',          label: 'Vía admin.',           flex: 1, tipo: 'autocomplete', campo: 'via_administracion', ph: 'Vía', initialSuggestions: vias },
-            { key: 'frecuencia',   label: 'Frecuencia',           flex: 1, tipo: 'autocomplete', campo: 'frecuencia_tecnica', ph: 'Ej. diaria' },
-            { key: 'volumen',      label: 'Volumen / dosis',      flex: 1, ph: 'Ej. 10 ml/kg' },
-            { key: 'duracion',     label: 'Duración',             flex: 1, ph: 'Ej. 4 semanas' },
-            { key: 'observaciones', label: 'Observaciones',       flex: 2, ph: '' },
+            { key: 'frecuencia',     label: 'Frecuencia',                    flex: 1, tipo: 'autocomplete', campo: 'frecuencia_tecnica', ph: 'Ej. 1 vez' },
+            { key: 'grupo_animales', label: 'Grupo / Nº animales',           flex: 2, ph: 'Ej. Todos los animales (180)' },
+            { key: 'nombre',         label: 'Técnica experimental/quirúrgica', flex: 3, tipo: 'autocomplete', campo: 'tecnica_experimental', ph: 'Nombre de la técnica' },
           ]}
           rows={form.tecnicas}
           onUpdate={tecnicaOps.upd}
@@ -663,9 +664,6 @@ export default function SeccionBForm() {
           onAdd={tecnicaOps.add}
           addLabel="＋ Añadir técnica"
         />
-        <p className={s.helpText}>
-          Incluir cada técnica o administración de sustancias con su vía, frecuencia y volumen. Los valores introducidos se guardarán en el repositorio para autocompletar en futuros formularios.
-        </p>
       </CollapsibleBlock>
 
       {/* ── 6. Analgesia / anestesia ───────────────────────────── */}
@@ -673,130 +671,47 @@ export default function SeccionBForm() {
         title="6. Analgesia y anestesia"
         storageKey="secB:B6"
         defaultOpen={false}
-        requiredFields={[form.analgesia_anestesia.hay_analgesia, form.analgesia_anestesia.hay_anestesia]}
       >
-        <div className={s.grid2}>
-          <div className="form-group">
-            <label>¿Se utiliza analgesia?</label>
-            <div className={s.radioGroup}>
-              {['Sí', 'No', 'No procede'].map(opt => (
-                <label key={opt} className={s.radioLabel}>
-                  <input
-                    type="radio"
-                    name="hay_analgesia"
-                    value={opt}
-                    checked={form.analgesia_anestesia.hay_analgesia === opt}
-                    onChange={() => update('analgesia_anestesia.hay_analgesia', opt)}
-                  />
-                  {opt}
-                </label>
-              ))}
-            </div>
+        {[
+          { label: 'Analgesia', rows: form.analgesia_anestesia.analgesia ?? [], add: addAna, remove: removeAna, upd: updAna },
+          { label: 'Anestesia', rows: form.analgesia_anestesia.anestesia ?? [], add: addAnes, remove: removeAnes, upd: updAnes },
+        ].map(({ label, rows, add, remove, upd }) => (
+          <div key={label} className="form-group">
+            <label>{label}</label>
+            <DynTable
+              columns={[
+                { key: 'frecuencia',           label: 'Frecuencia',           flex: 1, ph: 'Ej. 1 vez' },
+                { key: 'grupo_animales',        label: 'Grupo / Nº animales',  flex: 2, ph: 'Ej. Todos (180)' },
+                { key: 'producto_concentracion', label: 'Producto / Concentración', flex: 2, ph: 'Ej. Isoflurano 4%' },
+                { key: 'dosis_mg_kg',           label: 'Dosis (mg/kg)',        flex: 1, ph: '' },
+                { key: 'volumen_ml_kg',         label: 'Volumen (ml/kg)',      flex: 1, ph: '' },
+                { key: 'via',                   label: 'Vía',                  flex: 1, tipo: 'autocomplete', campo: 'via_administracion', ph: 'Vía', initialSuggestions: vias },
+              ]}
+              rows={rows}
+              onUpdate={upd}
+              onRemove={remove}
+              onAdd={add}
+              addLabel={`＋ Añadir ${label.toLowerCase()}`}
+            />
           </div>
-
-          {form.analgesia_anestesia.hay_analgesia === 'Sí' && (
-            <div className="form-group">
-              <label>Protocolo de analgesia</label>
-              <AutoExpandTextarea
-                storageKey="analgesia_anestesia.protocolo_analgesia"
-                rows={2}
-                value={form.analgesia_anestesia.protocolo_analgesia}
-                onChange={e => update('analgesia_anestesia.protocolo_analgesia', e.target.value)}
-                placeholder="Fármaco, dosis, vía, frecuencia"
-              />
-            </div>
-          )}
-
-          <div className="form-group">
-            <label>¿Se utiliza anestesia?</label>
-            <div className={s.radioGroup}>
-              {['Sí', 'No', 'No procede'].map(opt => (
-                <label key={opt} className={s.radioLabel}>
-                  <input
-                    type="radio"
-                    name="hay_anestesia"
-                    value={opt}
-                    checked={form.analgesia_anestesia.hay_anestesia === opt}
-                    onChange={() => update('analgesia_anestesia.hay_anestesia', opt)}
-                  />
-                  {opt}
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {form.analgesia_anestesia.hay_anestesia === 'Sí' && (
-            <div className="form-group">
-              <label>Protocolo de anestesia</label>
-              <AutoExpandTextarea
-                storageKey="analgesia_anestesia.protocolo_anestesia"
-                rows={2}
-                value={form.analgesia_anestesia.protocolo_anestesia}
-                onChange={e => update('analgesia_anestesia.protocolo_anestesia', e.target.value)}
-                placeholder="Fármaco/mezcla, dosis, vía, inducción/mantenimiento"
-              />
-            </div>
-          )}
-
-          {(form.analgesia_anestesia.hay_anestesia === 'Sí') && (
-            <>
-              <div className="form-group">
-                <label>Monitorización durante la anestesia</label>
-                <AutoExpandTextarea
-                  storageKey="analgesia_anestesia.monitorizacion"
-                  rows={2}
-                  value={form.analgesia_anestesia.monitorizacion}
-                  onChange={e => update('analgesia_anestesia.monitorizacion', e.target.value)}
-                  placeholder="Parámetros monitorizados (FR, FC, temperatura…)"
-                />
-              </div>
-              <div className="form-group">
-                <label>Recuperación post-anestésica</label>
-                <AutoExpandTextarea
-                  storageKey="analgesia_anestesia.recuperacion"
-                  rows={2}
-                  value={form.analgesia_anestesia.recuperacion}
-                  onChange={e => update('analgesia_anestesia.recuperacion', e.target.value)}
-                  placeholder="Medidas de recuperación y criterios de alta"
-                />
-              </div>
-            </>
-          )}
-        </div>
+        ))}
       </CollapsibleBlock>
 
-      {/* ── 7. Otras sustancias / productos con riesgo ─────────── */}
+      {/* ── 7. Administración de otras sustancias ──────────────── */}
       <CollapsibleBlock
-        title="7. Otras sustancias y productos con riesgo"
+        title="7. Administración de otras sustancias"
         storageKey="secB:B7"
         defaultOpen={false}
       >
         <div className="form-group">
-          <label className={s.checkboxLabel}>
-            <input
-              type="checkbox"
-              checked={form.otras_sustancias.hay_riesgo === true}
-              onChange={e => update('otras_sustancias.hay_riesgo', e.target.checked)}
-            />
-            Este procedimiento utiliza sustancias que requieren declaración de riesgo (Sección D)
-          </label>
-          {form.otras_sustancias.hay_riesgo && (
-            <p className={s.warning}>
-              Al marcar esta opción el procedimiento quedará vinculado a la Sección D del proyecto.
-            </p>
-          )}
-        </div>
-
-        <div className="form-group">
-          <label>Sustancias administradas (distintas a analgesia/anestesia)</label>
           <DynTable
             columns={[
-              { key: 'nombre',    label: 'Sustancia',      flex: 2, tipo: 'autocomplete', campo: 'producto_administrado', ph: 'Nombre' },
-              { key: 'tipo',      label: 'Tipo',           flex: 1, ph: 'Ej. vector viral, tóxico…' },
-              { key: 'cantidad',  label: 'Cantidad / dosis', flex: 1, ph: 'Ej. 1×10⁹ vp/ml' },
-              { key: 'via',       label: 'Vía admin.',     flex: 1, tipo: 'autocomplete', campo: 'via_administracion', ph: 'Vía', initialSuggestions: vias },
-              { key: 'frecuencia', label: 'Frecuencia',    flex: 1, ph: 'Ej. única dosis' },
-              { key: 'riesgo_desc', label: 'Volumen (ml/Kg)', flex: 2, ph: 'Descripción del riesgo si procede' },
+              { key: 'frecuencia',            label: 'Frecuencia',            flex: 1, ph: 'Ej. 1 vez' },
+              { key: 'grupo_animales',         label: 'Grupo / Nº animales',   flex: 2, ph: 'Ej. Todos (180)' },
+              { key: 'producto_concentracion', label: 'Producto / Concentración', flex: 2, tipo: 'autocomplete', campo: 'producto_administrado', ph: 'Nombre y concentración' },
+              { key: 'dosis_mg_kg',            label: 'Dosis (mg/kg)',         flex: 1, ph: '' },
+              { key: 'volumen_ml_kg',          label: 'Volumen (ml/kg)',       flex: 1, ph: '' },
+              { key: 'via',                    label: 'Vía',                   flex: 1, tipo: 'autocomplete', campo: 'via_administracion', ph: 'Vía', initialSuggestions: vias },
             ]}
             rows={form.otras_sustancias.sustancias ?? []}
             onUpdate={updSustancia}
@@ -804,6 +719,30 @@ export default function SeccionBForm() {
             onAdd={addSustancia}
             addLabel="＋ Añadir sustancia"
           />
+        </div>
+        <div className="form-group">
+          <label>¿Alguno de los productos supone un riesgo para la salud o el medio ambiente (citotóxico, biológico, etc.)?</label>
+          <div className={s.radioGroup}>
+            <label className={s.radioLabel}>
+              <input
+                type="checkbox"
+                checked={form.otras_sustancias.hay_riesgo === false || form.otras_sustancias.hay_riesgo === 'no'}
+                onChange={() => update('otras_sustancias.hay_riesgo', false)}
+              />
+              No
+            </label>
+            <label className={s.radioLabel}>
+              <input
+                type="checkbox"
+                checked={form.otras_sustancias.hay_riesgo === true || form.otras_sustancias.hay_riesgo === 'si'}
+                onChange={() => update('otras_sustancias.hay_riesgo', true)}
+              />
+              Sí
+            </label>
+          </div>
+          {form.otras_sustancias.hay_riesgo === true && (
+            <p className={s.warning}>Si ha contestado que sí, necesita rellenar un formulario D.</p>
+          )}
         </div>
       </CollapsibleBlock>
 
