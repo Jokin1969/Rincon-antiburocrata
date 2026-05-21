@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import styles from '../../styles/animalario/animalario.module.css'
+import PdfMerger from './PdfMerger'
 
 const TIPO_LABELS = {
   alta_baja_investigadores:  'Investigadores',
@@ -266,7 +267,21 @@ export default function ProyectoHub() {
   const load = useCallback(() => {
     fetch(`/api/animalario/proyectos/${proyectoId}`)
       .then(r => { if (!r.ok) throw new Error('Proyecto no encontrado'); return r.json() })
-      .then(data => { setProyecto(data); setLoading(false) })
+      .then(async data => {
+        // Enrich with proc titles for PdfMerger
+        const procTitulos = {}
+        for (const procId of data.procedimientos ?? []) {
+          try {
+            const r = await fetch(`/api/animalario/procedimientos/${procId}`)
+            if (r.ok) {
+              const proc = await r.json()
+              procTitulos[procId] = proc.datos_generales?.titulo_procedimiento ?? `Procedimiento`
+            }
+          } catch { /* ignore */ }
+        }
+        setProyecto({ ...data, _procTitulos: procTitulos })
+        setLoading(false)
+      })
       .catch(err => { setError(err.message); setLoading(false) })
   }, [proyectoId])
 
@@ -469,6 +484,9 @@ export default function ProyectoHub() {
 
       {/* Exportar */}
       <ExportProyectoDropdown proyectoId={proyectoId} />
+
+      {/* PDF unificado */}
+      <PdfMerger proyecto={{ ...p, id: proyectoId }} />
     </div>
   )
 }

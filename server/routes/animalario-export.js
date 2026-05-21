@@ -3,6 +3,7 @@ import { existsSync, readFileSync }                            from 'fs'
 import { join, dirname }                                       from 'path'
 import { fileURLToPath }                                       from 'url'
 import archiver                                                from 'archiver'
+import multer                                                  from 'multer'
 import JSZip                                                   from 'jszip'
 import {
   AlignmentType, BorderStyle, Document, Footer, ImageRun,
@@ -1461,6 +1462,59 @@ router.get('/proyectos/:id/exportar/completo', async (req, res) => {
     res.setHeader('Content-Type', 'application/zip')
     res.setHeader('Content-Disposition', `attachment; filename="Proyecto_${titulo}.zip"`)
     res.send(Buffer.concat(chunks))
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// ── PDF unificado (merge con orden personalizable + archivos extra) ────────────
+
+const uploadMem = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } })
+
+router.post('/proyectos/:id/exportar/pdf-unificado', uploadMem.any(), async (req, res) => {
+  try {
+    const proyecto = readProyecto(req.params.id)
+    if (!proyecto) return res.status(404).json({ error: 'Proyecto no encontrado' })
+
+    const items      = JSON.parse(req.body.items ?? '[]')   // [{type, ref, fileIndex}]
+    const uploadedFiles = req.files ?? []
+
+    const pdfBuffers = []
+
+    for (const item of items) {
+      if (!item.enabled) continue
+
+      let docxBuf = null
+
+      if (item.type === 'seccionA') {
+        docxBuf = await genSeccionA(req.params.id)
+      } else if (item.type === 'seccionB') {
+        const procs = (proyecto.procedimientos ?? [])
+        const idx   = procs.indexOf(item.ref)
+        docxBuf = await genSeccionB(item.ref, idx !== -1 ? idx + 1 : undefined)
+      } else if (item.type === 'seccionC') {
+        docxBuf = await genSeccionC(item.ref)
+      } else if (item.type === 'seccionD') {
+        docxBuf = await genSeccionD(req.params.id)
+      } else if (item.type === 'upload') {
+        const f = uploadedFiles.find(f => f.fieldname === `file_${item.fileIndex}`)
+        if (f) pdfBuffers.push(f.buffer)
+        continue
+      }
+
+      if (docxBuf) {
+        const pdfBuf = await docxToPdf(docxBuf)
+        if (pdfBuf) pdfBuffers.push(pdfBuf)
+      }
+    }
+
+    const { mergePdfs } = await import('../../utils/mergePdf.js')
+    const merged = await mergePdfs(pdfBuffers)
+
+    const titulo = safeName(proyecto.titulo ?? proyecto.id)
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `attachment; filename="Proyecto_${titulo}_unificado.pdf"`)
+    res.send(merged)
   } catch (e) {
     res.status(500).json({ error: e.message })
   }
