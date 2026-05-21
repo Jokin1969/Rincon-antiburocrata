@@ -50,6 +50,17 @@ export default function AnimalarioHub() {
         Para gestionar procedimientos, primero selecciona o crea un proyecto.
       </p>
 
+      <div className={styles.submitRow}>
+        <a
+          href="https://cbba.cicbiogune.es/InterfaceWeb/Login/WebLogin.aspx"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.submitBtn}
+        >
+          Enviar documentos al Comité de Ética (Noraybio)
+        </a>
+      </div>
+
       <BackupManager />
     </div>
   )
