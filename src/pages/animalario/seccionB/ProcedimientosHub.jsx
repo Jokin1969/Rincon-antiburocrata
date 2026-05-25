@@ -4,6 +4,7 @@ import PageHeader from '../../../components/PageHeader'
 import styles from '../../../styles/animalario/animalario.module.css'
 import hubStyles from './ProcedimientosHub.module.css'
 import ManualUsuario from '../../../components/animalario/ManualUsuario'
+import ReplicarModal from '../../../components/animalario/ReplicarModal'
 
 const SEVERITY_LABELS = { none: 'Sin clasificar', low: 'Leve', medium: 'Moderado', high: 'Severo' }
 
@@ -59,6 +60,7 @@ export default function ProcedimientosHub() {
   const [duplicating, setDuplicating] = useState(null)
   const [exporting, setExporting]     = useState(null)
   const [manualAbierto, setManualAbierto] = useState(false)
+  const [replicarOpen, setReplicarOpen]   = useState(false)
 
   function load() {
     setLoading(true)
@@ -171,12 +173,27 @@ export default function ProcedimientosHub() {
           {procs.length === 0 ? 'Todavía no hay procedimientos registrados.' : ''}
         </span>
         <button
+          className="btn btn-ghost"
+          onClick={() => setReplicarOpen(true)}
+        >
+          ⎘ Replicar de otro proyecto
+        </button>
+        <button
           className="btn btn-primary"
           onClick={() => navigate(`/animalario/proyecto/${proyectoId}/procedimientos/nuevo`)}
         >
           ＋ Nuevo procedimiento
         </button>
       </div>
+
+      {replicarOpen && (
+        <ReplicarModal
+          tipo="procedimiento"
+          proyectoId={proyectoId}
+          onClose={() => setReplicarOpen(false)}
+          onReplicated={() => { setReplicarOpen(false); load() }}
+        />
+      )}
 
       {/* Procedure cards */}
       {procs.length > 0 && (

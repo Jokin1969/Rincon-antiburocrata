@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import styles from '../../styles/animalario/animalario.module.css'
 import PdfMerger from './PdfMerger'
+import ReplicarModal from '../../components/animalario/ReplicarModal'
 
 const TIPO_LABELS = {
   alta_baja_investigadores:  'Investigadores',
@@ -262,7 +263,8 @@ export default function ProyectoHub() {
   const [proyecto, setProyecto]       = useState(null)
   const [loading, setLoading]         = useState(true)
   const [error, setError]             = useState(null)
-  const [exportandoCria, setExportandoCria] = useState(null)
+  const [exportandoCria, setExportandoCria]   = useState(null)
+  const [replicarTipo,   setReplicarTipo]     = useState(null)  // 'cria' | 'seccion-d' | null
 
   const load = useCallback(() => {
     fetch(`/api/animalario/proyectos/${proyectoId}`)
@@ -394,12 +396,21 @@ export default function ProyectoHub() {
             detail="No hay cepas/líneas declaradas en Sección A"
             ok={false}
             actions={
-              <button
-                className="btn btn-ghost"
-                onClick={() => navigate(`/animalario/proyecto/${proyectoId}/editar`)}
-              >
-                Añadir en Sección A →
-              </button>
+              <>
+                <button
+                  className="btn btn-ghost"
+                  onClick={() => setReplicarTipo('cria')}
+                  style={{ fontSize: '0.8rem' }}
+                >
+                  ⎘ Replicar de otro proyecto
+                </button>
+                <button
+                  className="btn btn-ghost"
+                  onClick={() => navigate(`/animalario/proyecto/${proyectoId}/editar`)}
+                >
+                  Añadir en Sección A →
+                </button>
+              </>
             }
           />
         )}
@@ -418,6 +429,15 @@ export default function ProyectoHub() {
               ok={Boolean(cria)}
               actions={
                 <>
+                  {!cria && (
+                    <button
+                      className="btn btn-ghost"
+                      onClick={() => setReplicarTipo('cria')}
+                      style={{ fontSize: '0.8rem' }}
+                    >
+                      ⎘ Replicar
+                    </button>
+                  )}
                   <button
                     className="btn btn-primary"
                     onClick={() =>
@@ -462,12 +482,23 @@ export default function ProyectoHub() {
             ok={seccionDOk}
             warn={!seccionDOk}
             actions={
-              <button
-                className="btn btn-primary"
-                onClick={() => navigate(`/animalario/proyecto/${proyectoId}/productos`)}
-              >
-                {seccionDOk ? 'Editar' : 'Crear'}
-              </button>
+              <>
+                {!seccionDOk && (
+                  <button
+                    className="btn btn-ghost"
+                    onClick={() => setReplicarTipo('seccion-d')}
+                    style={{ fontSize: '0.8rem' }}
+                  >
+                    ⎘ Replicar de otro proyecto
+                  </button>
+                )}
+                <button
+                  className="btn btn-primary"
+                  onClick={() => navigate(`/animalario/proyecto/${proyectoId}/productos`)}
+                >
+                  {seccionDOk ? 'Editar' : 'Crear'}
+                </button>
+              </>
             }
           />
         )}
@@ -487,6 +518,15 @@ export default function ProyectoHub() {
 
       {/* PDF unificado */}
       <PdfMerger proyecto={{ ...p, id: proyectoId }} />
+
+      {replicarTipo && (
+        <ReplicarModal
+          tipo={replicarTipo}
+          proyectoId={proyectoId}
+          onClose={() => setReplicarTipo(null)}
+          onReplicated={() => { setReplicarTipo(null); load() }}
+        />
+      )}
     </div>
   )
 }

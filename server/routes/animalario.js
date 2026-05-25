@@ -425,6 +425,134 @@ router.post('/procedimientos/:id/duplicar', (req, res) => {
   }
 })
 
+// GET /api/animalario/proyectos-resumen  (selector de replicación)
+router.get('/proyectos-resumen', (_req, res) => {
+  try {
+    if (!existsSync(PROYECTOS_DIR)) return res.json([])
+    const proyectos = readdirSync(PROYECTOS_DIR)
+      .filter(f => /^proyecto_.+\.json$/.test(f))
+      .map(f => {
+        try {
+          const p = JSON.parse(readFileSync(join(PROYECTOS_DIR, f), 'utf-8'))
+          const procedimientos = (p.procedimientos ?? []).map(id => {
+            const proc = readProc(id)
+            return proc ? { id, titulo: proc.datos_generales?.titulo_procedimiento ?? '(Sin título)' } : null
+          }).filter(Boolean)
+          const crias = (p.crias ?? []).map(c => ({
+            id: c.id,
+            acronimo: c.acronimo ?? '',
+            nomenclatura: c.nomenclatura_internacional ?? '',
+            cepa_idx: c.cepa_idx,
+          }))
+          const tieneSeccionD = existsSync(join(PRODUCTOS_DIR, `productos_${p.id}.json`))
+          return {
+            id:               p.id,
+            titulo:           p.seccionA?.titulo ?? p.titulo ?? '(Sin título)',
+            procedimientos,
+            crias,
+            tieneSeccionD,
+          }
+        } catch { return null }
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.titulo.localeCompare(b.titulo, 'es'))
+    res.json(proyectos)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /api/animalario/proyectos/:proyectoId/procedimientos/replicar/:procId
+router.post('/proyectos/:proyectoId/procedimientos/replicar/:procId', (req, res) => {
+  try {
+    const original = readProc(req.params.procId)
+    if (!original) return res.status(404).json({ error: 'Procedimiento no encontrado' })
+    const proyecto = readProyecto(req.params.proyectoId)
+    if (!proyecto) return res.status(404).json({ error: 'Proyecto no encontrado' })
+
+    const now  = new Date().toISOString()
+    const copy = {
+      ...JSON.parse(JSON.stringify(original)),
+      id:                  randomUUID(),
+      proyecto_id:         req.params.proyectoId,
+      fecha_creacion:      now,
+      fecha_actualizacion: now,
+    }
+    if (copy.datos_generales?.titulo_procedimiento) {
+      copy.datos_generales.titulo_procedimiento += ' (réplica)'
+    }
+    writeProc(copy)
+    proyecto.procedimientos      = [...(proyecto.procedimientos ?? []), copy.id]
+    proyecto.fecha_actualizacion = now
+    writeProyecto(proyecto)
+    res.status(201).json(copy)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /api/animalario/proyectos/:proyectoId/crias/replicar/:criaId
+router.post('/proyectos/:proyectoId/crias/replicar/:criaId', (req, res) => {
+  try {
+    const original = readCria(req.params.criaId)
+    if (!original) return res.status(404).json({ error: 'Cría no encontrada' })
+    const proyecto = readProyecto(req.params.proyectoId)
+    if (!proyecto) return res.status(404).json({ error: 'Proyecto no encontrado' })
+
+    const now  = new Date().toISOString()
+    const newId = randomUUID()
+    const copy = {
+      ...JSON.parse(JSON.stringify(original)),
+      id:                  newId,
+      proyecto_id:         req.params.proyectoId,
+      fecha_creacion:      now,
+      fecha_actualizacion: now,
+    }
+    writeCria(copy)
+
+    const cepaIdx = (proyecto.crias ?? []).length
+    const ref = {
+      id:                      newId,
+      cepa_idx:                cepaIdx,
+      acronimo:                copy.identificacion?.acronimo ?? '',
+      nomenclatura_internacional: copy.identificacion?.nomenclatura_internacional ?? '',
+      es_omg:                  copy.es_omg ?? false,
+    }
+    proyecto.crias               = [...(proyecto.crias ?? []), ref]
+    proyecto.fecha_actualizacion = now
+    writeProyecto(proyecto)
+    res.status(201).json({ cria: copy, ref })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /api/animalario/proyectos/:proyectoId/seccion-d/replicar/:fromProyectoId
+router.post('/proyectos/:proyectoId/seccion-d/replicar/:fromProyectoId', (req, res) => {
+  try {
+    const source = readProductos(req.params.fromProyectoId)
+    if (!source) return res.status(404).json({ error: 'Sección D no encontrada en el proyecto origen' })
+    const proyecto = readProyecto(req.params.proyectoId)
+    if (!proyecto) return res.status(404).json({ error: 'Proyecto no encontrado' })
+
+    const now = new Date().toISOString()
+    const doc = {
+      ...JSON.parse(JSON.stringify(source)),
+      id:                  randomUUID(),
+      proyecto_id:         req.params.proyectoId,
+      fecha_creacion:      now,
+      fecha_actualizacion: now,
+    }
+    writeProductos(doc)
+    proyecto.seccionD_id         = doc.id
+    proyecto.fecha_actualizacion = now
+    writeProyecto(proyecto)
+    res.status(201).json(doc)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // ── Crías ─────────────────────────────────────────────────────────────────────
 
 // POST /api/animalario/proyectos/:proyectoId/crias  (crear)
