@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
+import { contentDispositionHeader } from '../../utils/contentDisposition.js'
 import {
   existsSync, mkdirSync, readdirSync, statSync,
   readFileSync, writeFileSync,
@@ -304,7 +305,7 @@ router.get('/backup/download/:filename', async (req, res) => {
   try {
     const buf = await dbxDownload(filename)
     res.setHeader('Content-Type', 'application/zip')
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+    res.setHeader('Content-Disposition', contentDispositionHeader('attachment', filename))
     res.send(buf)
   } catch (err) {
     res.status(500).json({ error: err.message })

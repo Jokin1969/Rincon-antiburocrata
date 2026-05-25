@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, readdirSync,
          readFileSync, writeFileSync, unlinkSync }         from 'fs'
 import { join, dirname }                                   from 'path'
 import { fileURLToPath }                                   from 'url'
+import { contentDispositionHeader }                        from '../../utils/contentDisposition.js'
 import { randomUUID }                                      from 'crypto'
 import multer                                              from 'multer'
 import OpenAI                                              from 'openai'
@@ -309,7 +310,7 @@ router.get('/:id/adjuntos/:adjId', (req, res) => {
   if (!existsSync(filePath)) return res.status(404).json({ error: 'Archivo no encontrado.' })
 
   res.setHeader('Content-Type', meta.mime || 'application/octet-stream')
-  res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(meta.originalName)}"`)
+  res.setHeader('Content-Disposition', contentDispositionHeader('inline', meta.originalName))
   res.sendFile(filePath)
 })
 
