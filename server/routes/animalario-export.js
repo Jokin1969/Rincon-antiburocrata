@@ -1080,6 +1080,12 @@ async function genSeccionD(proyectoId) {
   if (!doc) throw new Error('Sección D no encontrada')
   const d = doc.seccionD ?? {}
 
+  // Build id → "1", "2", … map so stored UUIDs render as procedure numbers
+  const proyecto = readProyecto(proyectoId)
+  const procNum = {}
+  ;(proyecto?.procedimientos ?? []).forEach((id, idx) => { procNum[id] = String(idx + 1) })
+  const fmtProc = id => (id ? (procNum[id] ?? id) : '')
+
   const ctr = { align: AlignmentType.CENTER }
 
   function agBioTable(rows) {
@@ -1093,11 +1099,11 @@ async function genSeccionD(proyectoId) {
         lbc([par([txB('Nº de procedimiento'),  sup(2)], ctr)], { w: w(24) }),
       ),
       ...data.map(ag => tr(
-        tct([par(ag.nombre_cientifico ?? '')],     { w: w(20) }),
-        tct([par(ag.descripcion ?? '')],            { w: w(20) }),
+        tct([par(ag.nombre_cientifico ?? '')],                    { w: w(20) }),
+        tct([par(ag.descripcion ?? '')],                           { w: w(20) }),
         tct([par(ag.grupo_riesgo ? `Grupo ${ag.grupo_riesgo}` : '')], { w: w(12) }),
-        tct([par(ag.lugar_manipulacion ?? '')],    { w: w(24) }),
-        tct([par(ag.numero_procedimiento ?? '')],  { w: w(24) }),
+        tct([par(ag.lugar_manipulacion ?? '')],                   { w: w(24) }),
+        tct([par(fmtProc(ag.numero_procedimiento))],              { w: w(24) }),
       )),
     ])
   }
@@ -1115,7 +1121,7 @@ async function genSeccionD(proyectoId) {
         tct([par(aq.nombre ?? '')],                    { w: w(22) }),
         tct([par(aq.identificacion_riesgo ?? '')],     { w: w(26) }),
         tct([par(aq.condiciones_manipulacion ?? '')],  { w: w(30) }),
-        tct([par(aq.numero_procedimiento ?? '')],      { w: w(22) }),
+        tct([par(fmtProc(aq.numero_procedimiento))],   { w: w(22) }),
       )),
     ])
   }
