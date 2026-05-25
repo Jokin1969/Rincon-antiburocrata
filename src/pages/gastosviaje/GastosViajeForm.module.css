@@ -530,6 +530,27 @@
   color: var(--text-muted);
 }
 
+.btnEmail {
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1.1rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: #0f766e;
+  color: #fff;
+  transition: background 0.15s;
+}
+
+.btnEmail:hover:not(:disabled) {
+  background: #0d6460;
+}
+
+.btnEmail:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .btnClear {
   border: none;
   border-radius: 8px;
