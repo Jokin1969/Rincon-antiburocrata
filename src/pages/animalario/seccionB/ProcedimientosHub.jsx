@@ -203,9 +203,6 @@ export default function ProcedimientosHub() {
                         ⚠ productos con riesgo
                       </span>
                     )}
-                    <span className={styles.projectMetaItem}>
-                      <SeverityBadge value={severidad} />
-                    </span>
                   </div>
                 </div>
                 <div className={styles.projectActions}>
