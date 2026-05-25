@@ -3,6 +3,7 @@ import { existsSync, readFileSync }                            from 'fs'
 import { join, dirname }                                       from 'path'
 import { fileURLToPath }                                       from 'url'
 import archiver                                                from 'archiver'
+import { contentDispositionHeader }                            from '../../utils/contentDisposition.js'
 import multer                                                  from 'multer'
 import JSZip                                                   from 'jszip'
 import {
@@ -1303,7 +1304,7 @@ async function sendFile(res, genFn, basename, formato) {
   if (formato === 'pdf') {
     const pdfBuf = docxToPdf(docxBuf)
     res.setHeader('Content-Type', 'application/pdf')
-    res.setHeader('Content-Disposition', `attachment; filename="${basename}.pdf"`)
+    res.setHeader('Content-Disposition', contentDispositionHeader('attachment', `${basename}.pdf`))
     return res.send(pdfBuf)
   }
 
@@ -1320,13 +1321,13 @@ async function sendFile(res, genFn, basename, formato) {
       archive.finalize()
     })
     res.setHeader('Content-Type', 'application/zip')
-    res.setHeader('Content-Disposition', `attachment; filename="${basename}.zip"`)
+    res.setHeader('Content-Disposition', contentDispositionHeader('attachment', `${basename}.zip`))
     return res.send(Buffer.concat(chunks))
   }
 
   // default: docx
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-  res.setHeader('Content-Disposition', `attachment; filename="${basename}.docx"`)
+  res.setHeader('Content-Disposition', contentDispositionHeader('attachment', `${basename}.docx`))
   res.send(docxBuf)
 }
 
@@ -1460,7 +1461,7 @@ router.get('/proyectos/:id/exportar/completo', async (req, res) => {
     })
 
     res.setHeader('Content-Type', 'application/zip')
-    res.setHeader('Content-Disposition', `attachment; filename="Proyecto_${titulo}.zip"`)
+    res.setHeader('Content-Disposition', contentDispositionHeader('attachment', `Proyecto_${titulo}.zip`))
     res.send(Buffer.concat(chunks))
   } catch (e) {
     res.status(500).json({ error: e.message })
@@ -1513,7 +1514,7 @@ router.post('/proyectos/:id/exportar/pdf-unificado', uploadMem.any(), async (req
 
     const titulo = safeName(proyecto.titulo ?? proyecto.id)
     res.setHeader('Content-Type', 'application/pdf')
-    res.setHeader('Content-Disposition', `attachment; filename="Proyecto_${titulo}_unificado.pdf"`)
+    res.setHeader('Content-Disposition', contentDispositionHeader('attachment', `Proyecto_${titulo}_unificado.pdf`))
     res.send(merged)
   } catch (e) {
     res.status(500).json({ error: e.message })

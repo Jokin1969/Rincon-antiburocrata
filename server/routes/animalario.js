@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, readdirSync,
          readFileSync, writeFileSync, unlinkSync }   from 'fs'
 import { join, dirname }                             from 'path'
 import { fileURLToPath }                             from 'url'
+import { contentDispositionHeader }                  from '../../utils/contentDisposition.js'
 import { randomUUID }                                from 'crypto'
 import multer                                        from 'multer'
 
@@ -792,7 +793,7 @@ router.get('/proyectos/:id/certificado', (req, res) => {
   const proyecto = readProyecto(req.params.id)
   const filename = proyecto?.certificado?.filename ?? `certificado_${req.params.id}.pdf`
   res.setHeader('Content-Type', 'application/pdf')
-  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+  res.setHeader('Content-Disposition', contentDispositionHeader('attachment', filename))
   res.send(readFileSync(filePath))
 })
 

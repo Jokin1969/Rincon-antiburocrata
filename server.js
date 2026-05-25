@@ -24,6 +24,7 @@ import { generateGastosViaje }             from './generators/gastosViaje.js'
 import { docxToPdf }                       from './utils/pdf.js'
 import { mergePdfs, attachmentToPdf }      from './utils/mergePdf.js'
 import nodemailer                          from 'nodemailer'
+import { contentDispositionHeader }        from './utils/contentDisposition.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -42,14 +43,14 @@ function sendDocument(res, docxBuffer, basename, format) {
   if (format === 'pdf') {
     const pdfBuffer = docxToPdf(docxBuffer)
     res.setHeader('Content-Type', 'application/pdf')
-    res.setHeader('Content-Disposition', `attachment; filename="${basename}.pdf"`)
+    res.setHeader('Content-Disposition', contentDispositionHeader('attachment', `${basename}.pdf`))
     return res.send(pdfBuffer)
   }
   res.setHeader(
     'Content-Type',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
   )
-  res.setHeader('Content-Disposition', `attachment; filename="${basename}.docx"`)
+  res.setHeader('Content-Disposition', contentDispositionHeader('attachment', `${basename}.docx`))
   res.send(docxBuffer)
 }
 
@@ -895,7 +896,7 @@ app.post('/api/gastos-viaje/:id/generar', async (req, res) => {
 
     const mergedPdf = await mergePdfs(parts)
     res.setHeader('Content-Type', 'application/pdf')
-    res.setHeader('Content-Disposition', `attachment; filename="${base}.pdf"`)
+    res.setHeader('Content-Disposition', contentDispositionHeader('attachment', `${base}.pdf`))
     res.send(mergedPdf)
   } catch (err) {
     console.error('Gastos viaje generar error:', err)
