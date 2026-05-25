@@ -962,13 +962,14 @@ async function genSeccionC(criaId) {
   const cria = readCria(criaId)
   if (!cria) throw new Error('Cría no encontrada')
 
-  const id  = cria.identificacion       ?? {}
-  const fen = cria.fenotipo_anormal      ?? {}
-  const ce  = cria.condiciones_especiales ?? {}
-  const gen = cria.genotipaje            ?? {}
-  const ag  = cria.animales_a_generar    ?? {}
-  const pc  = cria.procedimiento_cria    ?? {}
-  const omg = cria.omg                   ?? {}
+  const sc  = cria.seccionC             ?? {}
+  const id  = sc.identificacion         ?? {}
+  const fen = sc.fenotipo_anormal        ?? {}
+  const ce  = sc.condiciones_especiales  ?? {}
+  const gen = sc.genotipaje              ?? {}
+  const ag  = sc.animales_a_generar      ?? {}
+  const pc  = sc.procedimiento_cria      ?? {}
+  const omg = sc.omg                     ?? {}
 
   // ── Helpers locales ──────────────────────────────────────────────────────────
   const GEN = { type: ShadingType.CLEAR, color: 'auto', fill: 'D9D9D9' }  // grey
@@ -1004,8 +1005,8 @@ async function genSeccionC(criaId) {
     // OMG
     tr(lbc([par([txB('¿Es un organismo modificado genéticamente?')])], { w: w(100), span: 2 })),
     fullVal([
-      par([tx(chk(!cria.es_omg)), tx(' No')]),
-      par([tx(chk(cria.es_omg)),  tx(' Si Necesita rellenar la sección C-O de este documento')]),
+      par([tx(chk(!sc.es_omg)), tx(' No')]),
+      par([tx(chk(sc.es_omg)),  tx(' Si Necesita rellenar la sección C-O de este documento')]),
     ]),
 
     // Fenotipo anormal
@@ -1029,7 +1030,7 @@ async function genSeccionC(criaId) {
     // Sistema de cría
     tr(lbc([par([txB('Sistema de cría a emplear (HOxHO, HOxHE, HOxWT, ...) y estrategia:')])],
         { w: w(100), span: 2 })),
-    fullVal(dash(cria.sistema_cria)),
+    fullVal(dash(sc.sistema_cria)),
 
     // Genotipaje (subgrupo gris oscuro)
     greyHeaderRow('Genotipaje'),
@@ -1052,9 +1053,9 @@ async function genSeccionC(criaId) {
     // Identificación animales
     tr(lbc([par([txB('Indicar el sistema de identificación de los animales')])], { w: w(100), span: 2 })),
     fullVal(IDOPTS.map(opt => {
-      const sel = (cria.identificacion_animales ?? []).includes(opt)
+      const sel = (sc.identificacion_animales ?? []).includes(opt)
       if (opt === 'Otro') {
-        return par([tx(chk(sel)), tx(' Otro. Especificar: '), tx(sel ? dash(cria.identificacion_animales_otro) : '')])
+        return par([tx(chk(sel)), tx(' Otro. Especificar: '), tx(sel ? dash(sc.identificacion_animales_otro) : '')])
       }
       return par([tx(chk(sel)), tx(` ${opt}`)])
     })),
@@ -1097,7 +1098,7 @@ async function genSeccionC(criaId) {
   ]
 
   // ── Sección C-O (OMG) ────────────────────────────────────────────────────────
-  if (cria.es_omg) {
+  if (sc.es_omg) {
     // Título C-O (fondo azul oscuro, texto blanco)
     children.push(
       tbl([tr(dbc([par([txBW('C-O: ORGANISMOS MODIFICADOS GENÉTICAMENTE')])], { w: w(100) }))]),
@@ -1281,7 +1282,7 @@ async function genSeccionC(criaId) {
     { id: 2, text: 'Nombre con el que se referirá a la cepa/línea a lo largo del Proyecto y en el animalario de CIC bioGUNE. Este nombre debe coincidir con el de la tabla de la sección A.6.' },
     { id: 3, text: 'Este número debe coincidir con el de la tabla de la sección A.6.' },
     { id: 4, text: 'Los machos se separan y tras 5 días se establecen las parejas de cría. Las parejas se renuevan cada 6 meses aproximadamente o antes si los parámetros reproductivos no son óptimos. Los destetes se realizan a los 18-21 de la fecha de parto, momento en que son sexados y dispuestos en jaulas de stock para atender la demanda de experimentos. Siempre que sea posible se guardan 5 animales de cada sexo para garantizar el mantenimiento de la línea. Más información en PNT/SDA/EXP/01' },
-    ...(cria.es_omg && !omg.usado_anteriormente ? [
+    ...(sc.es_omg && !omg.usado_anteriormente ? [
       { id: 5, text: 'Utilice siempre que sea posible la nomenclatura según recomendaciones internacionales sobre denominación de ratones modificados genéticamente' },
     ] : []),
   ]
