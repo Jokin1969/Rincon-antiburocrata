@@ -226,6 +226,87 @@ router.delete('/proyectos/:id', (req, res) => {
   }
 })
 
+// POST /api/animalario/proyectos/:id/duplicar
+router.post('/proyectos/:id/duplicar', (req, res) => {
+  try {
+    const original = readProyecto(req.params.id)
+    if (!original) return res.status(404).json({ error: 'Proyecto no encontrado' })
+
+    const now    = new Date().toISOString()
+    const newId  = randomUUID()
+
+    // Map old proc IDs → new proc IDs
+    const procIdMap = {}
+    const newProcIds = []
+    for (const oldProcId of original.procedimientos ?? []) {
+      const proc = readProc(oldProcId)
+      if (!proc) continue
+      const newProcId = randomUUID()
+      procIdMap[oldProcId] = newProcId
+      const newProc = {
+        ...proc,
+        id:                  newProcId,
+        proyecto_id:         newId,
+        fecha_creacion:      now,
+        fecha_actualizacion: now,
+      }
+      if (newProc.datos_generales?.titulo_procedimiento) {
+        newProc.datos_generales = { ...newProc.datos_generales, titulo_procedimiento: newProc.datos_generales.titulo_procedimiento + ' (copia)' }
+      }
+      writeProc(newProc)
+      newProcIds.push(newProcId)
+    }
+
+    // Map old cria IDs → new cria IDs
+    const newCriaRefs = []
+    for (const criaRef of original.crias ?? []) {
+      const cria = readCria(criaRef.id)
+      if (!cria) continue
+      const newCriaId = randomUUID()
+      const newCria = {
+        ...cria,
+        id:                  newCriaId,
+        proyecto_id:         newId,
+        fecha_creacion:      now,
+        fecha_actualizacion: now,
+      }
+      writeCria(newCria)
+      newCriaRefs.push({ ...criaRef, id: newCriaId })
+    }
+
+    // Build the new project
+    const titulo = original.seccionA?.titulo ?? ''
+    const newProject = {
+      ...original,
+      id:                  newId,
+      fecha_creacion:      now,
+      fecha_actualizacion: now,
+      procedimientos:      newProcIds,
+      crias:               newCriaRefs,
+      modificaciones:      [],
+      seccionD_id:         null,
+      hay_productos_riesgo: false,
+    }
+    if (newProject.seccionA?.titulo) {
+      newProject.seccionA = { ...newProject.seccionA, titulo: titulo + ' (copia)' }
+    }
+    writeProyecto(newProject)
+
+    // Copy SeccionD if it exists
+    const productos = readProductos(req.params.id)
+    if (productos) {
+      writeProductos({ ...productos, proyecto_id: newId, fecha_creacion: now, fecha_actualizacion: now })
+      newProject.seccionD_id = newId
+      newProject.hay_productos_riesgo = original.hay_productos_riesgo ?? false
+      writeProyecto(newProject)
+    }
+
+    res.status(201).json(newProject)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // ── Procedimientos ────────────────────────────────────────────────────────────
 
 // GET /api/animalario/proyectos/:proyectoId/procedimientos

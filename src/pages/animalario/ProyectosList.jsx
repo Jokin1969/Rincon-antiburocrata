@@ -13,8 +13,24 @@ export default function ProyectosList() {
   const [loading, setLoading]     = useState(true)
   const [error, setError]         = useState(null)
   const [search, setSearch]       = useState('')
-  const [deletingId, setDeletingId] = useState(null)
+  const [deletingId, setDeletingId]       = useState(null)
+  const [duplicatingId, setDuplicatingId] = useState(null)
   const navigate = useNavigate()
+
+  async function handleDuplicate(p) {
+    if (!window.confirm(`¿Duplicar el proyecto "${p.titulo}"? Se creará una copia con todos sus procedimientos y secciones.`)) return
+    setDuplicatingId(p.id)
+    try {
+      const r = await fetch(`/api/animalario/proyectos/${p.id}/duplicar`, { method: 'POST' })
+      if (!r.ok) throw new Error('Error al duplicar')
+      const copy = await r.json()
+      navigate(`/animalario/proyecto/${copy.id}`)
+    } catch (err) {
+      alert(err.message)
+    } finally {
+      setDuplicatingId(null)
+    }
+  }
 
   function handleDelete(p) {
     if (!window.confirm(`¿Eliminar el proyecto "${p.titulo}"? Esta acción no se puede deshacer.`)) return
@@ -111,10 +127,11 @@ export default function ProyectosList() {
                 </button>
                 <button
                   className="btn btn-ghost"
-                  disabled
-                  title="Próximamente"
+                  onClick={() => handleDuplicate(p)}
+                  disabled={duplicatingId === p.id}
+                  title="Crear una copia completa del proyecto"
                 >
-                  Exportar
+                  {duplicatingId === p.id ? 'Duplicando…' : 'Duplicar'}
                 </button>
                 <button
                   className="btn btn-danger"

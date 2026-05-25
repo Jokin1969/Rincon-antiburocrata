@@ -810,13 +810,17 @@ async function genSeccionB(procId, numeroOverride) {
     secHead('B.3 TAMAÑO MUESTRAL'),
     (() => {
       const grupos = tm.grupos ?? []
-      const gruposText = grupos.length
-        ? '\nGrupos experimentales: ' + grupos.map(g => `${g.nombre} (${g.n})`).join(', ')
-        : ''
-      const totalText = dash(tm.numero_total) + gruposText
+      const grupoPars = grupos.length
+        ? [
+            par([txB('Grupos experimentales:')], { before: 120, after: 25 }),
+            ...grupos.map(g =>
+              par(`• ${g.nombre || '—'} (n = ${g.n || '—'})${g.justificacion ? ': ' + g.justificacion : ''}`)
+            ),
+          ]
+        : []
       return tbl([
         secRowBlue('Indicar el número total de animales y los grupos experimentales (incluyendo controles) que se van a utilizar'),
-        fullTcThin([par(totalText)]),
+        fullTcThin([par(dash(tm.numero_total)), ...grupoPars]),
         secRowBlue('Justificar estadísticamente (o método empleado) el número total de animales a utilizar y el de animales por grupo experimental'),
         fullTcThin([par(dash(tm.justificacion))]),
       ])
