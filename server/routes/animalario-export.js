@@ -70,7 +70,14 @@ const txB = (text, opts = {}) => tx(text, { bold: true, ...opts })
 const txS = (text, opts = {}) => tx(text, { size: SZ_SM, ...opts })
 
 function par(children, opts = {}) {
-  if (typeof children === 'string') children = [tx(children)]
+  if (typeof children === 'string') {
+    const lines = children.split(/\r?\n/)
+    children = lines.flatMap((line, i) =>
+      i === 0
+        ? [tx(line)]
+        : [new TextRun({ text: line, font: FONT, size: SZ, break: 1 })]
+    )
+  }
   return new Paragraph({
     children,
     alignment: opts.align,
@@ -234,6 +241,13 @@ function makeFirmaBlock(nombre) {
 
 function buildDoc(children, footerLabel) {
   return new Document({
+    styles: {
+      default: {
+        document: {
+          run: { font: 'Calibri', size: SZ },
+        },
+      },
+    },
     sections: [{
       properties: { page: { margin: { top: MARG, bottom: MARG, left: MARG, right: MARG } } },
       footers: { default: makeFooter(footerLabel) },
