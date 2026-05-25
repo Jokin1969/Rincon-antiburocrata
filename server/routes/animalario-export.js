@@ -772,7 +772,7 @@ async function genSeccionB(procId, numeroOverride) {
       kvRowB('Sexo',                    dg.sexo),
       kvRowB('Edad',                    dg.edad_peso),
       kvRowB('Nº total de animales',    dg.num_animales),
-      kvRowB('Severidad',               sevLabel),
+      kvRowB('Severidad',               dash(dg.severidad)),
       tr(
         lbc([par([txB('Duración'), sup(1)])], { w: w(30) }),
         tct([par(dash(dg.duracion))],          { w: w(70) }),
@@ -920,9 +920,6 @@ async function genSeccionB(procId, numeroOverride) {
     ]),
     emptyLine(),
 
-    // ── Notas a pie de página ─────────────────────────────────────────────────
-    notesPar('1 Debe indicarse el tiempo entre la primera y la última utilización (sacrificio) de cada animal. No confundir con la duración total del estudio.'),
-    notesPar('2 Si desea adjunte un esquema de las distintas fases del procedimiento'),
   ]
 
   const rawBuf = await Packer.toBuffer(buildDoc(children, 'Sección B — Procedimiento'))
