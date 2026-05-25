@@ -1617,7 +1617,7 @@ router.get('/proyectos/:id/exportar/seccionA', async (req, res) => {
   try {
     const formato  = req.query.formato ?? 'docx'
     const proyecto = readProyecto(req.params.id)
-    const basename = `SeccionA_${safeName(proyecto?.titulo ?? req.params.id)}`
+    const basename = `SeccionA_${safeName(proyecto?.seccionA?.titulo ?? req.params.id)}`
     await sendFile(res, () => genSeccionA(req.params.id), basename, formato)
   } catch (e) {
     res.status(500).json({ error: e.message })
@@ -1640,7 +1640,7 @@ router.get('/crias/:id/exportar', async (req, res) => {
   try {
     const formato  = req.query.formato ?? 'docx'
     const cria     = readCria(req.params.id)
-    const acronimo = cria?.identificacion?.acronimo ?? req.params.id
+    const acronimo = cria?.seccionC?.identificacion?.acronimo || cria?.seccionC?.identificacion?.nomenclatura_internacional || req.params.id
     const basename = `SeccionC_${safeName(acronimo)}`
     await sendFile(res, () => genSeccionC(req.params.id), basename, formato)
   } catch (e) {
@@ -1652,7 +1652,7 @@ router.get('/proyectos/:id/exportar/seccionD', async (req, res) => {
   try {
     const formato  = req.query.formato ?? 'docx'
     const proyecto = readProyecto(req.params.id)
-    const basename = `SeccionD_${safeName(proyecto?.titulo ?? req.params.id)}`
+    const basename = `SeccionD_${safeName(proyecto?.seccionA?.titulo ?? req.params.id)}`
     await sendFile(res, () => genSeccionD(req.params.id), basename, formato)
   } catch (e) {
     res.status(500).json({ error: e.message })
@@ -1680,7 +1680,7 @@ router.get('/proyectos/:id/exportar/completo', async (req, res) => {
     const proyecto = readProyecto(req.params.id)
     if (!proyecto) return res.status(404).json({ error: 'Proyecto no encontrado' })
 
-    const titulo  = safeName(proyecto.titulo ?? req.params.id)
+    const titulo  = safeName(proyecto.seccionA?.titulo ?? req.params.id)
     const archive = archiver('zip', { zlib: { level: 6 } })
     const chunks  = []
     archive.on('data', c => chunks.push(c))
@@ -1786,7 +1786,7 @@ router.post('/proyectos/:id/exportar/pdf-unificado', uploadMem.any(), async (req
     const { mergePdfs } = await import('../../utils/mergePdf.js')
     const merged = await mergePdfs(pdfBuffers)
 
-    const titulo = safeName(proyecto.titulo ?? proyecto.id)
+    const titulo = safeName(proyecto.seccionA?.titulo ?? proyecto.id)
     res.setHeader('Content-Type', 'application/pdf')
     res.setHeader('Content-Disposition', contentDispositionHeader('attachment', `Proyecto_${titulo}_unificado.pdf`))
     res.send(merged)

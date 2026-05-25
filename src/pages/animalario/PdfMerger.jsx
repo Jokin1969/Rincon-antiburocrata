@@ -17,7 +17,7 @@ function buildDocs(proyecto) {
 
   const crias = proyecto.crias ?? []
   crias.forEach(cria => {
-    const nombre = cria.identificacion?.acronimo || cria.identificacion?.nomenclatura_internacional || `Cría ${cria.id.slice(0, 6)}`
+    const nombre = cria.acronimo || cria.nomenclatura_internacional || `Cría ${cria.id.slice(0, 6)}`
     docs.push({ key: key++, id: `seccionC_${cria.id}`, type: 'seccionC', ref: cria.id, label: `Sección C — ${nombre}`, enabled: true })
   })
 
