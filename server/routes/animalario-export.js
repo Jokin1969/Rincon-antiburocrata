@@ -1032,21 +1032,21 @@ async function genSeccionC(criaId) {
         { w: w(100), span: 2 })),
     fullVal(dash(sc.sistema_cria)),
 
-    // Genotipaje (subgrupo gris oscuro)
-    greyHeaderRow('Genotipaje'),
+    // Genotipaje (subgrupo azul claro)
+    secRowBlue('Genotipaje', 2),
     tr(
-      gcL([par([txB('Procedimiento\n(PCR, Southern, etc.)')])], { w: w(35) }),
+      lbc([par([txB('Procedimiento\n(PCR, Southern, etc.)')])], { w: w(35) }),
       tct([par(dash(gen.procedimiento))], { w: w(65) }),
     ),
     tr(
-      gcL([par([txB('¿Puesto a punto?')])], { w: w(35) }),
+      lbc([par([txB('¿Puesto a punto?')])], { w: w(35) }),
       tct([
         par([tx(chk(gen.puesto_a_punto !== true)), tx(' No')]),
         par([tx(chk(gen.puesto_a_punto === true)), tx(' Si')]),
       ], { w: w(65) }),
     ),
     tr(
-      gcL([par([txB('Tipo de muestra\n(biopsia cola, sangre, etc.)')])], { w: w(35) }),
+      lbc([par([txB('Tipo de muestra\n(biopsia cola, sangre, etc.)')])], { w: w(35) }),
       tct([par(dash(gen.tipo_muestra))], { w: w(65) }),
     ),
 
@@ -1055,19 +1055,19 @@ async function genSeccionC(criaId) {
     fullVal(IDOPTS.map(opt => {
       const sel = (sc.identificacion_animales ?? []).includes(opt)
       if (opt === 'Otro') {
-        return par([tx(chk(sel)), tx(' Otro. Especificar: '), tx(sel ? dash(sc.identificacion_animales_otro) : '')])
+        return par([tx(chk(sel)), tx(' Otro. Especificar: '), tx(sel ? dash(sc.identificacion_animales_otro) : '')], { before: 12, after: 12 })
       }
-      return par([tx(chk(sel)), tx(` ${opt}`)])
+      return par([tx(chk(sel)), tx(` ${opt}`)], { before: 12, after: 12 })
     })),
 
-    // Animales a generar
-    greyHeaderRow('Animales que van a generarse'),
+    // Animales a generar (subgrupo azul claro)
+    secRowBlue('Animales que van a generarse', 2),
     tr(
-      gcL([par([txB('Número total'), sup(3)])], { w: w(35) }),
+      lbc([par([txB('Número total'), sup(3)])], { w: w(35) }),
       tct([par(dash(ag.numero_total))], { w: w(65) }),
     ),
     tr(
-      gcL([par([txB('Justificar')])], { w: w(35) }),
+      lbc([par([txB('Justificar')])], { w: w(35) }),
       tct([par(dash(ag.justificacion))], { w: w(65) }),
     ),
 
@@ -1137,7 +1137,7 @@ async function genSeccionC(criaId) {
       // 2. Información general
       children.push(
         tbl([
-          greyHeaderRow('2.\tInformación general'),
+          secRowBlue('2.\tInformación general', 2),
           tr(lbc([par([txB('Clasificación de la actividad (según 98/81/CE y 2000/608/CE)')])], { w: w(100), span: 2 })),
           fullVal(dash(omg.clasificacion_actividad)),
           tr(lbc([par([txB('Descripción de las operaciones que van a realizarse')])], { w: w(100), span: 2 })),
@@ -1145,9 +1145,9 @@ async function genSeccionC(criaId) {
           tr(lbc([par([txB('Lugar de manipulación (indique la dependencia del centro en la que va a ser manipulado el OMG)')])],
               { w: w(100), span: 2 })),
           fullVal([
-            par([tx(chk(lm.tipo === 'animalario_cicbiogune' || (lm.tipos ?? []).includes('animalario_cicbiogune'))),
+            par([tx(chk(Array.isArray(lm.tipo) ? lm.tipo.includes('animalario_cicbiogune') : lm.tipo === 'animalario_cicbiogune')),
                  tx(' Animalario del CIC bioGUNE')]),
-            par([tx(chk(lm.tipo === 'otro' || (lm.tipos ?? []).includes('otro'))),
+            par([tx(chk(Array.isArray(lm.tipo) ? lm.tipo.includes('otro') : lm.tipo === 'otro')),
                  tx(' Otro. Especificar: '), tx(dash(lm.descripcion))]),
           ]),
         ]),
@@ -1157,7 +1157,7 @@ async function genSeccionC(criaId) {
       // 3. ¿Dónde se ha realizado la manipulación genética?
       children.push(
         tbl([
-          greyHeaderRow('3.\t¿Dónde se ha realizado la manipulación genética?'),
+          secRowBlue('3.\t¿Dónde se ha realizado la manipulación genética?', 2),
           fullVal(dash(omg.donde_manipulacion_genetica)),
         ]),
         emptyLine(),
@@ -1184,7 +1184,7 @@ async function genSeccionC(criaId) {
       // 5. Modificación genética
       children.push(
         tbl([
-          greyHeaderRow('5.\tInformación relativa a la modificación genética'),
+          secRowBlue('5.\tInformación relativa a la modificación genética', 2),
           tr(lbc([par([txB('Tipo de modificación (inserción, deleción, sustitución, fusión celular, etc.)')])], { w: w(100), span: 2 })),
           fullVal(dash(mg.tipo_modificacion)),
           tr(lbc([par([txB('Breve descripción del método de modificación utilizado')])], { w: w(100), span: 2 })),
@@ -1195,7 +1195,7 @@ async function genSeccionC(criaId) {
             lbc([par([txB('Tipo de identidad del vector')])], { w: w(35) }),
             tct([par(dash(mg.tipo_identidad_vector))], { w: w(65) }),
           ),
-          greyHeaderRow('Información del inserto (la información debe referirse exclusivamente al inserto, no al vector)'),
+          secRowBlue('Información del inserto (la información debe referirse exclusivamente al inserto, no al vector)', 2),
           tr(
             lbc([par([txB('Organismo de origen del inserto')])], { w: w(35) }),
             tct([par(dash(ins.organismo_origen))], { w: w(65) }),
@@ -1230,7 +1230,7 @@ async function genSeccionC(criaId) {
       // 6. OMG resultante
       children.push(
         tbl([
-          greyHeaderRow('6.\tInformación relativa al OMG resultante'),
+          secRowBlue('6.\tInformación relativa al OMG resultante', 2),
           tr(
             lbc([par([txB('Denominación del OMG'), sup(5)])], { w: w(35) }),
             tct([par(dash(or.denominacion))], { w: w(65) }),
@@ -1268,8 +1268,8 @@ async function genSeccionC(criaId) {
           ),
           tr(lbc([par([txB('¿Se dispone de técnicas para la identificación del OMG?')])], { w: w(100), span: 2 })),
           fullVal([
-            par([tx(chk(!tec.disponibles)), tx(' No')]),
-            par([tx(chk(tec.disponibles === true)), tx(' Si. Especificar: '), tx(tec.disponibles ? dash(tec.descripcion) : '')]),
+            par([tx(chk(!tec.disponible)), tx(' No')]),
+            par([tx(chk(tec.disponible === true)), tx(' Si. Especificar: '), tx(tec.disponible ? dash(tec.descripcion) : '')]),
           ]),
         ]),
         emptyLine(),
