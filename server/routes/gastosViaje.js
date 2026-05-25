@@ -298,12 +298,30 @@ router.post('/:id/adjuntos', upload.single('file'), async (req, res) => {
   }
 })
 
+// Helper: recorre todas las categorías de gastos y devuelve el ítem por id
+function findItemEnViaje(viaje, itemId) {
+  const tr = viaje.transporte || {}
+  const cats = [
+    tr.autopista, tr.coche, tr.avion, tr.tren,
+    tr.autobus, tr.parking, tr.taxi, tr.otros,
+    viaje.manutencion, viaje.hotel, viaje.otros,
+  ]
+  for (const cat of cats) {
+    if (!Array.isArray(cat)) continue
+    const found = cat.find(it => it.id === itemId)
+    if (found) return found
+  }
+  return null
+}
+
 // POST /api/gastos-viaje/:id/adjunto-item  — sube adjunto para un gasto individual
-// (no modifica viaje.adjuntos; la referencia se guarda dentro del item al guardar el viaje)
+// Guarda la referencia en el ítem del viaje inmediatamente (sin esperar a "Guardar")
 router.post('/:id/adjunto-item', upload.single('file'), async (req, res) => {
   const viaje = readViaje(req.params.id)
   if (!viaje) return res.status(404).json({ error: 'Viaje no encontrado.' })
   if (!req.file) return res.status(400).json({ error: 'Se requiere un archivo.' })
+
+  const itemId = req.body.itemId
 
   try {
     const dir      = adjuntosDir(req.params.id)
@@ -321,7 +339,18 @@ router.post('/:id/adjunto-item', upload.single('file'), async (req, res) => {
       } catch { pageCount = 1 }
     }
 
-    res.status(201).json({ id: adjId, originalName: req.file.originalname, mime: req.file.mimetype, filename, pageCount })
+    const meta = { id: adjId, originalName: req.file.originalname, mime: req.file.mimetype, filename, pageCount }
+
+    // Persistir la referencia en el ítem ahora mismo
+    if (itemId) {
+      const item = findItemEnViaje(viaje, itemId)
+      if (item) {
+        item.adjunto = meta
+        writeViaje(viaje)
+      }
+    }
+
+    res.status(201).json(meta)
   } catch (err) {
     console.error('Adjunto item upload error:', err)
     res.status(500).json({ error: 'Error al guardar el adjunto.' })
@@ -330,13 +359,33 @@ router.post('/:id/adjunto-item', upload.single('file'), async (req, res) => {
 
 // DELETE /api/gastos-viaje/:id/adjunto-item/:adjId
 router.delete('/:id/adjunto-item/:adjId', (req, res) => {
-  const dir = adjuntosDir(req.params.id)
+  const viaje = readViaje(req.params.id)
+  const dir   = adjuntosDir(req.params.id)
+
+  // Borrar el archivo
   if (existsSync(dir)) {
     const prefix = req.params.adjId + '_'
     readdirSync(dir).filter(f => f.startsWith(prefix)).forEach(f => {
       try { unlinkSync(join(dir, f)) } catch {}
     })
   }
+
+  // Quitar la referencia del ítem en el JSON
+  if (viaje) {
+    const tr = viaje.transporte || {}
+    const cats = [
+      tr.autopista, tr.coche, tr.avion, tr.tren,
+      tr.autobus, tr.parking, tr.taxi, tr.otros,
+      viaje.manutencion, viaje.hotel, viaje.otros,
+    ]
+    for (const cat of cats) {
+      if (!Array.isArray(cat)) continue
+      const item = cat.find(it => it.adjunto?.id === req.params.adjId)
+      if (item) { item.adjunto = null; break }
+    }
+    writeViaje(viaje)
+  }
+
   res.json({ ok: true })
 })
 
