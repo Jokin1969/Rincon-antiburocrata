@@ -962,112 +962,332 @@ async function genSeccionC(criaId) {
   const cria = readCria(criaId)
   if (!cria) throw new Error('Cría no encontrada')
 
-  const id  = cria.identificacion  ?? {}
-  const fen = cria.fenotipo_anormal ?? {}
+  const id  = cria.identificacion       ?? {}
+  const fen = cria.fenotipo_anormal      ?? {}
   const ce  = cria.condiciones_especiales ?? {}
-  const gen = cria.genotipaje       ?? {}
-  const ag  = cria.animales_a_generar ?? {}
-  const pc  = cria.procedimiento_cria ?? {}
-  const omg = cria.omg              ?? {}
+  const gen = cria.genotipaje            ?? {}
+  const ag  = cria.animales_a_generar    ?? {}
+  const pc  = cria.procedimiento_cria    ?? {}
+  const omg = cria.omg                   ?? {}
+
+  // ── Helpers locales ──────────────────────────────────────────────────────────
+  const GEN = { type: ShadingType.CLEAR, color: 'auto', fill: 'D9D9D9' }  // grey
+  const gcL = (ch, opts = {}) => tc(ch, { shading: GEN, ...opts })
+
+  // Fila cabecera gris oscuro (como "Genotipaje")
+  function greyHeaderRow(label, span = 2) {
+    return tr(gcL([par([txB(label)])], { w: w(100), span }))
+  }
+  // Fila de 2 celdas: label azul claro | value blanco fino
+  const kvB = (label, value, lw = 35) => tr(
+    lbc([par([txB(label)])], { w: w(lw) }),
+    tct([par(String(value ?? '—'))], { w: w(100 - lw) })
+  )
+  // Fila full-width valor delgada
+  const fullVal = (content) =>
+    tr(tct(typeof content === 'string' ? [par(content)] : content, { w: w(100), span: 2 }))
+
+  const IDOPTS = ['Rotulador indeleble', 'Crotal (oreja)', 'Perforación auricular',
+                  'Etiquetado jaula', 'Tatuaje', 'Microchip', 'Otro']
+
+  // ── Main identification table ────────────────────────────────────────────────
+  const mainTable = tbl([
+    // Nomenclatura
+    tr(lbc([par([txB('Nombre o nomenclatura internacional'), sup(1), txB(' de la cepa/línea a criar')])],
+        { w: w(100), span: 2 })),
+    fullVal(dash(id.nomenclatura_internacional)),
+
+    // Acrónimo
+    tr(lbc([par([txB('Nombre o acrónimo de la cepa/línea a criar'), sup(2)])], { w: w(100), span: 2 })),
+    fullVal(dash(id.acronimo)),
+
+    // OMG
+    tr(lbc([par([txB('¿Es un organismo modificado genéticamente?')])], { w: w(100), span: 2 })),
+    fullVal([
+      par([tx(chk(!cria.es_omg)), tx(' No')]),
+      par([tx(chk(cria.es_omg)),  tx(' Si Necesita rellenar la sección C-O de este documento')]),
+    ]),
+
+    // Fenotipo anormal
+    tr(lbc([par([txB('¿El fenotipo de los reproductores o de la descendencia está asociado con alguna anormalidad física, mayor susceptibilidad a padecer enfermedad o a un acortamiento de la longevidad?')])],
+        { w: w(100), span: 2 })),
+    fullVal([
+      par([tx(chk(fen.estado === 'no')),         tx(' No')]),
+      par([tx(chk(fen.estado === 'se_desconoce')), tx(' Se desconoce')]),
+      par([tx(chk(fen.estado === 'si')),          tx(' Sí. Especificar: '), tx(fen.estado === 'si' ? dash(fen.descripcion) : '')]),
+    ]),
+
+    // Condiciones especiales
+    tr(lbc([par([txB('¿Los animales necesitan ser mantenidos/manipulados en condiciones especiales?')])],
+        { w: w(100), span: 2 })),
+    fullVal([
+      par([tx(chk(ce.requiere === 'no')),         tx(' No')]),
+      par([tx(chk(ce.requiere === 'se_desconoce')), tx(' Se desconoce')]),
+      par([tx(chk(ce.requiere === 'si')),          tx(' Sí, especificar: '), tx(ce.requiere === 'si' ? dash(ce.descripcion) : '')]),
+    ]),
+
+    // Sistema de cría
+    tr(lbc([par([txB('Sistema de cría a emplear (HOxHO, HOxHE, HOxWT, ...) y estrategia:')])],
+        { w: w(100), span: 2 })),
+    fullVal(dash(cria.sistema_cria)),
+
+    // Genotipaje (subgrupo gris oscuro)
+    greyHeaderRow('Genotipaje'),
+    tr(
+      gcL([par([txB('Procedimiento\n(PCR, Southern, etc.)')])], { w: w(35) }),
+      tct([par(dash(gen.procedimiento))], { w: w(65) }),
+    ),
+    tr(
+      gcL([par([txB('¿Puesto a punto?')])], { w: w(35) }),
+      tct([
+        par([tx(chk(gen.puesto_a_punto !== true)), tx(' No')]),
+        par([tx(chk(gen.puesto_a_punto === true)), tx(' Si')]),
+      ], { w: w(65) }),
+    ),
+    tr(
+      gcL([par([txB('Tipo de muestra\n(biopsia cola, sangre, etc.)')])], { w: w(35) }),
+      tct([par(dash(gen.tipo_muestra))], { w: w(65) }),
+    ),
+
+    // Identificación animales
+    tr(lbc([par([txB('Indicar el sistema de identificación de los animales')])], { w: w(100), span: 2 })),
+    fullVal(IDOPTS.map(opt => {
+      const sel = (cria.identificacion_animales ?? []).includes(opt)
+      if (opt === 'Otro') {
+        return par([tx(chk(sel)), tx(' Otro. Especificar: '), tx(sel ? dash(cria.identificacion_animales_otro) : '')])
+      }
+      return par([tx(chk(sel)), tx(` ${opt}`)])
+    })),
+
+    // Animales a generar
+    greyHeaderRow('Animales que van a generarse'),
+    tr(
+      gcL([par([txB('Número total'), sup(3)])], { w: w(35) }),
+      tct([par(dash(ag.numero_total))], { w: w(65) }),
+    ),
+    tr(
+      gcL([par([txB('Justificar')])], { w: w(35) }),
+      tct([par(dash(ag.justificacion))], { w: w(65) }),
+    ),
+
+    // Procedimiento de cría
+    tr(lbc([par([txB('Procedimiento de cría')])], { w: w(100), span: 2 })),
+    fullVal([
+      par([tx(chk(pc.tipo === 'estandar_cicbiogune')), txB(' Según las normas internas del CIC bioGUNE'), sup(4)]),
+      par([tx(chk(pc.tipo === 'otro')), tx(' Otro. Describir: '), tx(pc.tipo === 'otro' ? dash(pc.descripcion) : '')]),
+    ]),
+  ])
 
   const children = [
     makeHeader(), emptyLine(),
-    h1('CRÍA DE CEPAS/LÍNEAS DE RATÓN'),
-    emptyLine(),
-    tbl([
-      kvRow('Nomenclatura internacional', id.nomenclatura_internacional),
-      kvRow('Acrónimo',                   id.acronimo),
-      kvRow('¿Organismo modificado genéticamente?', yn(cria.es_omg)),
-    ]),
-    emptyLine(),
 
-    h2('Identificación de la cepa'),
-    tbl([
-      kvRow('Fenotipo anormal',    fen.estado === 'si' ? 'Sí' : 'No'),
-      ...(fen.estado === 'si' ? [kvRow('Descripción fenotipo', fen.descripcion)] : []),
-      kvRow('Condiciones especiales', ce.requiere === 'si' ? 'Sí' : 'No'),
-      ...(ce.requiere === 'si' ? [kvRow('Descripción condiciones', ce.descripcion)] : []),
-    ]),
-    emptyLine(),
+    // ── Título C ───────────────────────────────────────────────────────────────
+    new Paragraph({
+      children: [
+        new TextRun({ text: 'C.\t', font: FONT, size: SZ, bold: true }),
+        new TextRun({ text: 'CRIA DE CEPAS/LÍNEAS DE RATÓN', font: FONT, size: SZ, bold: true, underline: { type: UnderlineType.SINGLE } }),
+      ],
+      spacing: { before: 80, after: 30 },
+    }),
+    par([new TextRun({ text: 'Necesita rellenar un formulario C para cada una de las cepas/líneas', font: FONT, size: SZ, color: '1F4E79', italics: true })],
+      { before: 0, after: 60 }),
 
-    h2('Sistema de cría y genotipaje'),
-    tbl([
-      kvRow('Sistema de cría', pc.tipo === 'estandar_cicbiogune' ? 'Estándar CIC bioGUNE' : pc.descripcion),
-      kvRow('Procedimiento de genotipaje', gen.procedimiento),
-      kvRow('Puesto a punto',              yn(gen.puesto_a_punto)),
-      kvRow('Tipo de muestra',             gen.tipo_muestra),
-      kvRow('Identificación de animales', (cria.identificacion_animales ?? []).join(', ')),
-      kvRow('Animales a generar',          ag.numero_total),
-      kvRow('Justificación número',        ag.justificacion),
-    ]),
+    mainTable,
     emptyLine(),
   ]
 
+  // ── Sección C-O (OMG) ────────────────────────────────────────────────────────
   if (cria.es_omg) {
-    children.push(h2('C-O — Bloque OMG'))
-    if (omg.usado_anteriormente) {
-      children.push(tbl([
-        kvRow('¿Usado anteriormente?',           'Sí'),
-        kvRow('Nº procedimiento previo',          omg.numero_procedimiento_previo),
-      ]))
-    } else {
-      children.push(
-        tbl([
-          kvRow('¿Usado anteriormente?',          'No'),
-          kvRow('Clasificación de la actividad',  omg.clasificacion_actividad),
-          kvRow('Descripción de operaciones',     omg.descripcion_operaciones),
-          kvRow('Lugar de manipulación',
-            omg.lugar_manipulacion?.tipo === 'animalario_cicbiogune'
-              ? 'Animalario CIC bioGUNE'
-              : (omg.lugar_manipulacion?.descripcion ?? omg.lugar_manipulacion?.tipo)),
-          kvRow('Dónde se realizó la manipulación genética', omg.donde_manipulacion_genetica),
-          kvRow('¿Es cruce de OMGs?', yn(omg.es_cruce_omgs)),
-        ])
-      )
-      if (omg.es_cruce_omgs && (omg.cruces ?? []).length) {
-        children.push(emptyLine(), par([txB('Cruces OMG:')]),
-          tbl([
-            tr(gc([par([txB('Código CBBA')])], { w: w(50) }), gc([par([txB('Fecha aprobación')])], { w: w(50) })),
-            ...omg.cruces.map(c => tr(tc([par(c.codigo_cbba ?? '')], { w: w(50) }), tc([par(fmtDate(c.fecha_aprobacion))], { w: w(50) }))),
-          ])
-        )
-      }
-      const mg = omg.modificacion_genetica ?? {}
-      children.push(
-        emptyLine(),
-        h2('Modificación genética'),
-        tbl([
-          kvRow('Tipo de modificación', mg.tipo_modificacion),
-          kvRow('Método / descripción', mg.metodo_descripcion),
-          kvRow('Características del vector', mg.caracteristicas_vector),
-          kvRow('Tipo / identidad del vector', mg.tipo_identidad_vector),
-        ])
-      )
+    // Título C-O (fondo azul oscuro, texto blanco)
+    children.push(
+      tbl([tr(dbc([par([txBW('C-O: ORGANISMOS MODIFICADOS GENÉTICAMENTE')])], { w: w(100) }))]),
+      emptyLine(),
+    )
+
+    // 1. Utilización OMGs
+    children.push(
+      tbl([
+        tr(lbc([par([txB('1.\tUtilización OMGs. ¿Ha sido utilizado anteriormente este OMG, en las mismas condiciones, en otro procedimiento ya aprobado?')])],
+            { w: w(100), span: 2 })),
+        fullVal([
+          par([tx(chk(!omg.usado_anteriormente)), tx(' No')]),
+          par([
+            tx(chk(omg.usado_anteriormente)), tx(' Sí, nº procedimiento: '),
+            tx(omg.usado_anteriormente ? dash(omg.numero_procedimiento_previo) : ''),
+            tx('  '),
+            new TextRun({ text: omg.usado_anteriormente ? 'No necesita seguir rellenando esta sección.' : '', font: FONT, size: SZ, color: '1F4E79' }),
+          ]),
+        ]),
+      ]),
+      emptyLine(),
+    )
+
+    if (!omg.usado_anteriormente) {
+      const lm  = omg.lugar_manipulacion ?? {}
+      const mg  = omg.modificacion_genetica ?? {}
       const ins = mg.inserto ?? {}
-      if (ins.organismo_origen || ins.funcion_especifica) {
-        children.push(
-          emptyLine(),
-          h2('Inserto'),
-          tbl([
-            kvRow('Organismo de origen',          ins.organismo_origen),
-            kvRow('Dimensiones / mapa / secuencias', ins.dimensiones_mapa_secuencias),
-            kvRow('Función específica',           ins.funcion_especifica),
-            kvRow('Genes estructurales',          ins.genes_estructurales),
-            kvRow('Elementos reguladores',        ins.elementos_reguladores),
-          ])
-        )
-      }
+      const or  = omg.omg_resultante ?? {}
+      const ins2 = or.insercion ?? {}
+      const inact = or.inactiva_gen ?? {}
+      const idf  = or.identificacion ?? {}
+      const tec  = idf.tecnicas_disponibles ?? {}
+      const mse  = or.medidas_seguridad_especiales ?? {}
+
+      // 2. Información general
+      children.push(
+        tbl([
+          greyHeaderRow('2.\tInformación general'),
+          tr(lbc([par([txB('Clasificación de la actividad (según 98/81/CE y 2000/608/CE)')])], { w: w(100), span: 2 })),
+          fullVal(dash(omg.clasificacion_actividad)),
+          tr(lbc([par([txB('Descripción de las operaciones que van a realizarse')])], { w: w(100), span: 2 })),
+          fullVal(dash(omg.descripcion_operaciones)),
+          tr(lbc([par([txB('Lugar de manipulación (indique la dependencia del centro en la que va a ser manipulado el OMG)')])],
+              { w: w(100), span: 2 })),
+          fullVal([
+            par([tx(chk(lm.tipo === 'animalario_cicbiogune' || (lm.tipos ?? []).includes('animalario_cicbiogune'))),
+                 tx(' Animalario del CIC bioGUNE')]),
+            par([tx(chk(lm.tipo === 'otro' || (lm.tipos ?? []).includes('otro'))),
+                 tx(' Otro. Especificar: '), tx(dash(lm.descripcion))]),
+          ]),
+        ]),
+        emptyLine(),
+      )
+
+      // 3. ¿Dónde se ha realizado la manipulación genética?
+      children.push(
+        tbl([
+          greyHeaderRow('3.\t¿Dónde se ha realizado la manipulación genética?'),
+          fullVal(dash(omg.donde_manipulacion_genetica)),
+        ]),
+        emptyLine(),
+      )
+
+      // 4. ¿Es cruce de OMGs?
+      const cruces = omg.cruces ?? []
+      children.push(
+        tbl([
+          tr(lbc([par([txB('4.\t¿Es este OMG resultado de un cruce (apareamiento) entre otros OMGs utilizados previamente en el centro?')])],
+              { w: w(100), span: 3 })),
+          tr(
+            tct([par([tx(chk(!omg.es_cruce_omgs)), tx(' No')])], { w: w(20) }),
+            tct([par([
+              tx(chk(omg.es_cruce_omgs)), tx(' Sí  '),
+              txB('Código CBBA asignado: '), tx(omg.es_cruce_omgs && cruces.length ? cruces.map(c => c.codigo_cbba).join(', ') : ''),
+            ])], { w: w(50) }),
+            tct([par([txB('Fecha de aprobación: '), tx(omg.es_cruce_omgs && cruces.length ? cruces.map(c => fmtDate(c.fecha_aprobacion)).join(', ') : '')])], { w: w(30) }),
+          ),
+        ]),
+        emptyLine(),
+      )
+
+      // 5. Modificación genética
+      children.push(
+        tbl([
+          greyHeaderRow('5.\tInformación relativa a la modificación genética'),
+          tr(lbc([par([txB('Tipo de modificación (inserción, deleción, sustitución, fusión celular, etc.)')])], { w: w(100), span: 2 })),
+          fullVal(dash(mg.tipo_modificacion)),
+          tr(lbc([par([txB('Breve descripción del método de modificación utilizado')])], { w: w(100), span: 2 })),
+          fullVal(dash(mg.metodo_descripcion)),
+          tr(lbc([par([txB('Características del vector')])], { w: w(100), span: 2 })),
+          fullVal(dash(mg.caracteristicas_vector)),
+          tr(
+            lbc([par([txB('Tipo de identidad del vector')])], { w: w(35) }),
+            tct([par(dash(mg.tipo_identidad_vector))], { w: w(65) }),
+          ),
+          greyHeaderRow('Información del inserto (la información debe referirse exclusivamente al inserto, no al vector)'),
+          tr(
+            lbc([par([txB('Organismo de origen del inserto')])], { w: w(35) }),
+            tct([par(dash(ins.organismo_origen))], { w: w(65) }),
+          ),
+          tr(
+            lbc([par([txB('Dimensiones del inserto, mapa de restricción y secuencias')])], { w: w(35) }),
+            tct([par(dash(ins.dimensiones_mapa_secuencias))], { w: w(65) }),
+          ),
+          tr(
+            lbc([par([txB('¿Tiene alguna función específica el inserto?')])], { w: w(35) }),
+            tct([par(dash(ins.funcion_especifica))], { w: w(65) }),
+          ),
+          tr(
+            lbc([par([txB('Información sobre los genes estructurales del inserto')])], { w: w(35) }),
+            tct([par(dash(ins.genes_estructurales))], { w: w(65) }),
+          ),
+          tr(
+            lbc([par([txB('Información sobre los elementos reguladores del inserto')])], { w: w(35) }),
+            tct([par(dash(ins.elementos_reguladores))], { w: w(65) }),
+          ),
+          tr(
+            lbc([par([txB('¿Ha sido secuenciado el inserto completamente?')])], { w: w(35) }),
+            tct([
+              par([tx(chk(ins.secuenciado_completamente !== true)), tx(' No')]),
+              par([tx(chk(ins.secuenciado_completamente === true)), tx(' Si')]),
+            ], { w: w(65) }),
+          ),
+        ]),
+        emptyLine(),
+      )
+
+      // 6. OMG resultante
+      children.push(
+        tbl([
+          greyHeaderRow('6.\tInformación relativa al OMG resultante'),
+          tr(
+            lbc([par([txB('Denominación del OMG'), sup(5)])], { w: w(35) }),
+            tct([par(dash(or.denominacion))], { w: w(65) }),
+          ),
+          tr(lbc([par([txB('¿Requiere el empleo de este OMG de medidas de seguridad especiales?')])], { w: w(100), span: 2 })),
+          fullVal([
+            par([tx(chk(!mse.requiere)), tx(' No')]),
+            par([tx(chk(mse.requiere === true)), tx(' Si. Detallar: '), tx(mse.requiere ? dash(mse.detalle) : '')]),
+          ]),
+          tr(lbc([par([txB('Breve descripción del OMG')])], { w: w(100), span: 2 })),
+          fullVal(dash(or.descripcion_breve)),
+          tr(lbc([par([txB('Estado y expresión del material genético')])], { w: w(100), span: 2 })),
+          fullVal(dash(or.estado_expresion_material_genetico)),
+          tr(lbc([par([txB('¿Conoce el número y localización de la inserción?')])], { w: w(100), span: 2 })),
+          fullVal([
+            par([tx(chk(ins2.conoce_numero_localizacion !== true)), tx(' No')]),
+            par([tx(chk(ins2.conoce_numero_localizacion === true)),  tx(' Sí')]),
+            ...(ins2.conoce_numero_localizacion === true ? [
+              par([txB('Número de copias: '), tx(dash(ins2.num_copias))]),
+              par([txB('Localización cromosómica: '), tx(dash(ins2.localizacion_cromosomica))]),
+              par([txB('Secuencias laterales: '), tx(dash(ins2.secuencias_laterales))]),
+            ] : []),
+          ]),
+          tr(lbc([par([txB('¿Inactiva la inserción la expresión de algún gen?')])], { w: w(100), span: 2 })),
+          fullVal([
+            par([tx(chk(inact.estado === 'no')),        tx(' No')]),
+            par([tx(chk(inact.estado === 'no_se_sabe')), tx(' No se sabe')]),
+            par([tx(chk(inact.estado === 'si')),         tx(' Si. Indicar: '), tx(inact.estado === 'si' ? dash(inact.descripcion) : '')]),
+          ]),
+          tr(lbc([par([txB('Descripción de métodos de identificación del OMG resultante')])], { w: w(100), span: 2 })),
+          fullVal(dash(idf.descripcion_metodos)),
+          tr(
+            lbc([par([txB('Marcadores específicos del OMG')])], { w: w(35) }),
+            tct([par(dash(idf.marcadores_especificos))], { w: w(65) }),
+          ),
+          tr(lbc([par([txB('¿Se dispone de técnicas para la identificación del OMG?')])], { w: w(100), span: 2 })),
+          fullVal([
+            par([tx(chk(!tec.disponibles)), tx(' No')]),
+            par([tx(chk(tec.disponibles === true)), tx(' Si. Especificar: '), tx(tec.disponibles ? dash(tec.descripcion) : '')]),
+          ]),
+        ]),
+        emptyLine(),
+      )
     }
-    children.push(emptyLine())
   }
 
-  children.push(
-    ...makeFirmaBlock(cria.firmante ?? ''),
-    notesPar('1 Los OMGs deben tener autorización del Ministerio de Medio Ambiente antes del inicio de la actividad.'),
-    notesPar('2 El mapa del vector debe adjuntarse como documento independiente.')
-  )
+  const footnoteEntries = [
+    { id: 1, text: 'Nomenclature for Mouse Strains. Jackson Laboratories' },
+    { id: 2, text: 'Nombre con el que se referirá a la cepa/línea a lo largo del Proyecto y en el animalario de CIC bioGUNE. Este nombre debe coincidir con el de la tabla de la sección A.6.' },
+    { id: 3, text: 'Este número debe coincidir con el de la tabla de la sección A.6.' },
+    { id: 4, text: 'Los machos se separan y tras 5 días se establecen las parejas de cría. Las parejas se renuevan cada 6 meses aproximadamente o antes si los parámetros reproductivos no son óptimos. Los destetes se realizan a los 18-21 de la fecha de parto, momento en que son sexados y dispuestos en jaulas de stock para atender la demanda de experimentos. Siempre que sea posible se guardan 5 animales de cada sexo para garantizar el mantenimiento de la línea. Más información en PNT/SDA/EXP/01' },
+    ...(cria.es_omg && !omg.usado_anteriormente ? [
+      { id: 5, text: 'Utilice siempre que sea posible la nomenclatura según recomendaciones internacionales sobre denominación de ratones modificados genéticamente' },
+    ] : []),
+  ]
 
-  return Packer.toBuffer(buildDoc(children, 'Sección C'))
+  const rawBuf = await Packer.toBuffer(buildDoc(children, 'Sección C'))
+  return addDocxFootnotes(rawBuf, footnoteEntries)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
