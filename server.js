@@ -23,6 +23,7 @@ import { generateCertificadoExclusividad } from './generators/certificadoExclusi
 import { generateGastosViaje }             from './generators/gastosViaje.js'
 import { docxToPdf }                       from './utils/pdf.js'
 import { mergePdfs, attachmentToPdf }      from './utils/mergePdf.js'
+import nodemailer                          from 'nodemailer'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -899,6 +900,71 @@ app.post('/api/gastos-viaje/:id/generar', async (req, res) => {
   } catch (err) {
     console.error('Gastos viaje generar error:', err)
     res.status(500).json({ error: 'Error al generar el informe.' })
+  }
+})
+
+// ── Gastos viaje: enviar informe PDF por email ────────────────────────────────
+app.post('/api/gastos-viaje/:id/enviar-email', async (req, res) => {
+  const to = process.env.CONTACT_EMAIL
+  if (!to) return res.status(500).json({ error: 'CONTACT_EMAIL no configurado en el servidor.' })
+
+  const DATA_DIR_GV   = process.env.DATA_DIR ?? join(__dirname, 'data')
+  const viajesDir     = join(DATA_DIR_GV, 'gastosviaje')
+  const viajeJsonPath = join(viajesDir, `viaje_${req.params.id}.json`)
+  if (!existsSync(viajeJsonPath)) return res.status(404).json({ error: 'Viaje no encontrado.' })
+
+  const viaje = JSON.parse(readFileSync(viajeJsonPath, 'utf-8'))
+  const safe  = (viaje.nombre || 'GastosViaje').replace(/[^a-zA-Z0-9_\-áéíóúÁÉÍÓÚüÜñÑ]/g, '_').slice(0, 50)
+  const base  = `GastosViaje_${safe}_${viaje.fechaInicio || 'sin_fecha'}`
+
+  try {
+    const docxBuffer = await generateGastosViaje(viaje)
+    const adjuntos   = viaje.adjuntos || []
+    let pdfBuffer
+
+    if (adjuntos.length === 0) {
+      pdfBuffer = docxToPdf(docxBuffer)
+    } else {
+      const adjuntosDir = join(viajesDir, 'adjuntos', req.params.id)
+      const parts       = [docxToPdf(docxBuffer)]
+      for (const meta of adjuntos) {
+        const filePath = join(adjuntosDir, meta.filename)
+        if (!existsSync(filePath)) continue
+        try {
+          const buf    = readFileSync(filePath)
+          const pdfBuf = await attachmentToPdf(buf, meta.mime)
+          parts.push(pdfBuf)
+        } catch (err) {
+          console.error(`Adjunto omitido en email (${meta.originalName}):`, err.message)
+        }
+      }
+      pdfBuffer = await mergePdfs(parts)
+    }
+
+    const transporter = nodemailer.createTransport({
+      host:   process.env.SMTP_HOST,
+      port:   Number(process.env.SMTP_PORT) || 587,
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    })
+
+    await transporter.sendMail({
+      from:    process.env.SMTP_FROM || process.env.SMTP_USER,
+      to,
+      subject: `Informe de gastos de viaje: ${viaje.nombre || base}`,
+      text:    `Adjunto encontrarás el informe de gastos de viaje "${viaje.nombre || base}".\n\nGenerado automáticamente desde Rincón Antiburocrata.`,
+      attachments: [
+        { filename: `${base}.pdf`, content: pdfBuffer, contentType: 'application/pdf' },
+      ],
+    })
+
+    res.json({ ok: true, to })
+  } catch (err) {
+    console.error('Gastos viaje enviar-email error:', err)
+    res.status(500).json({ error: err.message || 'Error al enviar el email.' })
   }
 })
 

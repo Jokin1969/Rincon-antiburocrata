@@ -1001,6 +1001,7 @@ export default function GastosViajeForm() {
   const [saved, setSaved]       = useState(false)
   const [error, setError]       = useState(null)
   const [generating, setGenerating] = useState(null)
+  const [sending, setSending]       = useState(false)
   const [cecoManual, setCecoManual] = useState(false)
   const logoRef = useRef()
 
@@ -1138,6 +1139,26 @@ export default function GastosViajeForm() {
     setSaved(false)
     setError(null)
     navigate('/gastos-viaje/nuevo', { replace: true })
+  }
+
+  // ── Send report by email ────────────────────────────────────────────────────
+  async function handleSendEmail() {
+    if (!viajeId) {
+      alert('Guarda el viaje primero antes de enviar el informe.')
+      return
+    }
+    setSending(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/gastos-viaje/${viajeId}/enviar-email`, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
+      alert(`✓ Informe enviado correctamente a ${data.to}`)
+    } catch (err) {
+      setError(`Error al enviar el email: ${err.message}`)
+    } finally {
+      setSending(false)
+    }
   }
 
   // ── Generate report ─────────────────────────────────────────────────────────
@@ -1466,6 +1487,10 @@ export default function GastosViajeForm() {
         <button className="btn btn-ghost" onClick={() => handleGenerate('pdf')}
           disabled={!!generating || !viajeId}>
           {generating === 'pdf' ? 'Generando…' : '⬇ Informe PDF'}
+        </button>
+        <button className={styles.btnEmail} onClick={handleSendEmail}
+          disabled={sending || !viajeId}>
+          {sending ? 'Enviando…' : '📧 Enviar por email'}
         </button>
         <button className={styles.btnClear} onClick={handleClear}>
           🗑 Limpiar / Borrar
