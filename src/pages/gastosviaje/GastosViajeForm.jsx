@@ -889,7 +889,22 @@ function OtrosGastoForm({ onAdd }) {
 function AdjuntosSection({ viajeId, adjuntos, onChange }) {
   const [uploading, setUploading] = useState(false)
   const [error, setError]         = useState(null)
+  const [dragId, setDragId]       = useState(null)
   const fileRef = useRef()
+
+  function onDragStart(id) { setDragId(id) }
+
+  function onDrop(targetId) {
+    if (!dragId || dragId === targetId) return
+    const from = adjuntos.findIndex(a => a.id === dragId)
+    const to   = adjuntos.findIndex(a => a.id === targetId)
+    if (from === -1 || to === -1) return
+    const reordered = [...adjuntos]
+    const [moved]   = reordered.splice(from, 1)
+    reordered.splice(to, 0, moved)
+    onChange(reordered)
+    setDragId(null)
+  }
 
   async function handleUpload(file) {
     if (!file) return
@@ -969,7 +984,16 @@ function AdjuntosSection({ viajeId, adjuntos, onChange }) {
                 ? `Pág. ${fromPg}`
                 : `Págs. ${fromPg}–${toPg} (${pages} pág.)`
               return (
-                <div key={adj.id} className={styles.itemRow}>
+                <div
+                  key={adj.id}
+                  className={`${styles.itemRow} ${dragId === adj.id ? styles.adjDragging : ''}`}
+                  draggable
+                  onDragStart={e => { e.stopPropagation(); onDragStart(adj.id) }}
+                  onDragOver={e => e.preventDefault()}
+                  onDrop={e => { e.stopPropagation(); onDrop(adj.id) }}
+                  onDragEnd={() => setDragId(null)}
+                >
+                  <span className={styles.adjDragHandle} title="Arrastrar para reordenar">⠿</span>
                   <span className={styles.adjIcon}>{MIME_ICON(adj.mime)}</span>
                   <a
                     href={`/api/gastos-viaje/${viajeId}/adjuntos/${adj.id}`}
