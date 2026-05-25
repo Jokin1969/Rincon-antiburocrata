@@ -345,6 +345,8 @@ const SEV_LABELS = { none: 'Sin clasificar', norecovery: 'Sin recuperación', lo
 function secRow(title, span = 1) {
   return tr(gc([par([txB(title)])], { w: w(100), span }))
 }
+// Bold paragraph heading used for B.x and D.x section labels
+const secHead = text => new Paragraph({ children: [txB(text)], spacing: { before: 120, after: 40 } })
 // Single-cell full-width light-blue header row (accepts string or TextRun[])
 function secRowBlue(children, span = 1) {
   const parChildren = typeof children === 'string'
@@ -726,9 +728,6 @@ async function genSeccionB(procId, numeroOverride) {
       ...rows.map(r => tr(...r.map((v, i) => tct([par(dash(v))], { w: w(widths[i]) })))),
     ])]
   }
-
-  // Helper: section heading like A.1, A.2, etc.
-  const secHead = text => new Paragraph({ children: [txB(text)], spacing: { before: 120, after: 40 } })
 
   // kvRow with light-blue label (SeccionB style)
   const kvRowB = (label, value, lw = 30) => tr(
