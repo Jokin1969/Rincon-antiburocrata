@@ -1080,22 +1080,24 @@ async function genSeccionD(proyectoId) {
   if (!doc) throw new Error('Sección D no encontrada')
   const d = doc.seccionD ?? {}
 
+  const ctr = { align: AlignmentType.CENTER }
+
   function agBioTable(rows) {
     const data = rows.length ? rows : [{ nombre_cientifico: '', descripcion: '', grupo_riesgo: '', lugar_manipulacion: '', numero_procedimiento: '' }]
     return tbl([
       tr(
-        gc([par([txB('Nombre científico')])],    { w: w(20) }),
-        gc([par([txB('Descripción')])],           { w: w(20) }),
-        gc([par([txB('Grupo riesgo')])],          { w: w(12) }),
-        gc([par([txB('Lugar manipulación')])],    { w: w(24) }),
-        gc([par([txB('Nº procedimiento')])],      { w: w(24) }),
+        lbc([par([txB('Nombre científico')],   ctr)], { w: w(20) }),
+        lbc([par([txB('Descripción del agente')], ctr)], { w: w(20) }),
+        lbc([par([txB('Grupo de riesgo')],     ctr)], { w: w(12) }),
+        lbc([par([txB('Lugar de manipulación'), sup(1)], ctr)], { w: w(24) }),
+        lbc([par([txB('Nº de procedimiento'),  sup(2)], ctr)], { w: w(24) }),
       ),
       ...data.map(ag => tr(
-        tc([par(ag.nombre_cientifico ?? '')],     { w: w(20) }),
-        tc([par(ag.descripcion ?? '')],            { w: w(20) }),
-        tc([par(ag.grupo_riesgo ? `Grupo ${ag.grupo_riesgo}` : '')], { w: w(12) }),
-        tc([par(ag.lugar_manipulacion ?? '')],    { w: w(24) }),
-        tc([par(ag.numero_procedimiento ?? '')],  { w: w(24) }),
+        tct([par(ag.nombre_cientifico ?? '')],     { w: w(20) }),
+        tct([par(ag.descripcion ?? '')],            { w: w(20) }),
+        tct([par(ag.grupo_riesgo ? `Grupo ${ag.grupo_riesgo}` : '')], { w: w(12) }),
+        tct([par(ag.lugar_manipulacion ?? '')],    { w: w(24) }),
+        tct([par(ag.numero_procedimiento ?? '')],  { w: w(24) }),
       )),
     ])
   }
@@ -1104,40 +1106,51 @@ async function genSeccionD(proyectoId) {
     const data = rows.length ? rows : [{ nombre: '', identificacion_riesgo: '', condiciones_manipulacion: '', numero_procedimiento: '' }]
     return tbl([
       tr(
-        gc([par([txB('Nombre del producto')])],        { w: w(25) }),
-        gc([par([txB('Identificación del riesgo')])],  { w: w(25) }),
-        gc([par([txB('Condiciones de manipulación')])],{ w: w(25) }),
-        gc([par([txB('Nº procedimiento')])],           { w: w(25) }),
+        lbc([par([txB('Nombre')],                              ctr)], { w: w(22) }),
+        lbc([par([txB('Identificación del riesgo')],           ctr)], { w: w(26) }),
+        lbc([par([txB('Condiciones especiales de manipulación')], ctr)], { w: w(30) }),
+        lbc([par([txB('Nº de procedimiento'), sup(3)],         ctr)], { w: w(22) }),
       ),
       ...data.map(aq => tr(
-        tc([par(aq.nombre ?? '')],                    { w: w(25) }),
-        tc([par(aq.identificacion_riesgo ?? '')],     { w: w(25) }),
-        tc([par(aq.condiciones_manipulacion ?? '')],  { w: w(25) }),
-        tc([par(aq.numero_procedimiento ?? '')],      { w: w(25) }),
+        tct([par(aq.nombre ?? '')],                    { w: w(22) }),
+        tct([par(aq.identificacion_riesgo ?? '')],     { w: w(26) }),
+        tct([par(aq.condiciones_manipulacion ?? '')],  { w: w(30) }),
+        tct([par(aq.numero_procedimiento ?? '')],      { w: w(22) }),
       )),
     ])
   }
 
   const children = [
     makeHeader(), emptyLine(),
-    h1('PRODUCTOS ADMINISTRADOS CON RIESGO\nPARA LA SALUD O MEDIO AMBIENTE'),
+
+    // ── Título principal ──────────────────────────────────────────────────────
+    new Paragraph({
+      children: [
+        new TextRun({ text: 'D. ', font: FONT, size: SZ, bold: true }),
+        new TextRun({ text: 'PRODUCTOS ADMINISTRADOS CON RIESGO PARA LA SALUD O MEDIO AMBIENTE', font: FONT, size: SZ, bold: true, underline: { type: UnderlineType.SINGLE } }),
+      ],
+      spacing: { before: 80, after: 60 },
+    }),
     emptyLine(),
 
-    h2('D.1 — Agentes biológicos'),
+    // ── D.1 ───────────────────────────────────────────────────────────────────
+    secHead('D.1 USO DE AGENTES BIOLÓGICOS EN ANIMALES DE EXPERIMENTACIÓN'),
     agBioTable(d.agentes_biologicos ?? []),
     emptyLine(),
 
-    h2('D.2 — Agentes químicos'),
+    // ── D.2 ───────────────────────────────────────────────────────────────────
+    secHead('D.2. USO DE AGENTES QUÍMICOS EN ANIMALES DE EXPERIMENTACIÓN'),
+    par([new TextRun({ text: 'Recuerde adjuntar al proyecto la ficha de seguridad de cada uno de los productos listados en la siguiente tabla', font: FONT, size: SZ, color: '1F4E79' })], { before: 0, after: 60 }),
     agQuimTable(d.agentes_quimicos ?? []),
     emptyLine(),
-
-    ...makeFirmaBlock(d.firmante ?? ''),
-
-    notesPar('Recuerde adjuntar la ficha de seguridad de cada uno de los productos listados al exportar el proyecto.'),
-    notesPar('Los agentes biológicos del grupo 2 o superior requieren medidas de contención adicionales (RD 664/1997).'),
   ]
 
-  return Packer.toBuffer(buildDoc(children, 'Sección D'))
+  const rawBuf = await Packer.toBuffer(buildDoc(children, 'Sección D'))
+  return addDocxFootnotes(rawBuf, [
+    { id: 1, text: 'Especifique la zona del Animalario de CIC bioGUNE donde se va a llevar a cabo la manipulación' },
+    { id: 2, text: 'Indique el número del procedimiento en el cual va a emplear el agente biológico' },
+    { id: 3, text: 'Indique el número del procedimiento en el cual se va a emplear el agente químico' },
+  ])
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
