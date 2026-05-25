@@ -273,10 +273,13 @@ function buildFootnotesXml(entries) {
     `<w:footnote w:type="continuationSeparator" w:id="0"><w:p><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr><w:r><w:continuationSeparator/></w:r></w:p></w:footnote>`,
   ].join('')
   const notes = entries.map(({ id, text }) =>
-    `<w:footnote w:id="${id}"><w:p><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr>` +
-    `<w:r><w:rPr><w:vertAlign w:val="superscript"/><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:footnoteRef/></w:r>` +
+    `<w:footnote w:id="${id}">` +
+    `<w:p>` +
+    `<w:pPr><w:pStyle w:val="FootnoteText"/><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr>` +
+    `<w:r><w:rPr><w:rStyle w:val="FootnoteReference"/></w:rPr><w:footnoteRef/></w:r>` +
     `<w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t xml:space="preserve"> ${xmlEsc(text)}</w:t></w:r>` +
-    `</w:p></w:footnote>`
+    `</w:p>` +
+    `</w:footnote>`
   ).join('')
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:footnotes ${ns}>${sep}${notes}</w:footnotes>`
 }
