@@ -298,6 +298,48 @@ router.post('/:id/adjuntos', upload.single('file'), async (req, res) => {
   }
 })
 
+// POST /api/gastos-viaje/:id/adjunto-item  — sube adjunto para un gasto individual
+// (no modifica viaje.adjuntos; la referencia se guarda dentro del item al guardar el viaje)
+router.post('/:id/adjunto-item', upload.single('file'), async (req, res) => {
+  const viaje = readViaje(req.params.id)
+  if (!viaje) return res.status(404).json({ error: 'Viaje no encontrado.' })
+  if (!req.file) return res.status(400).json({ error: 'Se requiere un archivo.' })
+
+  try {
+    const dir      = adjuntosDir(req.params.id)
+    ensureDir(dir)
+    const adjId    = randomUUID()
+    const safeName = req.file.originalname.replace(/[^a-zA-Z0-9._\-]/g, '_').slice(0, 80)
+    const filename = `${adjId}_${safeName}`
+    writeFileSync(join(dir, filename), req.file.buffer)
+
+    let pageCount = 1
+    if (req.file.mimetype === 'application/pdf') {
+      try {
+        const pdfDoc = await PDFDocument.load(req.file.buffer, { ignoreEncryption: true })
+        pageCount = pdfDoc.getPageCount()
+      } catch { pageCount = 1 }
+    }
+
+    res.status(201).json({ id: adjId, originalName: req.file.originalname, mime: req.file.mimetype, filename, pageCount })
+  } catch (err) {
+    console.error('Adjunto item upload error:', err)
+    res.status(500).json({ error: 'Error al guardar el adjunto.' })
+  }
+})
+
+// DELETE /api/gastos-viaje/:id/adjunto-item/:adjId
+router.delete('/:id/adjunto-item/:adjId', (req, res) => {
+  const dir = adjuntosDir(req.params.id)
+  if (existsSync(dir)) {
+    const prefix = req.params.adjId + '_'
+    readdirSync(dir).filter(f => f.startsWith(prefix)).forEach(f => {
+      try { unlinkSync(join(dir, f)) } catch {}
+    })
+  }
+  res.json({ ok: true })
+})
+
 // GET /api/gastos-viaje/:id/adjuntos/:adjId  — visualizar/descargar adjunto
 router.get('/:id/adjuntos/:adjId', (req, res) => {
   const viaje = readViaje(req.params.id)

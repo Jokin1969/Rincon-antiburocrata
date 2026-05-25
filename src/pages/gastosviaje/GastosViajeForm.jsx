@@ -42,6 +42,90 @@ function formatDate(d) {
   } catch { return d }
 }
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function mimeIcon(mime) {
+  if (!mime) return '📎'
+  if (mime === 'application/pdf') return '📄'
+  if (mime.startsWith('image/')) return '🖼️'
+  if (mime.includes('word')) return '📝'
+  return '📎'
+}
+
+// ── Sub-component: ItemAdjuntoRow ─────────────────────────────────────────────
+
+function ItemAdjuntoRow({ item, viajeId, onEdit }) {
+  const [uploading, setUploading] = useState(false)
+  const [error, setError]         = useState(null)
+  const fileRef                   = useRef()
+
+  async function handleFile(file) {
+    if (!file) return
+    if (!viajeId) { alert('Guarda el viaje primero para poder adjuntar documentos.'); return }
+    setUploading(true)
+    setError(null)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res  = await fetch(`/api/gastos-viaje/${viajeId}/adjunto-item`, { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
+      onEdit?.(item.id, { adjunto: data })
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setUploading(false)
+      if (fileRef.current) fileRef.current.value = ''
+    }
+  }
+
+  async function handleRemove() {
+    const adj = item.adjunto
+    if (!adj) return
+    try {
+      await fetch(`/api/gastos-viaje/${viajeId}/adjunto-item/${adj.id}`, { method: 'DELETE' })
+    } catch {}
+    onEdit?.(item.id, { adjunto: null })
+  }
+
+  const adj = item.adjunto
+
+  return (
+    <div className={styles.itemAdjunto}>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="application/pdf,image/*,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        style={{ display: 'none' }}
+        onChange={e => handleFile(e.target.files[0])}
+      />
+      {adj ? (
+        <>
+          <a
+            href={`/api/gastos-viaje/${viajeId}/adjuntos/${adj.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.adjuntoItemLink}
+            title={adj.originalName}
+          >
+            {mimeIcon(adj.mime)} {adj.originalName}
+          </a>
+          <button className={styles.adjuntoItemRemove} onClick={handleRemove} title="Eliminar adjunto">✕</button>
+        </>
+      ) : (
+        <button
+          className={styles.adjuntoItemBtn}
+          disabled={uploading}
+          onClick={() => fileRef.current?.click()}
+        >
+          {uploading ? 'Subiendo…' : '📎 Adjuntar ticket / factura'}
+        </button>
+      )}
+      {error && <span className={styles.adjuntoItemError}>{error}</span>}
+    </div>
+  )
+}
+
 // ── Sub-component: TicketUploader ─────────────────────────────────────────────
 
 function TicketUploader({ tipo, onExtracted }) {
@@ -175,7 +259,7 @@ function TicketForm({ tipo, onAdd }) {
 
 // ── Sub-component: TicketList ─────────────────────────────────────────────────
 
-function TicketList({ items, onRemove, onEdit, onDuplicate }) {
+function TicketList({ items, onRemove, onEdit, onDuplicate, viajeId }) {
   const [editingId, setEditingId] = useState(null)
   const [draft, setDraft]         = useState({})
 
@@ -227,15 +311,18 @@ function TicketList({ items, onRemove, onEdit, onDuplicate }) {
             </div>
           </div>
         ) : (
-          <div key={it.id} className={styles.itemRow}>
-            <span className={styles.itemName}>{it.nombre || '—'}</span>
-            <span className={styles.itemDate}>{formatDate(it.fecha)}</span>
-            <span className={styles.itemAmount}>{eur(it.sinIva)} / {eur(it.conIva)}</span>
-            <div className={styles.itemActions}>
-              {onDuplicate && <button className={styles.dupBtn} onClick={() => onDuplicate(it.id)} title="Duplicar">⧉</button>}
-              {onEdit      && <button className={styles.editBtn} onClick={() => startEdit(it)}     title="Editar">✏️</button>}
-              <button className={styles.removeBtn} onClick={() => onRemove(it.id)}>✕</button>
+          <div key={it.id} className={styles.itemBlock}>
+            <div className={styles.itemRow}>
+              <span className={styles.itemName}>{it.nombre || '—'}</span>
+              <span className={styles.itemDate}>{formatDate(it.fecha)}</span>
+              <span className={styles.itemAmount}>{eur(it.sinIva)} / {eur(it.conIva)}</span>
+              <div className={styles.itemActions}>
+                {onDuplicate && <button className={styles.dupBtn} onClick={() => onDuplicate(it.id)} title="Duplicar">⧉</button>}
+                {onEdit      && <button className={styles.editBtn} onClick={() => startEdit(it)}     title="Editar">✏️</button>}
+                <button className={styles.removeBtn} onClick={() => onRemove(it.id)}>✕</button>
+              </div>
             </div>
+            <ItemAdjuntoRow item={it} viajeId={viajeId} onEdit={onEdit} />
           </div>
         )
       ))}
@@ -329,7 +416,7 @@ function CocheForm({ onAdd }) {
   )
 }
 
-function CocheList({ items, onRemove, onEdit, onDuplicate }) {
+function CocheList({ items, onRemove, onEdit, onDuplicate, viajeId }) {
   const [editingId, setEditingId] = useState(null)
   const [draft, setDraft]         = useState({})
 
@@ -390,17 +477,20 @@ function CocheList({ items, onRemove, onEdit, onDuplicate }) {
             </div>
           </div>
         ) : (
-          <div key={it.id} className={styles.itemRow}>
-            <span className={styles.itemName}>
-              {[it.desde, it.hasta].filter(Boolean).join(' → ') || 'Desplazamiento'}
-            </span>
-            <span className={styles.itemDate}>{km} km × {toNum(it.precioPorKm ?? 0.29).toFixed(2)} €</span>
-            <span className={styles.itemAmount}>{eur(imp)}</span>
-            <div className={styles.itemActions}>
-              {onDuplicate && <button className={styles.dupBtn} onClick={() => onDuplicate(it.id)} title="Duplicar">⧉</button>}
-              {onEdit      && <button className={styles.editBtn} onClick={() => startEdit(it)}     title="Editar">✏️</button>}
-              <button className={styles.removeBtn} onClick={() => onRemove(it.id)}>✕</button>
+          <div key={it.id} className={styles.itemBlock}>
+            <div className={styles.itemRow}>
+              <span className={styles.itemName}>
+                {[it.desde, it.hasta].filter(Boolean).join(' → ') || 'Desplazamiento'}
+              </span>
+              <span className={styles.itemDate}>{km} km × {toNum(it.precioPorKm ?? 0.29).toFixed(2)} €</span>
+              <span className={styles.itemAmount}>{eur(imp)}</span>
+              <div className={styles.itemActions}>
+                {onDuplicate && <button className={styles.dupBtn} onClick={() => onDuplicate(it.id)} title="Duplicar">⧉</button>}
+                {onEdit      && <button className={styles.editBtn} onClick={() => startEdit(it)}     title="Editar">✏️</button>}
+                <button className={styles.removeBtn} onClick={() => onRemove(it.id)}>✕</button>
+              </div>
             </div>
+            <ItemAdjuntoRow item={it} viajeId={viajeId} onEdit={onEdit} />
           </div>
         )
       })}
@@ -414,7 +504,7 @@ function CocheList({ items, onRemove, onEdit, onDuplicate }) {
 
 // ── Sub-component: ManutencioList ─────────────────────────────────────────────
 
-function ManutencioList({ items, onRemove, onEdit, onDuplicate }) {
+function ManutencioList({ items, onRemove, onEdit, onDuplicate, viajeId }) {
   const [editingId, setEditingId] = useState(null)
   const [draft, setDraft]         = useState({})
 
@@ -489,15 +579,18 @@ function ManutencioList({ items, onRemove, onEdit, onDuplicate }) {
             </div>
           </div>
         ) : (
-          <div key={it.id} className={styles.itemRow}>
-            <span className={styles.itemName}>{displayName(it) || '—'}</span>
-            <span className={styles.itemDate}>{formatDate(it.fecha)}</span>
-            <span className={styles.itemAmount}>{eur(it.sinIva)} / {eur(it.conIva)}</span>
-            <div className={styles.itemActions}>
-              {onDuplicate && <button className={styles.dupBtn} onClick={() => onDuplicate(it.id)} title="Duplicar">⧉</button>}
-              {onEdit      && <button className={styles.editBtn} onClick={() => startEdit(it)}     title="Editar">✏️</button>}
-              <button className={styles.removeBtn} onClick={() => onRemove(it.id)}>✕</button>
+          <div key={it.id} className={styles.itemBlock}>
+            <div className={styles.itemRow}>
+              <span className={styles.itemName}>{displayName(it) || '—'}</span>
+              <span className={styles.itemDate}>{formatDate(it.fecha)}</span>
+              <span className={styles.itemAmount}>{eur(it.sinIva)} / {eur(it.conIva)}</span>
+              <div className={styles.itemActions}>
+                {onDuplicate && <button className={styles.dupBtn} onClick={() => onDuplicate(it.id)} title="Duplicar">⧉</button>}
+                {onEdit      && <button className={styles.editBtn} onClick={() => startEdit(it)}     title="Editar">✏️</button>}
+                <button className={styles.removeBtn} onClick={() => onRemove(it.id)}>✕</button>
+              </div>
             </div>
+            <ItemAdjuntoRow item={it} viajeId={viajeId} onEdit={onEdit} />
           </div>
         )
       ))}
@@ -511,7 +604,7 @@ function ManutencioList({ items, onRemove, onEdit, onDuplicate }) {
 
 // ── Sub-component: OtrosList ──────────────────────────────────────────────────
 
-function OtrosList({ items, onRemove, onEdit, onDuplicate }) {
+function OtrosList({ items, onRemove, onEdit, onDuplicate, viajeId }) {
   const [editingId, setEditingId] = useState(null)
   const [draft, setDraft]         = useState({})
 
@@ -572,15 +665,18 @@ function OtrosList({ items, onRemove, onEdit, onDuplicate }) {
             </div>
           </div>
         ) : (
-          <div key={it.id} className={styles.itemRow}>
-            <span className={styles.itemName}>{displayName(it)}</span>
-            <span className={styles.itemDate}>{formatDate(it.fecha)}</span>
-            <span className={styles.itemAmount}>{eur(it.sinIva)} / {eur(it.conIva)}</span>
-            <div className={styles.itemActions}>
-              {onDuplicate && <button className={styles.dupBtn} onClick={() => onDuplicate(it.id)} title="Duplicar">⧉</button>}
-              {onEdit      && <button className={styles.editBtn} onClick={() => startEdit(it)}     title="Editar">✏️</button>}
-              <button className={styles.removeBtn} onClick={() => onRemove(it.id)}>✕</button>
+          <div key={it.id} className={styles.itemBlock}>
+            <div className={styles.itemRow}>
+              <span className={styles.itemName}>{displayName(it)}</span>
+              <span className={styles.itemDate}>{formatDate(it.fecha)}</span>
+              <span className={styles.itemAmount}>{eur(it.sinIva)} / {eur(it.conIva)}</span>
+              <div className={styles.itemActions}>
+                {onDuplicate && <button className={styles.dupBtn} onClick={() => onDuplicate(it.id)} title="Duplicar">⧉</button>}
+                {onEdit      && <button className={styles.editBtn} onClick={() => startEdit(it)}     title="Editar">✏️</button>}
+                <button className={styles.removeBtn} onClick={() => onRemove(it.id)}>✕</button>
+              </div>
             </div>
+            <ItemAdjuntoRow item={it} viajeId={viajeId} onEdit={onEdit} />
           </div>
         )
       ))}
@@ -1321,56 +1417,56 @@ export default function GastosViajeForm() {
         <SubSection icon="🛣️" label="Autopista / Peaje" badge={tr.autopista.length}>
           <TicketForm tipo="autopista" onAdd={item => addTransporte('autopista', item)} />
           <TicketList items={tr.autopista} onRemove={id => removeTransporte('autopista', id)}
-            onEdit={(id, ch) => editTransporte('autopista', id, ch)} onDuplicate={id => dupTransporte('autopista', id)} />
+            onEdit={(id, ch) => editTransporte('autopista', id, ch)} onDuplicate={id => dupTransporte('autopista', id)} viajeId={viajeId} />
         </SubSection>
 
         {/* Coche */}
         <SubSection icon="🚗" label="Coche (vehículo propio)" badge={tr.coche.length}>
           <CocheForm onAdd={item => addTransporte('coche', item)} />
           <CocheList items={tr.coche} onRemove={id => removeTransporte('coche', id)}
-            onEdit={(id, ch) => editTransporte('coche', id, ch)} onDuplicate={id => dupTransporte('coche', id)} />
+            onEdit={(id, ch) => editTransporte('coche', id, ch)} onDuplicate={id => dupTransporte('coche', id)} viajeId={viajeId} />
         </SubSection>
 
         {/* Avión */}
         <SubSection icon="✈️" label="Avión" badge={tr.avion.length}>
           <TicketForm tipo="avion" onAdd={item => addTransporte('avion', item)} />
           <TicketList items={tr.avion} onRemove={id => removeTransporte('avion', id)}
-            onEdit={(id, ch) => editTransporte('avion', id, ch)} onDuplicate={id => dupTransporte('avion', id)} />
+            onEdit={(id, ch) => editTransporte('avion', id, ch)} onDuplicate={id => dupTransporte('avion', id)} viajeId={viajeId} />
         </SubSection>
 
         {/* Tren */}
         <SubSection icon="🚂" label="Tren" badge={tr.tren.length}>
           <TicketForm tipo="tren" onAdd={item => addTransporte('tren', item)} />
           <TicketList items={tr.tren} onRemove={id => removeTransporte('tren', id)}
-            onEdit={(id, ch) => editTransporte('tren', id, ch)} onDuplicate={id => dupTransporte('tren', id)} />
+            onEdit={(id, ch) => editTransporte('tren', id, ch)} onDuplicate={id => dupTransporte('tren', id)} viajeId={viajeId} />
         </SubSection>
 
         {/* Autobús */}
         <SubSection icon="🚌" label="Autobús" badge={tr.autobus.length}>
           <TicketForm tipo="autobus" onAdd={item => addTransporte('autobus', item)} />
           <TicketList items={tr.autobus} onRemove={id => removeTransporte('autobus', id)}
-            onEdit={(id, ch) => editTransporte('autobus', id, ch)} onDuplicate={id => dupTransporte('autobus', id)} />
+            onEdit={(id, ch) => editTransporte('autobus', id, ch)} onDuplicate={id => dupTransporte('autobus', id)} viajeId={viajeId} />
         </SubSection>
 
         {/* Parking */}
         <SubSection icon="🅿️" label="Parking" badge={tr.parking.length}>
           <TicketForm tipo="parking" onAdd={item => addTransporte('parking', item)} />
           <TicketList items={tr.parking} onRemove={id => removeTransporte('parking', id)}
-            onEdit={(id, ch) => editTransporte('parking', id, ch)} onDuplicate={id => dupTransporte('parking', id)} />
+            onEdit={(id, ch) => editTransporte('parking', id, ch)} onDuplicate={id => dupTransporte('parking', id)} viajeId={viajeId} />
         </SubSection>
 
         {/* Taxi */}
         <SubSection icon="🚕" label="Taxi / VTC" badge={tr.taxi.length}>
           <TicketForm tipo="taxi" onAdd={item => addTransporte('taxi', item)} />
           <TicketList items={tr.taxi} onRemove={id => removeTransporte('taxi', id)}
-            onEdit={(id, ch) => editTransporte('taxi', id, ch)} onDuplicate={id => dupTransporte('taxi', id)} />
+            onEdit={(id, ch) => editTransporte('taxi', id, ch)} onDuplicate={id => dupTransporte('taxi', id)} viajeId={viajeId} />
         </SubSection>
 
         {/* Otros transporte */}
         <SubSection icon="🛺" label="Otros transportes" badge={tr.otros.length}>
           <OtrosTrForm onAdd={item => addTransporte('otros', item)} />
           <TicketList items={tr.otros} onRemove={id => removeTransporte('otros', id)}
-            onEdit={(id, ch) => editTransporte('otros', id, ch)} onDuplicate={id => dupTransporte('otros', id)} />
+            onEdit={(id, ch) => editTransporte('otros', id, ch)} onDuplicate={id => dupTransporte('otros', id)} viajeId={viajeId} />
         </SubSection>
 
         {totalTransporte > 0 && (
@@ -1388,6 +1484,7 @@ export default function GastosViajeForm() {
           onRemove={id => setSection('manutencion', list => list.filter(i => i.id !== id))}
           onEdit={(id, ch) => editSection('manutencion', id, ch)}
           onDuplicate={id => dupSection('manutencion', id)}
+          viajeId={viajeId}
         />
         {totalManutencion > 0 && (
           <div className={styles.sectionTotal}>
@@ -1404,6 +1501,7 @@ export default function GastosViajeForm() {
           onRemove={id => setSection('hotel', list => list.filter(i => i.id !== id))}
           onEdit={(id, ch) => editSection('hotel', id, ch)}
           onDuplicate={id => dupSection('hotel', id)}
+          viajeId={viajeId}
         />
         {totalHotel > 0 && (
           <div className={styles.sectionTotal}>
@@ -1420,6 +1518,7 @@ export default function GastosViajeForm() {
           onRemove={id => setSection('otros', list => list.filter(i => i.id !== id))}
           onEdit={(id, ch) => editSection('otros', id, ch)}
           onDuplicate={id => dupSection('otros', id)}
+          viajeId={viajeId}
         />
         {totalOtros > 0 && (
           <div className={styles.sectionTotal}>
