@@ -387,7 +387,7 @@ export default function SeccionCForm() {
       </CollapsibleBlock>
 
       {/* Bloque 2: OMG */}
-      <CollapsibleBlock title="2 · ¿Es un organismo modificado genéticamente (OMG)?" storageKey="secC:omg">
+      <CollapsibleBlock title="2 · ¿Es un organismo modificado genéticamente (OMG)?" storageKey="secC:omg" requiredFields={['ok']}>
         <div className="form-group">
           <div className={s.radioGroup}>
             <label className={s.radioLabel}>
@@ -413,7 +413,7 @@ export default function SeccionCForm() {
       </CollapsibleBlock>
 
       {/* Bloque 3: Fenotipo */}
-      <CollapsibleBlock title="3 · Fenotipo" storageKey="secC:feno">
+      <CollapsibleBlock title="3 · Fenotipo" storageKey="secC:feno" requiredFields={[form.fenotipo_anormal.estado]}>
         <div className="form-group">
           <label>
             ¿El fenotipo de los reproductores o de la descendencia está asociado con alguna anormalidad
@@ -453,7 +453,7 @@ export default function SeccionCForm() {
       </CollapsibleBlock>
 
       {/* Bloque 4: Condiciones especiales */}
-      <CollapsibleBlock title="4 · Condiciones especiales de mantenimiento" storageKey="secC:cond">
+      <CollapsibleBlock title="4 · Condiciones especiales de mantenimiento" storageKey="secC:cond" requiredFields={[form.condiciones_especiales.requiere]}>
         <div className="form-group">
           <label>
             ¿Los animales necesitan ser mantenidos/manipulados en condiciones especiales?
@@ -492,7 +492,7 @@ export default function SeccionCForm() {
       </CollapsibleBlock>
 
       {/* Bloque 5: Sistema de cría */}
-      <CollapsibleBlock title="5 · Sistema de cría" storageKey="secC:cria">
+      <CollapsibleBlock title="5 · Sistema de cría" storageKey="secC:cria" requiredFields={[form.sistema_cria]}>
         <div className="form-group">
           <AutoExpandTextarea
             storageKey="secC:sistema_cria"
@@ -508,7 +508,7 @@ export default function SeccionCForm() {
       </CollapsibleBlock>
 
       {/* Bloque 6: Genotipaje */}
-      <CollapsibleBlock title="6 · Genotipaje" storageKey="secC:geno">
+      <CollapsibleBlock title="6 · Genotipaje" storageKey="secC:geno" requiredFields={[form.genotipaje.procedimiento, form.genotipaje.tipo_muestra]}>
         <div className={s.grid2}>
           <div className="form-group">
             <label>Procedimiento de genotipaje</label>
@@ -558,7 +558,7 @@ export default function SeccionCForm() {
       </CollapsibleBlock>
 
       {/* Bloque 7: Identificación de los animales */}
-      <CollapsibleBlock title="7 · Identificación de los animales" storageKey="secC:idanim">
+      <CollapsibleBlock title="7 · Identificación de los animales" storageKey="secC:idanim" requiredFields={[(form.identificacion_animales ?? []).length > 0 ? 'ok' : '']}>
         <div className="form-group">
           <label>Métodos de identificación (pueden combinarse)</label>
           <div className={s.checkboxGroupCol}>
@@ -588,7 +588,7 @@ export default function SeccionCForm() {
       </CollapsibleBlock>
 
       {/* Bloque 8: Animales a generar */}
-      <CollapsibleBlock title="8 · Animales a generar" storageKey="secC:anim">
+      <CollapsibleBlock title="8 · Animales a generar" storageKey="secC:anim" requiredFields={[form.animales_a_generar.numero_total, form.animales_a_generar.justificacion]}>
         <div className={s.grid2}>
           <div className="form-group">
             <label>Número total de animales a generar</label>
@@ -627,7 +627,7 @@ export default function SeccionCForm() {
       </CollapsibleBlock>
 
       {/* Bloque 9: Procedimiento de cría */}
-      <CollapsibleBlock title="9 · Procedimiento de cría" storageKey="secC:proccria">
+      <CollapsibleBlock title="9 · Procedimiento de cría" storageKey="secC:proccria" requiredFields={['ok']}>
         <div className="form-group">
           <div className={s.radioGroup}>
             <label className={s.radioLabel}>
@@ -766,14 +766,14 @@ export default function SeccionCForm() {
                 </div>
                 <div className="form-group">
                   <label>Lugar de manipulación del OMG</label>
-                  <div className={s.radioGroup}>
+                  <div className={s.checkboxGroup}>
                     {[
                       { value: 'animalario_cicbiogune', label: 'Animalario CIC bioGUNE' },
                       { value: 'otro', label: 'Otro' },
                     ].map(opt => {
                       const tipos = form.omg.lugar_manipulacion.tipo ?? []
                       return (
-                        <label key={opt.value} className={s.radioLabel}>
+                        <label key={opt.value} className={s.checkboxLabel}>
                           <input
                             type="checkbox"
                             checked={tipos.includes(opt.value)}
