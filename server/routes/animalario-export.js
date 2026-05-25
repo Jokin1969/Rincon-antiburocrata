@@ -788,8 +788,8 @@ async function genSeccionB(procId, numeroOverride) {
       kvRowB('Nº total de animales',    dg.num_animales),
       kvRowB('Severidad',               dash(dg.severidad)),
       tr(
-        lbc([par([txB('Duración'), sup(1)])], { w: w(30) }),
-        tct([par(dash(dg.duracion))],          { w: w(70) }),
+        lbc([par([txB('Duración')])], { w: w(30) }),
+        tct([par(dash(dg.duracion))], { w: w(70) }),
       ),
     ]),
     emptyLine(),
@@ -797,7 +797,7 @@ async function genSeccionB(procId, numeroOverride) {
     // ── B.2 METODOLOGÍA Y FASES ───────────────────────────────────────────────
     secHead('B.2 METODOLOGÍA Y FASES DEL PROCEDIMIENTO'),
     tbl([
-      secRowBlue([txB('Fases del procedimiento'), sup(2)]),
+      secRowBlue([txB('Fases del procedimiento')]),
       fullTcThin([par(dash(met.descripcion))]),
       secRowBlue('Describa en qué fases del procedimiento se prevé que el animal pueda experimentar sufrimiento, dolor, angustia o malestar'),
       fullTcThin([par(dash(met.justificacion_procedimiento))]),
@@ -815,9 +815,7 @@ async function genSeccionB(procId, numeroOverride) {
       return tbl([
         secRowBlue('Indicar el número total de animales y los grupos experimentales (incluyendo controles) que se van a utilizar'),
         fullTcThin([par(totalText)]),
-        secRowBlue('Método de cálculo del tamaño muestral'),
-        fullTcThin([par(dash(tm.metodo))]),
-        secRowBlue('Justificación del tamaño muestral'),
+        secRowBlue('Justificar estadísticamente (o método empleado) el número total de animales a utilizar y el de animales por grupo experimental'),
         fullTcThin([par(dash(tm.justificacion))]),
       ])
     })(),
@@ -840,7 +838,7 @@ async function genSeccionB(procId, numeroOverride) {
     emptyLine(),
 
     // ── B.5 TÉCNICAS ──────────────────────────────────────────────────────────
-    secHead('B.5 TÉCNICAS EXPERIMENTALES Y QUIRÚRGICAS'),
+    secHead('B.5 TÉCNICAS'),
     ...dynTable(
       ['Frecuencia', 'Grupo / Nº animales', 'Técnica experimental/quirúrgica'],
       (proc.tecnicas ?? []).map(t => [t.frecuencia, t.grupo_animales ?? t.observaciones, t.nombre]),
@@ -849,7 +847,7 @@ async function genSeccionB(procId, numeroOverride) {
     emptyLine(),
 
     // ── B.6 ANALGESIA Y ANESTESIA ─────────────────────────────────────────────
-    secHead('B.6 ANALGESIA Y ANESTESIA'),
+    secHead('B.6 USO DE ANALGESIA Y ANESTESIA'),
     tbl([
       tr(lbc([par([txB('Analgesia')])], { w: w(100), span: 6 })),
       tr(...ANA_HDRS.map((h, i) => lbc([par([txB(h)])], { w: w(ANA_COLS_W[i]) }))),
@@ -878,33 +876,42 @@ async function genSeccionB(procId, numeroOverride) {
 
     // ── B.8 PARÁMETROS A MEDIR ────────────────────────────────────────────────
     secHead('B.8 PARÁMETROS A MEDIR'),
-    ...dynTable(
-      ['Parámetro', 'Método', 'Frecuencia', 'Unidad', 'N/grupo'],
-      (proc.parametros ?? []).map(p => [p.parametro, p.metodo_medida, p.frecuencia, p.unidad, p.n_por_grupo]),
-      [28, 24, 16, 16, 16]
-    ),
+    (() => {
+      const B8_HDRS = ['Frecuencia', 'Grupo / Nº animales', 'Parámetro/Muestra', 'Metodología/Técnica', 'Procedimiento terminal (si/no)']
+      const B8_W    = [14, 18, 24, 24, 20]
+      const rows8   = (proc.parametros ?? []).map(p => [p.frecuencia, p.grupo_animales ?? '', p.parametro, p.metodo_medida, p.terminal ?? ''])
+      const dataRows = rows8.length ? rows8 : [[]]
+      return tbl([
+        tr(...B8_HDRS.map((h, i) => lbc([par([txB(h)])], { w: w(B8_W[i]) }))),
+        ...dataRows.map(r => tr(...B8_W.map((cw, i) => tct([par(dash(r[i]))], { w: w(cw) })))),
+      ])
+    })(),
     emptyLine(),
 
     // ── B.9 MUESTRAS ANTEMORTEM ───────────────────────────────────────────────
     secHead('B.9 MUESTRAS ANTEMORTEM'),
-    ...dynTable(
-      ['Tipo muestra', 'Volumen / cantidad', 'Frecuencia', 'Procedimiento'],
-      (proc.muestras_antemortem ?? []).map(m => [m.tipo, m.volumen_cantidad, m.frecuencia, m.procedimiento]),
-      [25, 25, 25, 25]
-    ),
+    (() => {
+      const B9_HDRS = ['Frecuencia', 'Grupo / Nº animales', 'Muestra', 'Cantidad (g) / Volumen (mg/kg peso animal)', 'Método/Vía']
+      const B9_W    = [14, 18, 20, 30, 18]
+      const rows9   = (proc.muestras_antemortem ?? []).map(m => [m.frecuencia, m.grupo_animales ?? '', m.tipo, m.volumen_cantidad, m.metodo_via ?? m.procedimiento ?? ''])
+      const dataRows = rows9.length ? rows9 : [[]]
+      return tbl([
+        tr(...B9_HDRS.map((h, i) => lbc([par([txB(h)])], { w: w(B9_W[i]) }))),
+        ...dataRows.map(r => tr(...B9_W.map((cw, i) => tct([par(dash(r[i]))], { w: w(cw) })))),
+      ])
+    })(),
     emptyLine(),
 
     // ── B.10 FINALIZACIÓN DEL PROCEDIMIENTO ──────────────────────────────────
     secHead('B.10 FINALIZACIÓN DEL PROCEDIMIENTO'),
     tbl([
-      kvRowB('Criterios humanitarios de finalización', dash(fin.criterios_humanos)),
       tr(lbc([par([
         txB('Métodos de eutanasia'), tx('. La eutanasia de los animales que tengan que ser sacrificados al finalizar el procedimiento o que se descarten del procedimiento debido a su estado de salud, se realizará por:'),
       ])], { w: w(100), span: 2 })),
       tr(tct([
-        par([tx(chk((fin.metodos_eutanasia ?? []).includes('Dislocación cervical'))),         tx(' Dislocación cervical')]),
-        par([tx(chk((fin.metodos_eutanasia ?? []).includes('CO₂') || (fin.metodos_eutanasia ?? []).includes('Inhalación de dióxido de carbono'))), tx(' Inhalación de dióxido de carbono')]),
-        par([tx(chk((fin.metodos_eutanasia ?? []).includes('Otro'))),                         tx(' Otra técnica')]),
+        ...['Sobredosis anestésica', 'Dislocación cervical', 'CO₂', 'Decapitación', 'Perfusión transcardíaca', 'Otro'].map(m =>
+          par([tx(chk((fin.metodos_eutanasia ?? []).includes(m))), tx(` ${m}`)])
+        ),
       ], { w: w(100), span: 2 })),
       ...((fin.metodos_eutanasia ?? []).includes('Otro') ? [
         kvRowB('Justificar', dash(fin.justificacion_eutanasia)),
@@ -919,28 +926,33 @@ async function genSeccionB(procId, numeroOverride) {
       tr(tct([
         par([tx(chk(reu.destino === 'Sacrifica los animales por requerimientos del procedimiento')), tx(' Sacrificar los animales por requerimientos del procedimiento')]),
       ], { w: w(100), span: 2 })),
+      ...(reu.destino === 'Sacrifica los animales por requerimientos del procedimiento' ? [
+        tr(tct([
+          par([txB('¿Qué tejido u órganos van a utilizarse? '), tx(dash(reu.tejidos))]),
+        ], { w: w(100), span: 2 })),
+      ] : []),
       tr(tct([
         par([tx(chk(reu.destino === 'Mantener los animales vivos para utilizarlos en otro procedimiento')), tx(' Mantener los animales vivos para utilizarlos en otro procedimiento')]),
       ], { w: w(100), span: 2 })),
       ...(reu.destino === 'Mantener los animales vivos para utilizarlos en otro procedimiento' ? [
-        kvRowB('Número de procedimiento', dash(reu.num_procedimiento)),
+        tr(tct([
+          par([txB('Número de procedimiento: '), tx(dash(reu.num_procedimiento))]),
+        ], { w: w(100), span: 2 })),
       ] : []),
       tr(tct([
         par([tx(chk(reu.destino === 'Mantener los animales vivos por otros procedimientos')), tx(' Mantener los animales vivos por otros motivos')]),
       ], { w: w(100), span: 2 })),
       ...(reu.destino === 'Mantener los animales vivos por otros procedimientos' ? [
-        kvRowB('Justificar', dash(reu.justificacion_vivos)),
+        tr(tct([
+          par([txB('Justificar: '), tx(dash(reu.justificacion_vivos))]),
+        ], { w: w(100), span: 2 })),
       ] : []),
     ]),
     emptyLine(),
 
   ]
 
-  const rawBuf = await Packer.toBuffer(buildDoc(children, 'Sección B — Procedimiento'))
-  return addDocxFootnotes(rawBuf, [
-    { id: 1, text: 'Debe indicarse el tiempo entre la primera y la última utilización (sacrificio) de cada animal. No confundir con la duración total del estudio.' },
-    { id: 2, text: 'Si desea adjunte un esquema de las distintas fases del procedimiento' },
-  ])
+  return Packer.toBuffer(buildDoc(children, 'Sección B — Procedimiento'))
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
