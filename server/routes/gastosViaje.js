@@ -345,7 +345,21 @@ router.get('/:id/adjuntos/:adjId', (req, res) => {
   const viaje = readViaje(req.params.id)
   if (!viaje) return res.status(404).json({ error: 'Viaje no encontrado.' })
 
-  const meta = (viaje.adjuntos || []).find(a => a.id === req.params.adjId)
+  // Buscar en adjuntos globales y, si no, en los adjuntos de cada gasto individual
+  let meta = (viaje.adjuntos || []).find(a => a.id === req.params.adjId)
+
+  if (!meta) {
+    const tr = viaje.transporte || {}
+    const todosItems = [
+      ...(tr.autopista || []), ...(tr.coche || []), ...(tr.avion || []),
+      ...(tr.tren || []),      ...(tr.autobus || []), ...(tr.parking || []),
+      ...(tr.taxi || []),      ...(tr.otros || []),
+      ...(viaje.manutencion || []), ...(viaje.hotel || []), ...(viaje.otros || []),
+    ]
+    const item = todosItems.find(it => it.adjunto?.id === req.params.adjId)
+    if (item) meta = item.adjunto
+  }
+
   if (!meta) return res.status(404).json({ error: 'Adjunto no encontrado.' })
 
   const filePath = join(adjuntosDir(req.params.id), meta.filename)
