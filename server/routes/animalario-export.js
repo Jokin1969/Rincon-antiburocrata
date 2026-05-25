@@ -621,7 +621,7 @@ async function genSeccionA(proyectoId) {
             tct([par(proc.datos_generales?.titulo_procedimiento ?? '')],                                  { w: w(34) }),
             tct([par((proc.datos_generales?.especies ?? []).join(', '))],                                 { w: w(22) }),
             tct([par(String(proc.datos_generales?.num_animales ?? ''))],                                  { w: w(18) }),
-            tct([par((Array.isArray(proc.clasificacion_severidad) ? proc.clasificacion_severidad : [proc.clasificacion_severidad]).map(v => SEV_LABELS[v] ?? v).join(', '))], { w: w(18) }),
+            tct([par((Array.isArray(proc.clasificacion_severidad) ? proc.clasificacion_severidad : [proc.clasificacion_severidad]).filter(v => v && v.length > 1 && v !== 'none' && SEV_LABELS[v]).map(v => SEV_LABELS[v]).join(', ') || '—')], { w: w(18) }),
           ))
         : [tr(
             tct([par('')], { w: w(8)  }),
