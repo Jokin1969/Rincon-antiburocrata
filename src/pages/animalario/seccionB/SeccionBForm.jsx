@@ -796,19 +796,8 @@ export default function SeccionBForm() {
       <CollapsibleBlock
         title="10. Finalización y eutanasia"
         storageKey="secB:B10"
-        requiredFields={[form.finalizacion.criterios_humanos, form.finalizacion.metodos_eutanasia]}
+        requiredFields={[form.finalizacion.metodos_eutanasia]}
       >
-        <div className="form-group">
-          <label>Criterios humanitarios de finalización</label>
-          <AutoExpandTextarea
-            storageKey="finalizacion.criterios_humanos"
-            rows={3}
-            copyFrom={true}
-            value={form.finalizacion.criterios_humanos}
-            onChange={e => update('finalizacion.criterios_humanos', e.target.value)}
-            placeholder="Criterios clínicos o de bienestar que determinarán la finalización anticipada del experimento"
-          />
-        </div>
         <div className="form-group">
           <label>Método(s) de eutanasia</label>
           <p className={s.helpText}>Pueden combinarse varios métodos (p.ej. sobredosis anestésica + dislocación cervical).</p>
