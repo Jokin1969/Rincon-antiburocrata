@@ -677,6 +677,26 @@
   margin: 0;
 }
 
+.adjDragHandle {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: grab;
+  flex-shrink: 0;
+  padding: 0 0.15rem;
+  user-select: none;
+}
+
+.adjDragHandle:active {
+  cursor: grabbing;
+}
+
+.adjDragging {
+  opacity: 0.4;
+  box-shadow: 0 0 0 2px var(--accent, #2563eb);
+  border-radius: 6px;
+}
+
 .adjIcon {
   font-size: 1.1rem;
   flex-shrink: 0;
