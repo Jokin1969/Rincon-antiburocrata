@@ -274,7 +274,7 @@ function buildFootnotesXml(entries) {
   ].join('')
   const notes = entries.map(({ id, text }) =>
     `<w:footnote w:id="${id}"><w:p><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr>` +
-    `<w:r><w:rPr><w:vertAlign w:val="superscript"/><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>${id}</w:t></w:r>` +
+    `<w:r><w:rPr><w:vertAlign w:val="superscript"/><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:footnoteRef/></w:r>` +
     `<w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t xml:space="preserve"> ${xmlEsc(text)}</w:t></w:r>` +
     `</w:p></w:footnote>`
   ).join('')
@@ -1066,10 +1066,8 @@ async function genSeccionC(criaId) {
       lbc([par([txB('Número total'), sup(3)])], { w: w(35) }),
       tct([par(dash(ag.numero_total))], { w: w(65) }),
     ),
-    tr(
-      lbc([par([txB('Justificar')])], { w: w(35) }),
-      tct([par(dash(ag.justificacion))], { w: w(65) }),
-    ),
+    tr(lbc([par([txB('Justificar')])], { w: w(100), span: 2 })),
+    fullVal(dash(ag.justificacion)),
 
     // Procedimiento de cría
     tr(lbc([par([txB('Procedimiento de cría')])], { w: w(100), span: 2 })),
