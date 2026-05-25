@@ -297,6 +297,22 @@ router.post('/:id/adjuntos', upload.single('file'), async (req, res) => {
   }
 })
 
+// GET /api/gastos-viaje/:id/adjuntos/:adjId  — visualizar/descargar adjunto
+router.get('/:id/adjuntos/:adjId', (req, res) => {
+  const viaje = readViaje(req.params.id)
+  if (!viaje) return res.status(404).json({ error: 'Viaje no encontrado.' })
+
+  const meta = (viaje.adjuntos || []).find(a => a.id === req.params.adjId)
+  if (!meta) return res.status(404).json({ error: 'Adjunto no encontrado.' })
+
+  const filePath = join(adjuntosDir(req.params.id), meta.filename)
+  if (!existsSync(filePath)) return res.status(404).json({ error: 'Archivo no encontrado.' })
+
+  res.setHeader('Content-Type', meta.mime || 'application/octet-stream')
+  res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(meta.originalName)}"`)
+  res.sendFile(filePath)
+})
+
 // DELETE /api/gastos-viaje/:id/adjuntos/:adjId
 router.delete('/:id/adjuntos/:adjId', (req, res) => {
   const viaje = readViaje(req.params.id)

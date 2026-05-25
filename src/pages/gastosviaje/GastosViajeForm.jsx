@@ -175,18 +175,69 @@ function TicketForm({ tipo, onAdd }) {
 
 // ── Sub-component: TicketList ─────────────────────────────────────────────────
 
-function TicketList({ items, onRemove }) {
+function TicketList({ items, onRemove, onEdit, onDuplicate }) {
+  const [editingId, setEditingId] = useState(null)
+  const [draft, setDraft]         = useState({})
+
   if (items.length === 0) return null
   const total = items.reduce((acc, it) => acc + toNum(it.conIva), 0)
+
+  function startEdit(it) {
+    setEditingId(it.id)
+    setDraft({ nombre: it.nombre || '', fecha: it.fecha || TODAY, sinIva: it.sinIva || '', conIva: it.conIva || '' })
+  }
+
+  function saveEdit() {
+    onEdit?.(editingId, draft)
+    setEditingId(null)
+  }
+
   return (
     <div className={styles.itemList}>
       {items.map(it => (
-        <div key={it.id} className={styles.itemRow}>
-          <span className={styles.itemName}>{it.nombre || '—'}</span>
-          <span className={styles.itemDate}>{formatDate(it.fecha)}</span>
-          <span className={styles.itemAmount}>{eur(it.sinIva)} / {eur(it.conIva)}</span>
-          <button className={styles.removeBtn} onClick={() => onRemove(it.id)}>✕</button>
-        </div>
+        editingId === it.id ? (
+          <div key={it.id} className={styles.inlineEdit}>
+            <div className={styles.fieldRow}>
+              <div className="form-group" style={{ flex: 2 }}>
+                <label>Nombre / descripción</label>
+                <input type="text" value={draft.nombre} autoFocus
+                  onChange={e => setDraft(d => ({ ...d, nombre: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label>Fecha</label>
+                <input type="date" value={draft.fecha}
+                  onChange={e => setDraft(d => ({ ...d, fecha: e.target.value }))} />
+              </div>
+            </div>
+            <div className={styles.fieldRow}>
+              <div className="form-group">
+                <label>Sin IVA</label>
+                <input type="text" inputMode="decimal" value={draft.sinIva}
+                  onChange={e => setDraft(d => ({ ...d, sinIva: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label>Con IVA</label>
+                <input type="text" inputMode="decimal" value={draft.conIva}
+                  onChange={e => setDraft(d => ({ ...d, conIva: e.target.value }))} />
+              </div>
+              <div className={styles.inlineEditActions}>
+                <button className="btn btn-primary" onClick={saveEdit}>✓ Guardar</button>
+                <button className="btn btn-ghost" onClick={() => setEditingId(null)}>Cancelar</button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div key={it.id} className={styles.itemRow}>
+            <span className={styles.itemName}>{it.nombre || '—'}</span>
+            <span className={styles.itemDate}>{formatDate(it.fecha)}</span>
+            <span className={styles.itemAmount}>{eur(it.sinIva)} / {eur(it.conIva)}</span>
+            <div className={styles.itemActions}>
+              {onDuplicate && <button className={styles.dupBtn} onClick={() => onDuplicate(it.id)} title="Duplicar">⧉</button>}
+              {onEdit      && <button className={styles.editBtn} onClick={() => startEdit(it)}     title="Editar">✏️</button>}
+              <button className={styles.removeBtn} onClick={() => onRemove(it.id)}>✕</button>
+            </div>
+          </div>
+        )
       ))}
       <div className={styles.itemTotal}>
         <span>Total</span>
@@ -278,27 +329,261 @@ function CocheForm({ onAdd }) {
   )
 }
 
-function CocheList({ items, onRemove }) {
+function CocheList({ items, onRemove, onEdit, onDuplicate }) {
+  const [editingId, setEditingId] = useState(null)
+  const [draft, setDraft]         = useState({})
+
   if (items.length === 0) return null
   const total = items.reduce((acc, it) => {
     return acc + (toNum(it.kmIda) + toNum(it.kmVuelta)) * toNum(it.precioPorKm ?? 0.29)
   }, 0)
+
+  function startEdit(it) {
+    setEditingId(it.id)
+    setDraft({ desde: it.desde || '', hasta: it.hasta || '', kmIda: it.kmIda || '', kmVuelta: it.kmVuelta || '', precioPorKm: it.precioPorKm ?? 0.29 })
+  }
+
+  function saveEdit() {
+    onEdit?.(editingId, draft)
+    setEditingId(null)
+  }
+
   return (
     <div className={styles.itemList}>
       {items.map(it => {
         const km  = toNum(it.kmIda) + toNum(it.kmVuelta)
         const imp = km * toNum(it.precioPorKm ?? 0.29)
-        return (
+        return editingId === it.id ? (
+          <div key={it.id} className={styles.inlineEdit}>
+            <div className={styles.fieldRow}>
+              <div className="form-group">
+                <label>Desde</label>
+                <input type="text" value={draft.desde} autoFocus
+                  onChange={e => setDraft(d => ({ ...d, desde: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label>Hasta</label>
+                <input type="text" value={draft.hasta}
+                  onChange={e => setDraft(d => ({ ...d, hasta: e.target.value }))} />
+              </div>
+            </div>
+            <div className={styles.fieldRow}>
+              <div className="form-group">
+                <label>Km ida</label>
+                <input type="text" inputMode="decimal" value={draft.kmIda}
+                  onChange={e => setDraft(d => ({ ...d, kmIda: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label>Km vuelta</label>
+                <input type="text" inputMode="decimal" value={draft.kmVuelta}
+                  onChange={e => setDraft(d => ({ ...d, kmVuelta: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label>€/km</label>
+                <input type="text" inputMode="decimal" value={draft.precioPorKm}
+                  onChange={e => setDraft(d => ({ ...d, precioPorKm: e.target.value }))} />
+              </div>
+              <div className={styles.inlineEditActions}>
+                <button className="btn btn-primary" onClick={saveEdit}>✓ Guardar</button>
+                <button className="btn btn-ghost" onClick={() => setEditingId(null)}>Cancelar</button>
+              </div>
+            </div>
+          </div>
+        ) : (
           <div key={it.id} className={styles.itemRow}>
             <span className={styles.itemName}>
               {[it.desde, it.hasta].filter(Boolean).join(' → ') || 'Desplazamiento'}
             </span>
             <span className={styles.itemDate}>{km} km × {toNum(it.precioPorKm ?? 0.29).toFixed(2)} €</span>
             <span className={styles.itemAmount}>{eur(imp)}</span>
-            <button className={styles.removeBtn} onClick={() => onRemove(it.id)}>✕</button>
+            <div className={styles.itemActions}>
+              {onDuplicate && <button className={styles.dupBtn} onClick={() => onDuplicate(it.id)} title="Duplicar">⧉</button>}
+              {onEdit      && <button className={styles.editBtn} onClick={() => startEdit(it)}     title="Editar">✏️</button>}
+              <button className={styles.removeBtn} onClick={() => onRemove(it.id)}>✕</button>
+            </div>
           </div>
         )
       })}
+      <div className={styles.itemTotal}>
+        <span>Total</span>
+        <span>{eur(total)}</span>
+      </div>
+    </div>
+  )
+}
+
+// ── Sub-component: ManutencioList ─────────────────────────────────────────────
+
+function ManutencioList({ items, onRemove, onEdit, onDuplicate }) {
+  const [editingId, setEditingId] = useState(null)
+  const [draft, setDraft]         = useState({})
+
+  if (items.length === 0) return null
+  const total = items.reduce((acc, it) => acc + toNum(it.conIva), 0)
+
+  function displayName(it) {
+    return [it.tipo ? (it.tipo.charAt(0).toUpperCase() + it.tipo.slice(1)) : '', it.nombre || it.lugar].filter(Boolean).join(' – ')
+  }
+
+  function startEdit(it) {
+    setEditingId(it.id)
+    setDraft({ tipo: it.tipo || 'comida', nombre: it.nombre || '', lugar: it.lugar || '', fecha: it.fecha || TODAY, sinIva: it.sinIva || '', conIva: it.conIva || '' })
+  }
+
+  function saveEdit() {
+    onEdit?.(editingId, draft)
+    setEditingId(null)
+  }
+
+  return (
+    <div className={styles.itemList}>
+      {items.map(it => (
+        editingId === it.id ? (
+          <div key={it.id} className={styles.inlineEdit}>
+            <div className={styles.fieldRow}>
+              <div className="form-group">
+                <label>Tipo</label>
+                <div className={styles.tipoSelector}>
+                  {['desayuno', 'comida', 'cena'].map(t => (
+                    <button key={t} type="button"
+                      className={`${styles.tipoBtn} ${draft.tipo === t ? styles.tipoBtnActive : ''}`}
+                      onClick={() => setDraft(d => ({ ...d, tipo: t }))}>
+                      {t === 'desayuno' ? '☀️ Desayuno' : t === 'comida' ? '🍽️ Comida' : '🌙 Cena'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="form-group">
+                <label>Fecha</label>
+                <input type="date" value={draft.fecha}
+                  onChange={e => setDraft(d => ({ ...d, fecha: e.target.value }))} />
+              </div>
+            </div>
+            <div className={styles.fieldRow}>
+              <div className="form-group" style={{ flex: 2 }}>
+                <label>Establecimiento</label>
+                <input type="text" value={draft.nombre} autoFocus
+                  onChange={e => setDraft(d => ({ ...d, nombre: e.target.value }))} />
+              </div>
+              <div className="form-group" style={{ flex: 2 }}>
+                <label>Lugar</label>
+                <input type="text" value={draft.lugar}
+                  onChange={e => setDraft(d => ({ ...d, lugar: e.target.value }))} />
+              </div>
+            </div>
+            <div className={styles.fieldRow}>
+              <div className="form-group">
+                <label>Sin IVA</label>
+                <input type="text" inputMode="decimal" value={draft.sinIva}
+                  onChange={e => setDraft(d => ({ ...d, sinIva: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label>Con IVA</label>
+                <input type="text" inputMode="decimal" value={draft.conIva}
+                  onChange={e => setDraft(d => ({ ...d, conIva: e.target.value }))} />
+              </div>
+              <div className={styles.inlineEditActions}>
+                <button className="btn btn-primary" onClick={saveEdit}>✓ Guardar</button>
+                <button className="btn btn-ghost" onClick={() => setEditingId(null)}>Cancelar</button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div key={it.id} className={styles.itemRow}>
+            <span className={styles.itemName}>{displayName(it) || '—'}</span>
+            <span className={styles.itemDate}>{formatDate(it.fecha)}</span>
+            <span className={styles.itemAmount}>{eur(it.sinIva)} / {eur(it.conIva)}</span>
+            <div className={styles.itemActions}>
+              {onDuplicate && <button className={styles.dupBtn} onClick={() => onDuplicate(it.id)} title="Duplicar">⧉</button>}
+              {onEdit      && <button className={styles.editBtn} onClick={() => startEdit(it)}     title="Editar">✏️</button>}
+              <button className={styles.removeBtn} onClick={() => onRemove(it.id)}>✕</button>
+            </div>
+          </div>
+        )
+      ))}
+      <div className={styles.itemTotal}>
+        <span>Total</span>
+        <span>{eur(total)}</span>
+      </div>
+    </div>
+  )
+}
+
+// ── Sub-component: OtrosList ──────────────────────────────────────────────────
+
+function OtrosList({ items, onRemove, onEdit, onDuplicate }) {
+  const [editingId, setEditingId] = useState(null)
+  const [draft, setDraft]         = useState({})
+
+  if (items.length === 0) return null
+  const total = items.reduce((acc, it) => acc + toNum(it.conIva), 0)
+
+  function displayName(it) {
+    return [it.tipo, it.descripcion].filter(Boolean).join(' – ') || '—'
+  }
+
+  function startEdit(it) {
+    setEditingId(it.id)
+    setDraft({ tipo: it.tipo || '', descripcion: it.descripcion || '', fecha: it.fecha || TODAY, sinIva: it.sinIva || '', conIva: it.conIva || '' })
+  }
+
+  function saveEdit() {
+    onEdit?.(editingId, draft)
+    setEditingId(null)
+  }
+
+  return (
+    <div className={styles.itemList}>
+      {items.map(it => (
+        editingId === it.id ? (
+          <div key={it.id} className={styles.inlineEdit}>
+            <div className={styles.fieldRow}>
+              <div className="form-group">
+                <label>Tipo de gasto</label>
+                <input type="text" value={draft.tipo} autoFocus
+                  onChange={e => setDraft(d => ({ ...d, tipo: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label>Fecha</label>
+                <input type="date" value={draft.fecha}
+                  onChange={e => setDraft(d => ({ ...d, fecha: e.target.value }))} />
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Descripción</label>
+              <input type="text" value={draft.descripcion}
+                onChange={e => setDraft(d => ({ ...d, descripcion: e.target.value }))} />
+            </div>
+            <div className={styles.fieldRow}>
+              <div className="form-group">
+                <label>Sin IVA</label>
+                <input type="text" inputMode="decimal" value={draft.sinIva}
+                  onChange={e => setDraft(d => ({ ...d, sinIva: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label>Con IVA</label>
+                <input type="text" inputMode="decimal" value={draft.conIva}
+                  onChange={e => setDraft(d => ({ ...d, conIva: e.target.value }))} />
+              </div>
+              <div className={styles.inlineEditActions}>
+                <button className="btn btn-primary" onClick={saveEdit}>✓ Guardar</button>
+                <button className="btn btn-ghost" onClick={() => setEditingId(null)}>Cancelar</button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div key={it.id} className={styles.itemRow}>
+            <span className={styles.itemName}>{displayName(it)}</span>
+            <span className={styles.itemDate}>{formatDate(it.fecha)}</span>
+            <span className={styles.itemAmount}>{eur(it.sinIva)} / {eur(it.conIva)}</span>
+            <div className={styles.itemActions}>
+              {onDuplicate && <button className={styles.dupBtn} onClick={() => onDuplicate(it.id)} title="Duplicar">⧉</button>}
+              {onEdit      && <button className={styles.editBtn} onClick={() => startEdit(it)}     title="Editar">✏️</button>}
+              <button className={styles.removeBtn} onClick={() => onRemove(it.id)}>✕</button>
+            </div>
+          </div>
+        )
+      ))}
       <div className={styles.itemTotal}>
         <span>Total</span>
         <span>{eur(total)}</span>
@@ -589,7 +874,14 @@ function AdjuntosSection({ viajeId, adjuntos, onChange }) {
               return (
                 <div key={adj.id} className={styles.itemRow}>
                   <span className={styles.adjIcon}>{MIME_ICON(adj.mime)}</span>
-                  <span className={styles.itemName}>{adj.originalName}</span>
+                  <a
+                    href={`/api/gastos-viaje/${viajeId}/adjuntos/${adj.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.adjLink}
+                  >
+                    {adj.originalName}
+                  </a>
                   <span className={styles.itemDate}>{pageLabel}</span>
                   <button className={styles.removeBtn} onClick={() => handleRemove(adj)}>✕</button>
                 </div>
@@ -760,6 +1052,30 @@ export default function GastosViajeForm() {
 
   function setSection(key, fn) {
     setViaje(prev => ({ ...prev, [key]: fn(prev[key] || []) }))
+    setSaved(false)
+  }
+
+  function editTransporte(tipo, itemId, changes) {
+    setTransporte(tipo, list => list.map(i => i.id === itemId ? { ...i, ...changes } : i))
+  }
+
+  function dupTransporte(tipo, itemId) {
+    setTransporte(tipo, list => {
+      const it = list.find(i => i.id === itemId)
+      return it ? [...list, { ...it, id: uid() }] : list
+    })
+  }
+
+  function editSection(key, itemId, changes) {
+    setViaje(prev => ({ ...prev, [key]: prev[key].map(i => i.id === itemId ? { ...i, ...changes } : i) }))
+    setSaved(false)
+  }
+
+  function dupSection(key, itemId) {
+    setViaje(prev => {
+      const it = (prev[key] || []).find(i => i.id === itemId)
+      return it ? { ...prev, [key]: [...prev[key], { ...it, id: uid() }] } : prev
+    })
     setSaved(false)
   }
 
@@ -983,49 +1299,57 @@ export default function GastosViajeForm() {
         {/* Autopista */}
         <SubSection icon="🛣️" label="Autopista / Peaje" badge={tr.autopista.length}>
           <TicketForm tipo="autopista" onAdd={item => addTransporte('autopista', item)} />
-          <TicketList items={tr.autopista} onRemove={id => removeTransporte('autopista', id)} />
+          <TicketList items={tr.autopista} onRemove={id => removeTransporte('autopista', id)}
+            onEdit={(id, ch) => editTransporte('autopista', id, ch)} onDuplicate={id => dupTransporte('autopista', id)} />
         </SubSection>
 
         {/* Coche */}
         <SubSection icon="🚗" label="Coche (vehículo propio)" badge={tr.coche.length}>
           <CocheForm onAdd={item => addTransporte('coche', item)} />
-          <CocheList items={tr.coche} onRemove={id => removeTransporte('coche', id)} />
+          <CocheList items={tr.coche} onRemove={id => removeTransporte('coche', id)}
+            onEdit={(id, ch) => editTransporte('coche', id, ch)} onDuplicate={id => dupTransporte('coche', id)} />
         </SubSection>
 
         {/* Avión */}
         <SubSection icon="✈️" label="Avión" badge={tr.avion.length}>
           <TicketForm tipo="avion" onAdd={item => addTransporte('avion', item)} />
-          <TicketList items={tr.avion} onRemove={id => removeTransporte('avion', id)} />
+          <TicketList items={tr.avion} onRemove={id => removeTransporte('avion', id)}
+            onEdit={(id, ch) => editTransporte('avion', id, ch)} onDuplicate={id => dupTransporte('avion', id)} />
         </SubSection>
 
         {/* Tren */}
         <SubSection icon="🚂" label="Tren" badge={tr.tren.length}>
           <TicketForm tipo="tren" onAdd={item => addTransporte('tren', item)} />
-          <TicketList items={tr.tren} onRemove={id => removeTransporte('tren', id)} />
+          <TicketList items={tr.tren} onRemove={id => removeTransporte('tren', id)}
+            onEdit={(id, ch) => editTransporte('tren', id, ch)} onDuplicate={id => dupTransporte('tren', id)} />
         </SubSection>
 
         {/* Autobús */}
         <SubSection icon="🚌" label="Autobús" badge={tr.autobus.length}>
           <TicketForm tipo="autobus" onAdd={item => addTransporte('autobus', item)} />
-          <TicketList items={tr.autobus} onRemove={id => removeTransporte('autobus', id)} />
+          <TicketList items={tr.autobus} onRemove={id => removeTransporte('autobus', id)}
+            onEdit={(id, ch) => editTransporte('autobus', id, ch)} onDuplicate={id => dupTransporte('autobus', id)} />
         </SubSection>
 
         {/* Parking */}
         <SubSection icon="🅿️" label="Parking" badge={tr.parking.length}>
           <TicketForm tipo="parking" onAdd={item => addTransporte('parking', item)} />
-          <TicketList items={tr.parking} onRemove={id => removeTransporte('parking', id)} />
+          <TicketList items={tr.parking} onRemove={id => removeTransporte('parking', id)}
+            onEdit={(id, ch) => editTransporte('parking', id, ch)} onDuplicate={id => dupTransporte('parking', id)} />
         </SubSection>
 
         {/* Taxi */}
         <SubSection icon="🚕" label="Taxi / VTC" badge={tr.taxi.length}>
           <TicketForm tipo="taxi" onAdd={item => addTransporte('taxi', item)} />
-          <TicketList items={tr.taxi} onRemove={id => removeTransporte('taxi', id)} />
+          <TicketList items={tr.taxi} onRemove={id => removeTransporte('taxi', id)}
+            onEdit={(id, ch) => editTransporte('taxi', id, ch)} onDuplicate={id => dupTransporte('taxi', id)} />
         </SubSection>
 
         {/* Otros transporte */}
         <SubSection icon="🛺" label="Otros transportes" badge={tr.otros.length}>
           <OtrosTrForm onAdd={item => addTransporte('otros', item)} />
-          <TicketList items={tr.otros} onRemove={id => removeTransporte('otros', id)} />
+          <TicketList items={tr.otros} onRemove={id => removeTransporte('otros', id)}
+            onEdit={(id, ch) => editTransporte('otros', id, ch)} onDuplicate={id => dupTransporte('otros', id)} />
         </SubSection>
 
         {totalTransporte > 0 && (
@@ -1038,9 +1362,11 @@ export default function GastosViajeForm() {
       {/* Manutención */}
       <Section icon="🍽️" label="Manutención" badge={viaje.manutencion.length}>
         <ManutencioForm onAdd={item => setSection('manutencion', list => [...list, item])} />
-        <TicketList
-          items={viaje.manutencion.map(it => ({ ...it, nombre: [it.tipo ? (it.tipo.charAt(0).toUpperCase() + it.tipo.slice(1)) : '', it.nombre || it.lugar].filter(Boolean).join(' – ') }))}
+        <ManutencioList
+          items={viaje.manutencion}
           onRemove={id => setSection('manutencion', list => list.filter(i => i.id !== id))}
+          onEdit={(id, ch) => editSection('manutencion', id, ch)}
+          onDuplicate={id => dupSection('manutencion', id)}
         />
         {totalManutencion > 0 && (
           <div className={styles.sectionTotal}>
@@ -1055,6 +1381,8 @@ export default function GastosViajeForm() {
         <TicketList
           items={viaje.hotel}
           onRemove={id => setSection('hotel', list => list.filter(i => i.id !== id))}
+          onEdit={(id, ch) => editSection('hotel', id, ch)}
+          onDuplicate={id => dupSection('hotel', id)}
         />
         {totalHotel > 0 && (
           <div className={styles.sectionTotal}>
@@ -1066,12 +1394,11 @@ export default function GastosViajeForm() {
       {/* Otros gastos */}
       <Section icon="📋" label="Otros gastos" badge={viaje.otros.length}>
         <OtrosGastoForm onAdd={item => setSection('otros', list => [...list, item])} />
-        <TicketList
-          items={viaje.otros.map(it => ({
-            ...it,
-            nombre: [it.tipo, it.descripcion].filter(Boolean).join(' – ') || '—',
-          }))}
+        <OtrosList
+          items={viaje.otros}
           onRemove={id => setSection('otros', list => list.filter(i => i.id !== id))}
+          onEdit={(id, ch) => editSection('otros', id, ch)}
+          onDuplicate={id => dupSection('otros', id)}
         />
         {totalOtros > 0 && (
           <div className={styles.sectionTotal}>

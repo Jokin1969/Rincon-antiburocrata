@@ -305,6 +305,13 @@
   flex-shrink: 0;
 }
 
+.itemActions {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex-shrink: 0;
+}
+
 .removeBtn {
   background: none;
   border: none;
@@ -320,6 +327,61 @@
 .removeBtn:hover {
   color: var(--danger, #e53e3e);
   background: rgba(229,62,62,0.08);
+}
+
+.editBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: 0.15rem 0.35rem;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.editBtn:hover {
+  color: var(--accent, #2563eb);
+  background: rgba(37,99,235,0.08);
+}
+
+.dupBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 1rem;
+  padding: 0.15rem 0.35rem;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.dupBtn:hover {
+  color: var(--accent, #2563eb);
+  background: rgba(37,99,235,0.08);
+}
+
+/* ── Inline edit ─────────────────────────────────────────────────────────── */
+
+.inlineEdit {
+  padding: 0.75rem;
+  background: rgba(37,99,235,0.04);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.inlineEditActions {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.4rem;
+  min-width: 170px;
+  padding-bottom: 0;
 }
 
 .itemTotal {
@@ -511,4 +573,20 @@
 .adjIcon {
   font-size: 1.1rem;
   flex-shrink: 0;
+}
+
+.adjLink {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.adjLink:hover {
+  color: var(--accent, #2563eb);
+  text-decoration: underline;
 }
