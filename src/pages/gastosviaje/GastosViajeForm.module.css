@@ -284,6 +284,7 @@
   flex-wrap: wrap;
 }
 
+.itemBlock > .itemRow,
 .itemRow:last-of-type {
   border-bottom: none;
 }
@@ -363,6 +364,91 @@
 .dupBtn:hover {
   color: var(--accent, #2563eb);
   background: rgba(37,99,235,0.08);
+}
+
+/* ── Item block (row + adjunto sub-row) ──────────────────────────────────── */
+
+.itemBlock {
+  border-bottom: 1px solid var(--border);
+}
+
+.itemBlock:last-of-type {
+  border-bottom: none;
+}
+
+.itemBlock > .itemRow {
+  border-bottom: none;
+}
+
+/* ── Per-item adjunto ────────────────────────────────────────────────────── */
+
+.itemAdjunto {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.2rem 0.9rem 0.35rem;
+  background: rgba(37,99,235,0.03);
+  font-size: 0.78rem;
+  flex-wrap: wrap;
+}
+
+.adjuntoItemBtn {
+  background: none;
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+  padding: 0.12rem 0.6rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-family: inherit;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.adjuntoItemBtn:hover:not(:disabled) {
+  border-color: var(--accent, #2563eb);
+  color: var(--accent, #2563eb);
+}
+
+.adjuntoItemBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.adjuntoItemLink {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.adjuntoItemLink:hover {
+  color: var(--accent, #2563eb);
+  text-decoration: underline;
+}
+
+.adjuntoItemRemove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.adjuntoItemRemove:hover {
+  color: var(--danger, #e53e3e);
+}
+
+.adjuntoItemError {
+  color: var(--danger, #e53e3e);
+  font-size: 0.73rem;
 }
 
 /* ── Inline edit ─────────────────────────────────────────────────────────── */

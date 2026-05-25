@@ -871,18 +871,27 @@ app.post('/api/gastos-viaje/:id/generar', async (req, res) => {
   try {
     const docxBuffer = await generateGastosViaje(viaje)
 
-    // Sin adjuntos o formato DOCX: enviar directamente
-    const adjuntos = viaje.adjuntos || []
-    if (format === 'docx' || adjuntos.length === 0) {
+    // Recoger adjuntos globales + adjuntos individuales de cada gasto
+    const globalAdj  = viaje.adjuntos || []
+    const tr         = viaje.transporte || {}
+    const itemAdj    = [
+      ...(tr.autopista || []), ...(tr.coche || []), ...(tr.avion || []),
+      ...(tr.tren || []),      ...(tr.autobus || []), ...(tr.parking || []),
+      ...(tr.taxi || []),      ...(tr.otros || []),
+      ...(viaje.manutencion || []), ...(viaje.hotel || []), ...(viaje.otros || []),
+    ].filter(it => it.adjunto?.filename).map(it => it.adjunto)
+
+    const allAdj = [...itemAdj, ...globalAdj]
+
+    if (format === 'docx' || allAdj.length === 0) {
       return sendDocument(res, docxBuffer, base, format)
     }
 
-    // Con adjuntos en PDF: convertir informe + adjuntos y fusionar
     const adjuntosDir = join(viajesDir, 'adjuntos', req.params.id)
     const mainPdf     = docxToPdf(docxBuffer)
     const parts       = [mainPdf]
 
-    for (const meta of adjuntos) {
+    for (const meta of allAdj) {
       const filePath = join(adjuntosDir, meta.filename)
       if (!existsSync(filePath)) continue
       try {
@@ -920,15 +929,23 @@ app.post('/api/gastos-viaje/:id/enviar-email', async (req, res) => {
 
   try {
     const docxBuffer = await generateGastosViaje(viaje)
-    const adjuntos   = viaje.adjuntos || []
+    const globalAdj  = viaje.adjuntos || []
+    const trE        = viaje.transporte || {}
+    const itemAdjE   = [
+      ...(trE.autopista || []), ...(trE.coche || []), ...(trE.avion || []),
+      ...(trE.tren || []),      ...(trE.autobus || []), ...(trE.parking || []),
+      ...(trE.taxi || []),      ...(trE.otros || []),
+      ...(viaje.manutencion || []), ...(viaje.hotel || []), ...(viaje.otros || []),
+    ].filter(it => it.adjunto?.filename).map(it => it.adjunto)
+    const allAdjE = [...itemAdjE, ...globalAdj]
     let pdfBuffer
 
-    if (adjuntos.length === 0) {
+    if (allAdjE.length === 0) {
       pdfBuffer = docxToPdf(docxBuffer)
     } else {
       const adjuntosDir = join(viajesDir, 'adjuntos', req.params.id)
       const parts       = [docxToPdf(docxBuffer)]
-      for (const meta of adjuntos) {
+      for (const meta of allAdjE) {
         const filePath = join(adjuntosDir, meta.filename)
         if (!existsSync(filePath)) continue
         try {
