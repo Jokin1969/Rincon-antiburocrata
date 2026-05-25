@@ -40,7 +40,16 @@ const EMPTY_FORM = {
     autoridad_competente: 'Convalidado por el Ministerio de Agricultura, Pesca y Alimentación (RD 1201/2005)',
     fecha_acreditacion:   '2023-12-27',
   },
-  participantes: [],
+  participantes: [
+    { nombre_apellidos: 'Jorge Moreno Charco',              nif_pasaporte: '74520022E', funciones: 'B,C,D' },
+    { nombre_apellidos: 'Hasier Eraña Lasagabaster',        nif_pasaporte: '72726214F', funciones: 'B,C'   },
+    { nombre_apellidos: 'Patricia Piñeiro Busto',           nif_pasaporte: '76047003X', funciones: 'B,C'   },
+    { nombre_apellidos: 'Nuno Filipe Coutinho Gonçalvez A', nif_pasaporte: 'C896204',   funciones: 'B,C'   },
+    { nombre_apellidos: 'Cristina Sampedro Torres-Quevedo', nif_pasaporte: '06028318H', funciones: 'B,C'   },
+    { nombre_apellidos: 'Maitena San Juan Ansoleaga',       nif_pasaporte: '78997060H', funciones: 'B,C'   },
+    { nombre_apellidos: 'Eva Fernández Muñoz',              nif_pasaporte: '79068133K', funciones: 'B,C'   },
+    { nombre_apellidos: 'Carlos Díaz Domínguez',            nif_pasaporte: '76047003X', funciones: 'B,C'   },
+  ],
   duracion: { fecha_inicio: '', fecha_fin: '' },
   financiacion: {
     entidad_programa:    'Plan Nacional (P. of Concept)',
