@@ -146,17 +146,18 @@ export default function FacturaProforma() {
   }
 
   function applyShipper(persona) {
-    setForm(prev => ({ ...prev, shipper: personaToForm(persona) }))
-    const logoFile = persona.logo
-    if (logoFile) {
+    setForm(prev => ({
+      ...prev,
+      shipper:    personaToForm(persona),
+      paisOrigen: persona.pais || prev.paisOrigen,
+    }))
+    // Priority: stored data URL > SVG filename reference
+    const src = persona.logoDataUrl || (persona.logo ? `/assets/logos/${persona.logo}` : null)
+    if (src) {
       setLogoStatus('loading')
       setLogoData(null)
-      const url = `/assets/logos/${logoFile}`
-      svgUrlToPng(url)
-        .then(d => {
-          setLogoData({ ...d, previewUrl: url })
-          setLogoStatus('ok')
-        })
+      svgUrlToPng(src, 300, 120)
+        .then(d => { setLogoData({ ...d, previewUrl: src }); setLogoStatus('ok') })
         .catch(() => setLogoStatus('error'))
     } else {
       setLogoStatus('none')
@@ -739,6 +740,17 @@ function ShipperDirectory({ shippers, open, onToggle, onSave }) {
     setDraft({ ...entry })
   }
 
+  function copyEntry(entry) {
+    const tempId = `new_${Date.now()}`
+    setEditId(tempId)
+    setDraft({
+      ...entry,
+      id: tempId,
+      nombre_display: (entry.nombre_display || entry.nombre_contacto || '') + ' (copia)',
+      _isNew: true,
+    })
+  }
+
   function startNew() {
     const tempId = `new_${Date.now()}`
     setEditId(tempId)
@@ -800,6 +812,10 @@ function ShipperDirectory({ shippers, open, onToggle, onSave }) {
                     onClick={() => editId === entry.id ? cancelEdit() : startEdit(entry)}>
                     {editId === entry.id ? 'Cancelar' : 'Editar'}
                   </button>
+                  <button type="button" className={styles.dirEditBtn}
+                    onClick={() => copyEntry(entry)} title="Duplicar esta entrada">
+                    Copiar
+                  </button>
                   <button type="button" className={styles.dirDelBtn} onClick={() => deleteEntry(entry.id)}>✕</button>
                 </div>
               </div>
@@ -833,6 +849,8 @@ function ShipperDirectory({ shippers, open, onToggle, onSave }) {
 }
 
 function DirEntryForm({ draft, set, onSave, onCancel, styles }) {
+  const fileRef = useRef(null)
+
   const fields = [
     { k: 'nombre_display',    label: 'Nombre en lista',    full: true },
     { k: 'nombre_contacto',   label: 'Nombre contacto' },
@@ -846,9 +864,19 @@ function DirEntryForm({ draft, set, onSave, onCancel, styles }) {
     { k: 'fax',               label: 'Fax' },
     { k: 'email',             label: 'Email',              full: true },
     { k: 'vat_tax_id',        label: 'VAT / Tax ID' },
-    { k: 'logo',              label: 'Logo (nombre SVG)' },
     { k: 'notas',             label: 'Notas',              full: true },
   ]
+
+  async function handleLogoFile(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const dataUrl = await new Promise(resolve => {
+      const r = new FileReader(); r.onload = ev => resolve(ev.target.result); r.readAsDataURL(file)
+    })
+    set('logoDataUrl', dataUrl)
+    e.target.value = ''
+  }
+
   return (
     <div className={styles.dirForm}>
       {fields.map(f => (
@@ -862,6 +890,26 @@ function DirEntryForm({ draft, set, onSave, onCancel, styles }) {
           />
         </div>
       ))}
+
+      {/* Logo */}
+      <div className={styles.dirFormFull}>
+        <label className={styles.dirFormLabel}>Logo del contacto</label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+          {draft.logoDataUrl ? (
+            <>
+              <img src={draft.logoDataUrl} alt="logo" style={{ height: '36px', maxWidth: '120px', objectFit: 'contain', border: '1px solid var(--border)', borderRadius: '4px', padding: '2px' }} />
+              <button type="button" className={styles.dirEditBtn} onClick={() => fileRef.current?.click()}>Cambiar</button>
+              <button type="button" className={styles.dirCancelBtn} onClick={() => set('logoDataUrl', null)}>Quitar</button>
+            </>
+          ) : (
+            <button type="button" className={styles.dirEditBtn} onClick={() => fileRef.current?.click()}>
+              ↑ Adjuntar logo
+            </button>
+          )}
+          <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleLogoFile} />
+        </div>
+      </div>
+
       <div className={styles.dirFormFull} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         <label className={styles.dirFormLabel} style={{ margin: 0 }}>CIC bioGUNE</label>
         <input type="checkbox" checked={!!draft.es_cicbiogune} onChange={e => set('es_cicbiogune', e.target.checked)} />
