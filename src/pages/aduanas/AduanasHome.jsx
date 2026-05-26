@@ -35,6 +35,14 @@ const DOCS = [
     href: '/aduanas/declaracion-exenta',
     status: 'ready',
   },
+  {
+    id: 'cert-no-peligrosidad',
+    name: 'Certificado de No Peligrosidad',
+    description: 'Certifica que el material biológico enviado no es tóxico, explosivo, oxidante, infeccioso, radioactivo, corrosivo ni magnético. Disponible en español, inglés o bilingüe.',
+    icon: '✅',
+    href: '/aduanas/cert-no-peligrosidad',
+    status: 'ready',
+  },
 ]
 
 export default function AduanasHome() {

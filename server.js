@@ -19,6 +19,7 @@ import { generateFacturaProforma } from './generators/facturaProforma.js'
 import { generatePqpImport } from './generators/pqpImport.js'
 import { generateDocumento1403 } from './generators/documento1403.js'
 import { generateDeclaracionExenta } from './generators/declaracionExenta.js'
+import { generateCertNoPeligrosidad } from './generators/certNoPeligrosidad.js'
 import { generateCertificadoExclusividad } from './generators/certificadoExclusividad.js'
 import { generateGastosViaje }             from './generators/gastosViaje.js'
 import { docxToPdf }                       from './utils/pdf.js'
@@ -375,6 +376,21 @@ app.post('/api/aduanas/pqp-import', async (req, res) => {
     sendDocument(res, docxBuffer, base, format)
   } catch (err) {
     console.error('PQP import error:', err)
+    res.status(500).json({ error: 'Error al generar el documento.' })
+  }
+})
+
+app.post('/api/aduanas/cert-no-peligrosidad', async (req, res) => {
+  const { material, hsCode } = req.body
+  if (!material?.trim()) return res.status(400).json({ error: 'Campo obligatorio: material.' })
+  if (!hsCode?.trim())   return res.status(400).json({ error: 'Campo obligatorio: hsCode.' })
+  const format = req.query.format === 'pdf' ? 'pdf' : 'docx'
+  try {
+    const docxBuffer = await generateCertNoPeligrosidad(req.body)
+    const num  = (req.body.numero || 'CertNoPeligrosidad').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 30)
+    sendDocument(res, docxBuffer, num, format)
+  } catch (err) {
+    console.error('CertNoPeligrosidad error:', err)
     res.status(500).json({ error: 'Error al generar el documento.' })
   }
 })
