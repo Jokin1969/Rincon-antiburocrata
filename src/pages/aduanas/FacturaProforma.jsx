@@ -60,6 +60,8 @@ export default function FacturaProforma() {
   const [logoData, setLogoData] = useState(null)
   // null=no shipper selected yet | 'loading' | 'ok' | 'error' | 'none'
   const [logoStatus, setLogoStatus] = useState(null)
+  const [selectedShipperId, setSelectedShipperId] = useState(null)
+  const [logoSavedMsg, setLogoSavedMsg] = useState(false)
   const logoFileRef = useRef(null)
   const [showDirectory, setShowDirectory] = useState(false)
 
@@ -146,6 +148,7 @@ export default function FacturaProforma() {
   }
 
   function applyShipper(persona) {
+    setSelectedShipperId(persona.id ?? null)
     setForm(prev => ({
       ...prev,
       shipper:    personaToForm(persona),
@@ -167,6 +170,45 @@ export default function FacturaProforma() {
 
   function applyConsignee(persona) {
     setForm(prev => ({ ...prev, consignee: personaToForm(persona) }))
+  }
+
+  async function handlePasteLogo(e) {
+    const items = e.clipboardData?.items
+    if (!items) return
+    let imageItem = null
+    for (const item of items) {
+      if (item.type.startsWith('image/')) { imageItem = item; break }
+    }
+    if (!imageItem) return
+    e.preventDefault()
+    const file = imageItem.getAsFile()
+    if (!file) return
+    const dataUrl = await new Promise(resolve => {
+      const r = new FileReader(); r.onload = ev => resolve(ev.target.result); r.readAsDataURL(file)
+    })
+    setLogoStatus('loading')
+    try {
+      const d = await svgUrlToPng(dataUrl, 300, 120)
+      setLogoData({ ...d, previewUrl: dataUrl })
+      setLogoStatus('ok')
+    } catch {
+      setLogoStatus('error')
+    }
+  }
+
+  async function handleSaveLogoToDir() {
+    if (!selectedShipperId || !logoData) return
+    const updated = shippers.map(s =>
+      s.id === selectedShipperId ? { ...s, logoDataUrl: logoData.previewUrl } : s
+    )
+    setShippers(updated)
+    await fetch('/api/aduanas/shippers', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated),
+    }).catch(() => {})
+    setLogoSavedMsg(true)
+    setTimeout(() => setLogoSavedMsg(false), 2500)
   }
 
   async function handleLogoUpload(e) {
@@ -415,7 +457,10 @@ export default function FacturaProforma() {
             onSelectShipper={applyShipper}
             logoStatus={logoStatus}
             logoData={logoData}
+            logoSavedMsg={logoSavedMsg}
             onUploadLogo={() => logoFileRef.current?.click()}
+            onPasteLogo={handlePasteLogo}
+            onSaveLogo={selectedShipperId ? handleSaveLogoToDir : null}
           />
           <PersonaSection
             title="Consignee (Destinatario)"
@@ -652,7 +697,7 @@ export default function FacturaProforma() {
 
 // ── PersonaSection ────────────────────────────────────────────────────────────
 
-function PersonaSection({ title, values, onChange, shippers, onSelectShipper, logoStatus, logoData, onUploadLogo }) {
+function PersonaSection({ title, values, onChange, shippers, onSelectShipper, logoStatus, logoData, logoSavedMsg, onUploadLogo, onPasteLogo, onSaveLogo }) {
   const isShipper = logoStatus !== undefined
   return (
     <div className={styles.personaSection}>
@@ -676,23 +721,38 @@ function PersonaSection({ title, values, onChange, shippers, onSelectShipper, lo
       </div>
 
       {/* Logo zone — only for Shipper column */}
-      {isShipper && logoStatus !== null && (
+      {isShipper && (
         <div className={styles.logoZone}>
           {logoStatus === 'loading' && (
             <span className={styles.logoLoading}>Cargando logo…</span>
           )}
-          {logoStatus === 'ok' && logoData && (
+          {logoStatus === 'ok' && logoData ? (
             <div className={styles.logoPreview}>
               <img src={logoData.previewUrl} alt="logo" className={styles.logoPreviewImg} />
               <span className={styles.logoOk}>✓ Logo cargado</span>
-              <button type="button" className={styles.logoChangeBtn} onClick={onUploadLogo} title="Cambiar logo">↑ Cambiar</button>
+              <button type="button" className={styles.logoChangeBtn} onClick={onUploadLogo} title="Cambiar logo desde archivo">↑ Archivo</button>
+              <div
+                className={styles.logoPasteSmall}
+                tabIndex={0}
+                onPaste={onPasteLogo}
+                title="Haz clic aquí y pega el logo con Ctrl+V"
+              >
+                📋 Pegar
+              </div>
+              {onSaveLogo && (
+                <button type="button" className={styles.logoSaveBtn} onClick={onSaveLogo} title="Guardar este logo en el directorio de contactos">
+                  💾 Guardar en directorio
+                </button>
+              )}
+              {logoSavedMsg && <span className={styles.logoSavedMsg}>✓ Guardado</span>}
             </div>
-          )}
-          {(logoStatus === 'none' || logoStatus === 'error') && (
-            <div className={styles.logoWarning}>
-              <span>⚠ Sin logo para esta organización.</span>
-              <button type="button" className={styles.logoUploadBtn} onClick={onUploadLogo}>
-                ↑ Adjuntar logo
+          ) : logoStatus !== 'loading' && (
+            <div className={styles.logoPasteZone} tabIndex={0} onPaste={onPasteLogo}>
+              <span className={styles.logoPasteHint}>
+                📋 Haz clic aquí y pega el logo con <kbd>Ctrl+V</kbd>
+              </span>
+              <button type="button" className={styles.logoUploadBtn} onClick={onUploadLogo} onMouseDown={e => e.stopPropagation()}>
+                ↑ Desde archivo
               </button>
             </div>
           )}

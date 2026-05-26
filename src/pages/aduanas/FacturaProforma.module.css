@@ -743,6 +743,85 @@
 
 .logoUploadBtn:hover { background: #fef3c7; }
 
+.logoPasteZone {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.55rem 0.9rem;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.logoPasteZone:focus,
+.logoPasteZone:focus-within {
+  border-color: var(--accent);
+  background: #f0f7ff;
+}
+
+.logoPasteHint {
+  font-size: 0.75rem;
+  color: var(--muted);
+  user-select: none;
+}
+
+.logoPasteHint kbd {
+  display: inline-block;
+  padding: 0 0.3em;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 0.7rem;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.logoPasteSmall {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--muted-light);
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.logoPasteSmall:focus,
+.logoPasteSmall:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: #f0f7ff;
+}
+
+.logoSaveBtn {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid #16a34a;
+  background: transparent;
+  color: #16a34a;
+  transition: background 0.15s;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.logoSaveBtn:hover { background: #f0fdf4; }
+
+.logoSavedMsg {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #16a34a;
+}
+
 /* ── Shipper Directory Editor ─────────────────────────────────────────────── */
 
 .dirPanel {
