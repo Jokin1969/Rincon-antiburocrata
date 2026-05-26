@@ -1790,9 +1790,11 @@ router.post('/proyectos/:id/exportar/pdf-unificado', uploadMem.any(), async (req
     const { mergePdfs } = await import('../../utils/mergePdf.js')
     const merged = await mergePdfs(pdfBuffers)
 
-    const titulo = safeName(proyecto.seccionA?.titulo ?? proyecto.id)
+    const today    = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+    const words    = (proyecto.seccionA?.titulo ?? '').split(/\s+/).filter(Boolean).slice(0, 4).join('_')
+    const fileTitle = words ? `${today}_${words}` : `${today}_${proyecto.id.slice(0, 8)}`
     res.setHeader('Content-Type', 'application/pdf')
-    res.setHeader('Content-Disposition', contentDispositionHeader('attachment', `Proyecto_${titulo}_unificado.pdf`))
+    res.setHeader('Content-Disposition', contentDispositionHeader('attachment', `${fileTitle}.pdf`))
     res.send(merged)
   } catch (e) {
     res.status(500).json({ error: e.message })
