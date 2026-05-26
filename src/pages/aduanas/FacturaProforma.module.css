@@ -1047,3 +1047,45 @@
   gap: 0.75rem;
   margin-top: 0.5rem;
 }
+
+/* ── IA Translation row (CertNoPeligrosidad) ─────────────────────────────── */
+
+.translateRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.translateLabel {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted-light);
+}
+
+.translateBtn {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted-light);
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+
+.translateBtn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.translateBtn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.translateErr {
+  font-size: 0.8rem;
+  color: #b91c1c;
+  margin: 0 0 0.4rem;
+}

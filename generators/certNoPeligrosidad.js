@@ -62,6 +62,7 @@ export async function generateCertNoPeligrosidad(data) {
     cif          = '',
     vat          = '',
     material     = '',
+    materialEn   = '',
     hsCode       = '',
     incluirFirma = true,
     incluirSello = true,
@@ -160,6 +161,7 @@ export async function generateCertNoPeligrosidad(data) {
 
   // ── 5. Cuerpo en inglés ───────────────────────────────────────────────────
   if (showEn) {
+    const materialEnText = materialEn?.trim() || material
     children.push(p(
       [
         t(nombre || '_______________', { bold: true }),
@@ -168,7 +170,7 @@ export async function generateCertNoPeligrosidad(data) {
         t(', Principal Investigator at '),
         t(centroEN || '_______________', { bold: true }),
         t(' declares that the product contained in this box that consists of '),
-        t(material || '_______________', { bold: true }),
+        t(materialEnText || '_______________', { bold: true }),
         t(' (HS Code: '),
         t(hsCode   || '______', { bold: true }),
         t('), is neither explosive, nor oxidizing, poisonous/toxic, infectious, radioactive, corrosive or magnetic, and therefore, it is proved not to be a dangerous goods for transportation.'),

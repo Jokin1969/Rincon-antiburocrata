@@ -747,6 +747,69 @@ app.post('/api/ia/hs-code', async (req, res) => {
   }
 })
 
+// ── IA: traducción ES → EN para documentos aduaneros ─────────────────────────
+
+const TRANSLATE_SYSTEM_PROMPT =
+  'Eres un traductor técnico especializado en material biológico de investigación, ' +
+  'aduanas y envíos internacionales. ' +
+  'Traduce el texto que te proporcionen del español al inglés de forma precisa, ' +
+  'manteniendo la terminología técnica, las cantidades y el formato original. ' +
+  'Responde ÚNICAMENTE con el texto traducido, sin comentarios, introducciones ' +
+  'ni explicaciones adicionales.'
+
+async function translateWithClaude(texto) {
+  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  const message = await anthropic.messages.create({
+    model: 'claude-opus-4-7',
+    max_tokens: 1024,
+    system: TRANSLATE_SYSTEM_PROMPT,
+    messages: [{ role: 'user', content: texto }],
+  })
+  return { traduccion: message.content.find(b => b.type === 'text')?.text?.trim() || '' }
+}
+
+async function translateWithOpenAI(texto) {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [
+      { role: 'system', content: TRANSLATE_SYSTEM_PROMPT },
+      { role: 'user',   content: texto },
+    ],
+    max_tokens: 1024,
+  })
+  return { traduccion: completion.choices[0].message.content.trim() }
+}
+
+async function translateWithGemini(texto) {
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-2.0-flash-lite',
+    systemInstruction: TRANSLATE_SYSTEM_PROMPT,
+  })
+  const result = await model.generateContent({ contents: [{ role: 'user', parts: [{ text: texto }] }] })
+  return { traduccion: result.response.text().trim() }
+}
+
+app.post('/api/ia/translate', async (req, res) => {
+  const { texto, provider = 'claude' } = req.body
+  if (!texto?.trim()) return res.status(400).json({ error: 'Campo obligatorio: texto' })
+  const KEY_MAP = { claude: 'ANTHROPIC_API_KEY', openai: 'OPENAI_API_KEY', gemini: 'GEMINI_API_KEY' }
+  const keyName = KEY_MAP[provider]
+  if (!keyName) return res.status(400).json({ error: `Proveedor desconocido: ${provider}` })
+  if (!process.env[keyName]) return res.status(503).json({ error: `${keyName} no configurada en el servidor.` })
+  try {
+    let data
+    if (provider === 'claude')      data = await translateWithClaude(texto)
+    else if (provider === 'openai') data = await translateWithOpenAI(texto)
+    else                            data = await translateWithGemini(texto)
+    res.json(data)
+  } catch (err) {
+    console.error(`IA translate [${provider}] error:`, err)
+    res.status(500).json({ error: classifyAIError(err, provider) })
+  }
+})
+
 // ── IA: sugerir código TARIC (UE, 10 dígitos) ────────────────────────────────
 
 const TARIC_SYSTEM_PROMPT =

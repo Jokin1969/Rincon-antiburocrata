@@ -14,6 +14,7 @@ const DEFAULTS = {
   cif:          'G95229142',
   vat:          'ESG95229142',
   material:     '',
+  materialEn:   '',
   hsCode:       '',
   incluirFirma: true,
   incluirSello: true,
@@ -29,6 +30,8 @@ export default function CertNoPeligrosidad() {
   const [savedMsg, setSavedMsg]   = useState(false)
   const [logoData, setLogoData]   = useState(null)
   const [logoStatus, setLogoStatus] = useState(null)
+  const [translateLoading, setTranslateLoading] = useState(null)
+  const [translateError, setTranslateError]     = useState(null)
   const logoFileRef = useRef(null)
   const numeroRef   = useRef(null)
 
@@ -69,6 +72,29 @@ export default function CertNoPeligrosidad() {
       setLogoStatus('ok')
     } catch { setLogoStatus('error') }
     e.target.value = ''
+  }
+
+  async function handleTranslate(provider) {
+    if (!form.material.trim()) return
+    setTranslateLoading(provider)
+    setTranslateError(null)
+    try {
+      const res = await fetch('/api/ia/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texto: form.material, provider }),
+      })
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        throw new Error(d.error || `Error ${res.status}`)
+      }
+      const { traduccion } = await res.json()
+      setField('materialEn', traduccion)
+    } catch (err) {
+      setTranslateError(err.message)
+    } finally {
+      setTranslateLoading(null)
+    }
   }
 
   async function handleSave() {
@@ -358,6 +384,39 @@ export default function CertNoPeligrosidad() {
             style={{ width: '100%', fontFamily: 'inherit', fontSize: '0.875rem', padding: '0.45rem 0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', resize: 'vertical' }}
           />
         </div>
+
+        {/* Descripción en inglés + botones IA — sólo en modo bilingüe */}
+        {form.lang === 'es+en' && (
+          <div className="form-group">
+            <label htmlFor="materialEn">
+              Descripción en inglés{' '}
+              <span style={{ fontWeight: 400, color: 'var(--muted)', fontSize: '0.8em' }}>(para el texto en inglés del documento bilingüe)</span>
+            </label>
+            <div className={styles.translateRow}>
+              <span className={styles.translateLabel}>Traducir con IA:</span>
+              {[{ v: 'claude', l: 'Claude' }, { v: 'openai', l: 'GPT-4o' }, { v: 'gemini', l: 'Gemini' }].map(p => (
+                <button
+                  key={p.v}
+                  type="button"
+                  className={styles.translateBtn}
+                  disabled={!form.material.trim() || translateLoading !== null}
+                  onClick={() => handleTranslate(p.v)}
+                >
+                  {translateLoading === p.v ? 'Traduciendo…' : `✦ ${p.l}`}
+                </button>
+              ))}
+            </div>
+            {translateError && <p className={styles.translateErr}>{translateError}</p>}
+            <textarea
+              id="materialEn"
+              rows={3}
+              value={form.materialEn}
+              onChange={e => setField('materialEn', e.target.value)}
+              placeholder="Ej: 160 tubes of 0.5 ml each containing mouse plasma for research and diagnosis"
+              style={{ width: '100%', fontFamily: 'inherit', fontSize: '0.875rem', padding: '0.45rem 0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', resize: 'vertical' }}
+            />
+          </div>
+        )}
 
         {/* Código HS */}
         <div className="form-group" style={{ maxWidth: '260px' }}>
