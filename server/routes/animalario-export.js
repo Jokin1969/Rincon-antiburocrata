@@ -349,7 +349,9 @@ function secRow(title, span = 1) {
   return tr(gc([par([txB(title)])], { w: w(100), span }))
 }
 // Bold paragraph heading used for B.x and D.x section labels
-const secHead = text => new Paragraph({ children: [txB(text)], spacing: { before: 120, after: 40 } })
+const secHead   = text => new Paragraph({ children: [txB(text)],                    spacing: { before: 120, after: 40 } })
+const secHeadSm = text => new Paragraph({ children: [txB(text, { size: SZ_SM })],   spacing: { before: 120, after: 40 } })
+const noteDisplay = (val, nota) => (val != null && String(val).trim()) ? (nota ? `${val} (${nota})` : String(val)) : null
 // Single-cell full-width light-blue header row (accepts string or TextRun[])
 function secRowBlue(children, span = 1) {
   const parChildren = typeof children === 'string'
@@ -787,7 +789,7 @@ async function genSeccionB(procId, numeroOverride) {
       kvRowB('Cepa/línea',              dg.cepa_linea),
       kvRowB('Sexo',                    dg.sexo),
       kvRowB('Edad',                    dg.edad_peso),
-      kvRowB('Nº total de animales',    dg.num_animales),
+      kvRowB('Nº total de animales',    dash(noteDisplay(dg.num_animales, dg.num_animales_nota))),
       kvRowB('Severidad',               dash(dg.severidad)),
       tr(
         lbc([par([txB('Duración')])], { w: w(30) }),
@@ -814,7 +816,7 @@ async function genSeccionB(procId, numeroOverride) {
         ? [
             par([txB('Grupos experimentales:')], { before: 120, after: 25 }),
             ...grupos.map(g =>
-              par(`• ${g.nombre || '—'} (n = ${g.n || '—'})${g.justificacion ? ': ' + g.justificacion : ''}`)
+              par(`• ${g.nombre || '—'} (n = ${noteDisplay(g.n, g.n_nota) || '—'})${g.justificacion ? ': ' + g.justificacion : ''}`)
             ),
           ]
         : []
@@ -844,7 +846,7 @@ async function genSeccionB(procId, numeroOverride) {
     emptyLine(),
 
     // ── B.5 TÉCNICAS ──────────────────────────────────────────────────────────
-    secHead('B.5 TÉCNICAS'),
+    secHeadSm('B.5 TÉCNICAS'),
     ...dynTable(
       ['Frecuencia', 'Grupo / Nº animales', 'Técnica experimental/quirúrgica'],
       (proc.tecnicas ?? []).map(t => [t.frecuencia, t.grupo_animales ?? t.observaciones, t.nombre]),
@@ -853,7 +855,7 @@ async function genSeccionB(procId, numeroOverride) {
     emptyLine(),
 
     // ── B.6 ANALGESIA Y ANESTESIA ─────────────────────────────────────────────
-    secHead('B.6 USO DE ANALGESIA Y ANESTESIA'),
+    secHeadSm('B.6 USO DE ANALGESIA Y ANESTESIA'),
     tbl([
       tr(lbc([par([txB('Analgesia')])], { w: w(100), span: 6 })),
       tr(...ANA_HDRS.map((h, i) => lbc([par([txB(h)])], { w: w(ANA_COLS_W[i]) }))),
@@ -869,7 +871,7 @@ async function genSeccionB(procId, numeroOverride) {
     emptyLine(),
 
     // ── B.7 ADMINISTRACIÓN DE OTRAS SUSTANCIAS ────────────────────────────────
-    secHead('B.7 ADMINISTRACIÓN DE OTRAS SUSTANCIAS'),
+    secHeadSm('B.7 ADMINISTRACIÓN DE OTRAS SUSTANCIAS'),
     anaTable(os.sustancias),
     emptyLine(),
     par([txB('¿Alguno de los productos supone un riesgo para la salud o el medio ambiente (citotóxico, biológico, etc.)?')]),
@@ -881,7 +883,7 @@ async function genSeccionB(procId, numeroOverride) {
     emptyLine(),
 
     // ── B.8 PARÁMETROS A MEDIR ────────────────────────────────────────────────
-    secHead('B.8 PARÁMETROS A MEDIR'),
+    secHeadSm('B.8 PARÁMETROS A MEDIR'),
     (() => {
       const B8_HDRS = ['Frecuencia', 'Grupo / Nº animales', 'Parámetro/Muestra', 'Metodología/Técnica', 'Procedimiento terminal (si/no)']
       const B8_W    = [14, 18, 24, 24, 20]
@@ -895,7 +897,7 @@ async function genSeccionB(procId, numeroOverride) {
     emptyLine(),
 
     // ── B.9 MUESTRAS ANTEMORTEM ───────────────────────────────────────────────
-    secHead('B.9 MUESTRAS ANTEMORTEM'),
+    secHeadSm('B.9 MUESTRAS ANTEMORTEM'),
     (() => {
       const B9_HDRS = ['Frecuencia', 'Grupo / Nº animales', 'Muestra', 'Cantidad (g) / Volumen (mg/kg peso animal)', 'Método/Vía']
       const B9_W    = [14, 18, 20, 30, 18]
@@ -1376,12 +1378,12 @@ async function genSeccionD(proyectoId) {
     emptyLine(),
 
     // ── D.1 ───────────────────────────────────────────────────────────────────
-    secHead('D.1 USO DE AGENTES BIOLÓGICOS EN ANIMALES DE EXPERIMENTACIÓN'),
+    secHeadSm('D.1 USO DE AGENTES BIOLÓGICOS EN ANIMALES DE EXPERIMENTACIÓN'),
     agBioTable(d.agentes_biologicos ?? []),
     emptyLine(),
 
     // ── D.2 ───────────────────────────────────────────────────────────────────
-    secHead('D.2. USO DE AGENTES QUÍMICOS EN ANIMALES DE EXPERIMENTACIÓN'),
+    secHeadSm('D.2. USO DE AGENTES QUÍMICOS EN ANIMALES DE EXPERIMENTACIÓN'),
     par([new TextRun({ text: 'Recuerde adjuntar al proyecto la ficha de seguridad de cada uno de los productos listados en la siguiente tabla', font: FONT, size: SZ, color: '1F4E79' })], { before: 0, after: 60 }),
     agQuimTable(d.agentes_quimicos ?? []),
     emptyLine(),

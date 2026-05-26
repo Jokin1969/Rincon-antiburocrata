@@ -131,7 +131,50 @@ function AutocompleteInput({ campo, value, onChange, placeholder, initialSuggest
   )
 }
 
+function NoteableNumberInput({ value, nota, onChangeValue, onChangeNota, placeholder }) {
+  const [open, setOpen] = useState(Boolean(nota))
+  useEffect(() => { if (nota && !open) setOpen(true) }, [nota])
+  return (
+    <>
+      <div className={s.notaNumRow}>
+        <input
+          type="number"
+          value={value ?? ''}
+          placeholder={placeholder ?? ''}
+          onChange={onChangeValue}
+          style={{ flex: 1, minWidth: 0 }}
+        />
+        <button
+          type="button"
+          className={`${s.notaBtn}${nota ? ` ${s.notaBtnActive}` : ''}`}
+          title={open ? 'Cerrar nota' : 'Añadir nota al número'}
+          onClick={() => setOpen(o => !o)}
+        >✎</button>
+      </div>
+      {open && (
+        <input
+          type="text"
+          className={s.notaInput}
+          placeholder="Nota (aparece entre paréntesis en el documento)"
+          value={nota ?? ''}
+          onChange={onChangeNota}
+        />
+      )}
+    </>
+  )
+}
+
 function DynTable({ columns, rows, onUpdate, onRemove, onAdd, addLabel = '＋ Añadir fila' }) {
+  const [openNotas, setOpenNotas] = useState(() => new Set())
+
+  function toggleNota(key) {
+    setOpenNotas(prev => {
+      const next = new Set(prev)
+      next.has(key) ? next.delete(key) : next.add(key)
+      return next
+    })
+  }
+
   return (
     <div>
       <div className={s.dynTable}>
@@ -164,6 +207,33 @@ function DynTable({ columns, rows, onUpdate, onRemove, onAdd, addLabel = '＋ A�
                     placeholder={col.ph ?? ''}
                     initialSuggestions={col.initialSuggestions ?? []}
                   />
+                ) : col.tipo === 'number' ? (
+                  <>
+                    <div className={s.notaNumRow}>
+                      <input
+                        type="number"
+                        value={row[col.key] ?? ''}
+                        placeholder={col.ph ?? ''}
+                        onChange={e => onUpdate(i, col.key, e.target.value)}
+                        style={{ flex: 1, minWidth: 0 }}
+                      />
+                      <button
+                        type="button"
+                        className={`${s.notaBtn}${row[col.key + '_nota'] ? ` ${s.notaBtnActive}` : ''}`}
+                        title={openNotas.has(`${i}_${col.key}`) ? 'Cerrar nota' : 'Añadir nota al número'}
+                        onClick={() => toggleNota(`${i}_${col.key}`)}
+                      >✎</button>
+                    </div>
+                    {(openNotas.has(`${i}_${col.key}`) || row[col.key + '_nota']) && (
+                      <input
+                        type="text"
+                        className={s.notaInput}
+                        placeholder="Nota (entre paréntesis en el doc.)"
+                        value={row[col.key + '_nota'] ?? ''}
+                        onChange={e => onUpdate(i, col.key + '_nota', e.target.value)}
+                      />
+                    )}
+                  </>
                 ) : (
                   <input
                     type={col.tipo ?? 'text'}
@@ -435,14 +505,15 @@ export default function SeccionBForm() {
 
           <div className="form-group">
             <label>Número de animales</label>
-            <input
-              type="number"
-              className="form-group input"
-              value={form.datos_generales.num_animales}
-              onChange={e => update('datos_generales.num_animales', e.target.value)}
-              min="1"
-              placeholder="Nº total de animales"
-            />
+            <div style={{ maxWidth: '220px' }}>
+              <NoteableNumberInput
+                value={form.datos_generales.num_animales}
+                nota={form.datos_generales.num_animales_nota}
+                onChangeValue={e => update('datos_generales.num_animales', e.target.value)}
+                onChangeNota={e => update('datos_generales.num_animales_nota', e.target.value)}
+                placeholder="Nº total de animales"
+              />
+            </div>
           </div>
 
           <div className={`form-group ${s.fullRow}`}>
