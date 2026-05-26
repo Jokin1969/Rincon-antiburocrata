@@ -526,20 +526,20 @@ async function genSeccionA(proyectoId) {
     new Paragraph({ children: [txB('A.2 CAPACITACIÓN DE LAS PERSONAS QUE PARTICIPAN EN EL PROYECTO')], spacing: { before: 80, after: 40 } }),
     tbl([
       tr(
-        lbc([par([txB('Nombre y apellidos')])], { w: w(40) }),
-        lbc([par([txB('Función/es')])],          { w: w(35) }),
-        lbc([par([txB('NIF/ Pasaporte')])],      { w: w(25) }),
+        lbc([par([txB('Nombre y apellidos')])], { w: w(60) }),
+        lbc([par([txB('Función/es')])],          { w: w(18) }),
+        lbc([par([txB('NIF/ Pasaporte')])],      { w: w(22) }),
       ),
       ...(a.participantes ?? []).map(pt => tr(
-        tct([par(pt.nombre_apellidos ?? '')], { w: w(40) }),
-        tct([par(fmtFunciones(pt.funciones))], { w: w(35) }),
-        tct([par(pt.nif_pasaporte ?? '')],    { w: w(25) }),
+        tct([par(pt.nombre_apellidos ?? '')], { w: w(60) }),
+        tct([par(fmtFunciones(pt.funciones))], { w: w(18) }),
+        tct([par(pt.nif_pasaporte ?? '')],    { w: w(22) }),
       )),
       ...((a.participantes ?? []).length === 0
         ? Array(3).fill(null).map(() => tr(
-            tct([par('')], { w: w(40) }),
-            tct([par('')], { w: w(35) }),
-            tct([par('')], { w: w(25) }),
+            tct([par('')], { w: w(60) }),
+            tct([par('')], { w: w(18) }),
+            tct([par('')], { w: w(22) }),
           ))
         : []),
     ]),
@@ -615,23 +615,23 @@ async function genSeccionA(proyectoId) {
     new Paragraph({ children: [txB('A.6 RESUMEN DE PROCEDIMIENTOS:')], spacing: { before: 80, after: 40 } }),
     tbl([
       tr(
-        lbc([par([txB('Nº')],      { align: AlignmentType.CENTER })], { w: w(8)  }),
-        lbc([par([txB('Título')],  { align: AlignmentType.CENTER })], { w: w(34) }),
+        lbc([par([txB('Nº')],      { align: AlignmentType.CENTER })], { w: w(5)  }),
+        lbc([par([txB('Título')],  { align: AlignmentType.CENTER })], { w: w(37) }),
         lbc([par([txB('Especie')], { align: AlignmentType.CENTER })], { w: w(22) }),
         lbc([par([txB('Nº animales')], { align: AlignmentType.CENTER })], { w: w(18) }),
         lbc([par([txB('Severidad')],   { align: AlignmentType.CENTER })], { w: w(18) }),
       ),
       ...(procs.length > 0
         ? procs.map((proc, idx) => tr(
-            tct([par(String(idx + 1))],                                                                   { w: w(8)  }),
-            tct([par(proc.datos_generales?.titulo_procedimiento ?? '')],                                  { w: w(34) }),
+            tct([par(String(idx + 1))],                                                                   { w: w(5)  }),
+            tct([par(proc.datos_generales?.titulo_procedimiento ?? '')],                                  { w: w(37) }),
             tct([par((proc.datos_generales?.especies ?? []).join(', '))],                                 { w: w(22) }),
             tct([par(dash(noteDisplay(proc.datos_generales?.num_animales, proc.datos_generales?.num_animales_nota)))], { w: w(18) }),
             tct([par((Array.isArray(proc.clasificacion_severidad) ? proc.clasificacion_severidad : [proc.clasificacion_severidad]).filter(v => v && v.length > 1 && v !== 'none' && SEV_LABELS[v]).map(v => SEV_LABELS[v]).join(', ') || '—')], { w: w(18) }),
           ))
         : [tr(
-            tct([par('')], { w: w(8)  }),
-            tct([par('')], { w: w(34) }),
+            tct([par('')], { w: w(5)  }),
+            tct([par('')], { w: w(37) }),
             tct([par('')], { w: w(22) }),
             tct([par('')], { w: w(18) }),
             tct([par('')], { w: w(18) }),
@@ -651,14 +651,14 @@ async function genSeccionA(proyectoId) {
       emptyLine(),
       tbl([
         tr(
-          lbc([par([txB('Nomenclatura internacional de la cepa/línea a criar'), sup(6)])], { w: w(50) }),
-          lbc([par([txB('Acrónimo de la cepa/línea'), sup(7)])],                            { w: w(25) }),
-          lbc([par([txB('Número de animales que van a generarse')])],                       { w: w(25) }),
+          lbc([par([txB('Nomenclatura internacional de la cepa/línea a criar'), sup(6)])], { w: w(62) }),
+          lbc([par([txB('Acrónimo de la cepa/línea'), sup(7)])],                            { w: w(17) }),
+          lbc([par([txB('Número de animales que van a generarse')])],                       { w: w(21) }),
         ),
         ...(a.cepas_cria ?? []).map(c => tr(
-          tct([par(c.nomenclatura_internacional ?? '')], { w: w(50) }),
-          tct([par(c.acronimo ?? '')],                   { w: w(25) }),
-          tct([par(String(c.num_animales ?? ''))],       { w: w(25) }),
+          tct([par(c.nomenclatura_internacional ?? '')], { w: w(62) }),
+          tct([par(c.acronimo ?? '')],                   { w: w(17) }),
+          tct([par(String(c.num_animales ?? ''))],       { w: w(21) }),
         )),
       ]),
     ] : []),
@@ -742,7 +742,7 @@ async function genSeccionB(procId, numeroOverride) {
   )
 
   // Analgesia/anestesia table helper (6-col, one empty row if no data)
-  const ANA_COLS_W = [12, 20, 24, 14, 14, 16]
+  const ANA_COLS_W = [12, 20, 28, 10, 14, 16]
   const ANA_HDRS   = ['Frecuencia', 'Grupo / Nº animales', 'Producto / Concentración', 'Dosis (mg/kg)', 'Volumen (ml/kg)', 'Vía']
   function anaTable(rows) {
     const dataRows = rows && rows.length
@@ -785,16 +785,16 @@ async function genSeccionB(procId, numeroOverride) {
     // ── B.1 DATOS GENERALES DEL PROCEDIMIENTO ────────────────────────────────
     secHead('B.1 DATOS GENERALES DEL PROCEDIMIENTO'),
     tbl([
-      kvRowB('Título',                  dg.titulo_procedimiento),
-      kvRowB('Especie/s animal/es',     (dg.especies ?? []).join(', ')),
-      kvRowB('Cepa/línea',              dg.cepa_linea),
-      kvRowB('Sexo',                    dg.sexo),
-      kvRowB('Edad',                    dg.edad_peso),
-      kvRowB('Nº total de animales',    dash(noteDisplay(dg.num_animales, dg.num_animales_nota))),
-      kvRowB('Severidad',               dash(dg.severidad)),
+      kvRowB('Título',                  dg.titulo_procedimiento,                             25),
+      kvRowB('Especie/s animal/es',     (dg.especies ?? []).join(', '),                      25),
+      kvRowB('Cepa/línea',              dg.cepa_linea,                                       25),
+      kvRowB('Sexo',                    dg.sexo,                                             25),
+      kvRowB('Edad',                    dg.edad_peso,                                        25),
+      kvRowB('Nº total de animales',    dash(noteDisplay(dg.num_animales, dg.num_animales_nota)), 25),
+      kvRowB('Severidad',               dash(dg.severidad),                                  25),
       tr(
-        lbc([par([txB('Duración')])], { w: w(30) }),
-        tct([par(dash(dg.duracion))], { w: w(70) }),
+        lbc([par([txB('Duración')])], { w: w(25) }),
+        tct([par(dash(dg.duracion))], { w: w(75) }),
       ),
     ]),
     emptyLine(),
