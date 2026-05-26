@@ -64,10 +64,11 @@ const ALL_THIN  = { top: BS_THIN, bottom: BS_THIN, left: BS_THIN, right: BS_THIN
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const tx  = (text, opts = {}) =>
+const tx   = (text, opts = {}) =>
   new TextRun({ text: String(text ?? ''), font: FONT, size: SZ, ...opts })
-const txB = (text, opts = {}) => tx(text, { bold: true, ...opts })
-const txS = (text, opts = {}) => tx(text, { size: SZ_SM, ...opts })
+const txB  = (text, opts = {}) => tx(text, { bold: true, ...opts })
+const txBsm= (text, opts = {}) => txB(text, { size: SZ_SM, ...opts })  // bold, 9pt — for table column headers
+const txS  = (text, opts = {}) => tx(text, { size: SZ_SM, ...opts })
 
 function par(children, opts = {}) {
   if (typeof children === 'string') {
@@ -625,7 +626,7 @@ async function genSeccionA(proyectoId) {
             tct([par(String(idx + 1))],                                                                   { w: w(8)  }),
             tct([par(proc.datos_generales?.titulo_procedimiento ?? '')],                                  { w: w(34) }),
             tct([par((proc.datos_generales?.especies ?? []).join(', '))],                                 { w: w(22) }),
-            tct([par(String(proc.datos_generales?.num_animales ?? ''))],                                  { w: w(18) }),
+            tct([par(dash(noteDisplay(proc.datos_generales?.num_animales, proc.datos_generales?.num_animales_nota)))], { w: w(18) }),
             tct([par((Array.isArray(proc.clasificacion_severidad) ? proc.clasificacion_severidad : [proc.clasificacion_severidad]).filter(v => v && v.length > 1 && v !== 'none' && SEV_LABELS[v]).map(v => SEV_LABELS[v]).join(', ') || '—')], { w: w(18) }),
           ))
         : [tr(
@@ -729,7 +730,7 @@ async function genSeccionB(procId, numeroOverride) {
   function dynTable(headers, rows, widths) {
     if (!rows.length) return [par('— Sin registros —')]
     return [tbl([
-      tr(...headers.map((h, i) => lbc([par([txB(h)])], { w: w(widths[i]) }))),
+      tr(...headers.map((h, i) => lbc([par([txBsm(h)])], { w: w(widths[i]) }))),
       ...rows.map(r => tr(...r.map((v, i) => tct([par(dash(v))], { w: w(widths[i]) })))),
     ])]
   }
@@ -749,7 +750,7 @@ async function genSeccionB(procId, numeroOverride) {
           .map((v, i) => tct([par(dash(v))], { w: w(ANA_COLS_W[i]) }))))
       : [tr(...ANA_COLS_W.map(cw => tct([par('')], { w: w(cw) })))]
     return tbl([
-      tr(...ANA_HDRS.map((h, i) => lbc([par([txB(h)])], { w: w(ANA_COLS_W[i]) }))),
+      tr(...ANA_HDRS.map((h, i) => lbc([par([txBsm(h)])], { w: w(ANA_COLS_W[i]) }))),
       ...dataRows,
     ])
   }
@@ -846,7 +847,7 @@ async function genSeccionB(procId, numeroOverride) {
     emptyLine(),
 
     // ── B.5 TÉCNICAS ──────────────────────────────────────────────────────────
-    secHeadSm('B.5 TÉCNICAS'),
+    secHead('B.5 TÉCNICAS'),
     ...dynTable(
       ['Frecuencia', 'Grupo / Nº animales', 'Técnica experimental/quirúrgica'],
       (proc.tecnicas ?? []).map(t => [t.frecuencia, t.grupo_animales ?? t.observaciones, t.nombre]),
@@ -855,15 +856,15 @@ async function genSeccionB(procId, numeroOverride) {
     emptyLine(),
 
     // ── B.6 ANALGESIA Y ANESTESIA ─────────────────────────────────────────────
-    secHeadSm('B.6 USO DE ANALGESIA Y ANESTESIA'),
+    secHead('B.6 USO DE ANALGESIA Y ANESTESIA'),
     tbl([
-      tr(lbc([par([txB('Analgesia')])], { w: w(100), span: 6 })),
-      tr(...ANA_HDRS.map((h, i) => lbc([par([txB(h)])], { w: w(ANA_COLS_W[i]) }))),
+      tr(lbc([par([txBsm('Analgesia')])], { w: w(100), span: 6 })),
+      tr(...ANA_HDRS.map((h, i) => lbc([par([txBsm(h)])], { w: w(ANA_COLS_W[i]) }))),
       ...((ana.analgesia ?? []).length
         ? (ana.analgesia).map(r => tr(...[r.frecuencia, r.grupo_animales, r.producto_concentracion, r.dosis_mg_kg, r.volumen_ml_kg, r.via].map((v, i) => tct([par(dash(v))], { w: w(ANA_COLS_W[i]) }))))
         : [tr(...ANA_COLS_W.map(cw => tct([par('')], { w: w(cw) })))]),
-      tr(lbc([par([txB('Anestesia')])], { w: w(100), span: 6 })),
-      tr(...ANA_HDRS.map((h, i) => lbc([par([txB(h)])], { w: w(ANA_COLS_W[i]) }))),
+      tr(lbc([par([txBsm('Anestesia')])], { w: w(100), span: 6 })),
+      tr(...ANA_HDRS.map((h, i) => lbc([par([txBsm(h)])], { w: w(ANA_COLS_W[i]) }))),
       ...((ana.anestesia ?? []).length
         ? (ana.anestesia).map(r => tr(...[r.frecuencia, r.grupo_animales, r.producto_concentracion, r.dosis_mg_kg, r.volumen_ml_kg, r.via].map((v, i) => tct([par(dash(v))], { w: w(ANA_COLS_W[i]) }))))
         : [tr(...ANA_COLS_W.map(cw => tct([par('')], { w: w(cw) })))]),
@@ -871,7 +872,7 @@ async function genSeccionB(procId, numeroOverride) {
     emptyLine(),
 
     // ── B.7 ADMINISTRACIÓN DE OTRAS SUSTANCIAS ────────────────────────────────
-    secHeadSm('B.7 ADMINISTRACIÓN DE OTRAS SUSTANCIAS'),
+    secHead('B.7 ADMINISTRACIÓN DE OTRAS SUSTANCIAS'),
     anaTable(os.sustancias),
     emptyLine(),
     par([txB('¿Alguno de los productos supone un riesgo para la salud o el medio ambiente (citotóxico, biológico, etc.)?')]),
@@ -883,28 +884,28 @@ async function genSeccionB(procId, numeroOverride) {
     emptyLine(),
 
     // ── B.8 PARÁMETROS A MEDIR ────────────────────────────────────────────────
-    secHeadSm('B.8 PARÁMETROS A MEDIR'),
+    secHead('B.8 PARÁMETROS A MEDIR'),
     (() => {
       const B8_HDRS = ['Frecuencia', 'Grupo / Nº animales', 'Parámetro/Muestra', 'Metodología/Técnica', 'Procedimiento terminal (si/no)']
       const B8_W    = [14, 18, 24, 24, 20]
       const rows8   = (proc.parametros ?? []).map(p => [p.frecuencia, p.grupo_animales ?? '', p.parametro, p.metodo_medida, p.terminal ?? ''])
       const dataRows = rows8.length ? rows8 : [[]]
       return tbl([
-        tr(...B8_HDRS.map((h, i) => lbc([par([txB(h)])], { w: w(B8_W[i]) }))),
+        tr(...B8_HDRS.map((h, i) => lbc([par([txBsm(h)])], { w: w(B8_W[i]) }))),
         ...dataRows.map(r => tr(...B8_W.map((cw, i) => tct([par(dash(r[i]))], { w: w(cw) })))),
       ])
     })(),
     emptyLine(),
 
     // ── B.9 MUESTRAS ANTEMORTEM ───────────────────────────────────────────────
-    secHeadSm('B.9 MUESTRAS ANTEMORTEM'),
+    secHead('B.9 MUESTRAS ANTEMORTEM'),
     (() => {
       const B9_HDRS = ['Frecuencia', 'Grupo / Nº animales', 'Muestra', 'Cantidad (g) / Volumen (mg/kg peso animal)', 'Método/Vía']
       const B9_W    = [14, 18, 20, 30, 18]
       const rows9   = (proc.muestras_antemortem ?? []).map(m => [m.frecuencia, m.grupo_animales ?? '', m.tipo, m.volumen_cantidad, m.metodo_via ?? m.procedimiento ?? ''])
       const dataRows = rows9.length ? rows9 : [[]]
       return tbl([
-        tr(...B9_HDRS.map((h, i) => lbc([par([txB(h)])], { w: w(B9_W[i]) }))),
+        tr(...B9_HDRS.map((h, i) => lbc([par([txBsm(h)])], { w: w(B9_W[i]) }))),
         ...dataRows.map(r => tr(...B9_W.map((cw, i) => tct([par(dash(r[i]))], { w: w(cw) })))),
       ])
     })(),
@@ -1330,11 +1331,11 @@ async function genSeccionD(proyectoId) {
     const data = rows.length ? rows : [{ nombre_cientifico: '', descripcion: '', grupo_riesgo: '', lugar_manipulacion: '', numero_procedimiento: '' }]
     return tbl([
       tr(
-        lbc([par([txB('Nombre científico')],   ctr)], { w: w(20) }),
-        lbc([par([txB('Descripción del agente')], ctr)], { w: w(20) }),
-        lbc([par([txB('Grupo de riesgo')],     ctr)], { w: w(12) }),
-        lbc([par([txB('Lugar de manipulación'), sup(1)], ctr)], { w: w(24) }),
-        lbc([par([txB('Nº de procedimiento'),  sup(2)], ctr)], { w: w(24) }),
+        lbc([par([txBsm('Nombre científico')],   ctr)], { w: w(20) }),
+        lbc([par([txBsm('Descripción del agente')], ctr)], { w: w(20) }),
+        lbc([par([txBsm('Grupo de riesgo')],     ctr)], { w: w(12) }),
+        lbc([par([txBsm('Lugar de manipulación'), sup(1)], ctr)], { w: w(24) }),
+        lbc([par([txBsm('Nº de procedimiento'),  sup(2)], ctr)], { w: w(24) }),
       ),
       ...data.map(ag => tr(
         tct([par(ag.nombre_cientifico ?? '')],                    { w: w(20) }),
@@ -1350,10 +1351,10 @@ async function genSeccionD(proyectoId) {
     const data = rows.length ? rows : [{ nombre: '', identificacion_riesgo: '', condiciones_manipulacion: '', numero_procedimiento: '' }]
     return tbl([
       tr(
-        lbc([par([txB('Nombre')],                              ctr)], { w: w(22) }),
-        lbc([par([txB('Identificación del riesgo')],           ctr)], { w: w(26) }),
-        lbc([par([txB('Condiciones especiales de manipulación')], ctr)], { w: w(30) }),
-        lbc([par([txB('Nº de procedimiento'), sup(3)],         ctr)], { w: w(22) }),
+        lbc([par([txBsm('Nombre')],                              ctr)], { w: w(22) }),
+        lbc([par([txBsm('Identificación del riesgo')],           ctr)], { w: w(26) }),
+        lbc([par([txBsm('Condiciones especiales de manipulación')], ctr)], { w: w(30) }),
+        lbc([par([txBsm('Nº de procedimiento'), sup(3)],         ctr)], { w: w(22) }),
       ),
       ...data.map(aq => tr(
         tct([par(aq.nombre ?? '')],                    { w: w(22) }),
@@ -1378,12 +1379,12 @@ async function genSeccionD(proyectoId) {
     emptyLine(),
 
     // ── D.1 ───────────────────────────────────────────────────────────────────
-    secHeadSm('D.1 USO DE AGENTES BIOLÓGICOS EN ANIMALES DE EXPERIMENTACIÓN'),
+    secHead('D.1 USO DE AGENTES BIOLÓGICOS EN ANIMALES DE EXPERIMENTACIÓN'),
     agBioTable(d.agentes_biologicos ?? []),
     emptyLine(),
 
     // ── D.2 ───────────────────────────────────────────────────────────────────
-    secHeadSm('D.2. USO DE AGENTES QUÍMICOS EN ANIMALES DE EXPERIMENTACIÓN'),
+    secHead('D.2. USO DE AGENTES QUÍMICOS EN ANIMALES DE EXPERIMENTACIÓN'),
     par([new TextRun({ text: 'Recuerde adjuntar al proyecto la ficha de seguridad de cada uno de los productos listados en la siguiente tabla', font: FONT, size: SZ, color: '1F4E79' })], { before: 0, after: 60 }),
     agQuimTable(d.agentes_quimicos ?? []),
     emptyLine(),

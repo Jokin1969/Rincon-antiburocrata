@@ -8,6 +8,16 @@ import AutoExpandTextarea from '../../../components/animalario/AutoExpandTextare
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
+const SEV_LABELS = { norecovery: 'Sin recuperación', low: 'Leve', medium: 'Moderada', high: 'Severa' }
+function fmtSeveridad(val) {
+  const vals = Array.isArray(val) ? val : [val]
+  return vals.filter(v => v && v !== 'none' && SEV_LABELS[v]).map(v => SEV_LABELS[v]).join(', ') || '—'
+}
+function noteDisplay(val, nota) {
+  if (!val && val !== 0) return '—'
+  return nota ? `${val} (${nota})` : String(val)
+}
+
 const FUNCIONES_ECC = [
   { value: 'A', label: 'A. Cuidado de los animales' },
   { value: 'B', label: 'B. Eutanasia' },
@@ -236,6 +246,7 @@ export default function SeccionAForm() {
   const isEdit         = Boolean(proyectoId)
 
   const [proyecto,      setProyecto]   = useState(null)
+  const [procDetails,   setProcDetails] = useState([])
   const [form,          setForm]       = useState(clone(EMPTY_FORM))
   const [loading,       setLoading]    = useState(isEdit)
   const [saving,        setSaving]     = useState(false)
@@ -256,6 +267,10 @@ export default function SeccionAForm() {
       .then(data => {
         setProyecto(data)
         setCert(data.certificado ?? null)
+        fetch(`/api/animalario/proyectos/${proyectoId}/procedimientos`)
+          .then(r => r.ok ? r.json() : [])
+          .then(ps => setProcDetails(Array.isArray(ps) ? ps : []))
+          .catch(() => {})
         if (data.seccionA) {
           const secA = data.seccionA
           // Migrate old lugar_realizacion model (tipo string → checkboxes)
@@ -863,6 +878,8 @@ export default function SeccionAForm() {
           <p className={styles.emptyNote}>
             Aún no hay procedimientos. Podrás añadirlos desde el hub del proyecto.
           </p>
+        ) : procDetails.length === 0 ? (
+          <p className={styles.emptyNote}>Cargando datos de procedimientos…</p>
         ) : (
           <table className={styles.table}>
             <thead>
@@ -875,15 +892,18 @@ export default function SeccionAForm() {
               </tr>
             </thead>
             <tbody>
-              {procedimientos.map((proc, i) => (
-                <tr key={proc.id || i}>
-                  <td>{i + 1}</td>
-                  <td>{proc.titulo       ?? '—'}</td>
-                  <td>{proc.especie      ?? '—'}</td>
-                  <td>{proc.num_animales ?? '—'}</td>
-                  <td>{proc.severidad    ?? '—'}</td>
-                </tr>
-              ))}
+              {procDetails.map((proc, i) => {
+                const dg = proc.datos_generales ?? {}
+                return (
+                  <tr key={proc.id || i}>
+                    <td>{i + 1}</td>
+                    <td>{dg.titulo_procedimiento ?? '—'}</td>
+                    <td>{(dg.especies ?? []).join(', ') || '—'}</td>
+                    <td>{noteDisplay(dg.num_animales, dg.num_animales_nota)}</td>
+                    <td>{fmtSeveridad(proc.clasificacion_severidad)}</td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         )}
