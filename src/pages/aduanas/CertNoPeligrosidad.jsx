@@ -32,6 +32,8 @@ export default function CertNoPeligrosidad() {
   const [logoStatus, setLogoStatus] = useState(null)
   const [translateLoading, setTranslateLoading] = useState(null)
   const [translateError, setTranslateError]     = useState(null)
+  const [sendingEmail, setSendingEmail]         = useState(false)
+  const [emailMsg, setEmailMsg]                 = useState(null)
   const logoFileRef = useRef(null)
   const numeroRef   = useRef(null)
 
@@ -151,6 +153,33 @@ export default function CertNoPeligrosidad() {
       setError(err.message)
     } finally {
       setLoadingFmt(null)
+    }
+  }
+
+  async function handleSendEmail() {
+    setSendingEmail(true)
+    setEmailMsg(null)
+    try {
+      const payload = {
+        ...form,
+        esCIC:      true,
+        logoBase64: form.incluirLogo && logoData ? logoData.base64  : null,
+        logoWidth:  logoData?.width,
+        logoHeight: logoData?.height,
+      }
+      const res = await fetch('/api/aduanas/cert-no-peligrosidad/enviar-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const d = await res.json()
+      if (!res.ok) throw new Error(d.error || `Error ${res.status}`)
+      setEmailMsg({ ok: true, text: `✓ Email enviado a ${d.to}` })
+    } catch (err) {
+      setEmailMsg({ ok: false, text: err.message })
+    } finally {
+      setSendingEmail(false)
+      setTimeout(() => setEmailMsg(null), 5000)
     }
   }
 
@@ -464,7 +493,11 @@ export default function CertNoPeligrosidad() {
           <button type="button" className="btn btn-ghost" onClick={handleSave}>
             Guardar certificado
           </button>
+          <button type="button" className={styles.emailBtn} disabled={!isValid || busy || sendingEmail} onClick={handleSendEmail}>
+            {sendingEmail ? 'Enviando…' : '✉ Enviar PDF por email'}
+          </button>
           {savedMsg && <span className={styles.savedMsg}>✓ Guardado</span>}
+          {emailMsg && <span className={emailMsg.ok ? styles.emailOk : styles.emailErr}>{emailMsg.text}</span>}
           <span className={styles.meta}>Fecha: {new Date().toLocaleDateString('es-ES')} · incluida automáticamente</span>
         </div>
       </form>

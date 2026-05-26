@@ -419,6 +419,71 @@ app.post('/api/aduanas/factura-proforma', async (req, res) => {
   }
 })
 
+// ── Aduanas: enviar documentos por email ─────────────────────────────────────
+
+function makeTransporter() {
+  return nodemailer.createTransport({
+    host:   process.env.SMTP_HOST,
+    port:   Number(process.env.SMTP_PORT) || 587,
+    secure: process.env.SMTP_SECURE === 'true',
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+  })
+}
+
+app.post('/api/aduanas/factura-proforma/enviar-email', async (req, res) => {
+  const to = process.env.CONTACT_EMAIL
+  if (!to) return res.status(500).json({ error: 'CONTACT_EMAIL no configurado en el servidor.' })
+  const { numero, shipper, consignee, lineas } = req.body
+  if (!numero || !shipper || !consignee)
+    return res.status(400).json({ error: 'Campos obligatorios: numero, shipper, consignee' })
+  if (!lineas?.some(l => l.descripcion?.trim()))
+    return res.status(400).json({ error: 'Se requiere al menos una línea de producto.' })
+  try {
+    const docxBuffer = await generateFacturaProforma(req.body)
+    const pdfBuffer  = docxToPdf(docxBuffer)
+    const sn  = (shipper.organizacion  || shipper.nombre  || 'shipper').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20)
+    const cn  = (consignee.organizacion || consignee.nombre || 'consignee').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20)
+    const num = numero.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 20)
+    const filename = `Proforma_${num}_${sn}_${cn}.pdf`
+    const subject  = `Factura Proforma ${numero} — ${shipper.organizacion || shipper.nombre || ''} → ${consignee.organizacion || consignee.nombre || ''}`
+    const text     = `Adjunto encontrarás la Factura Proforma ${numero}.\n\nRemitente: ${shipper.organizacion || shipper.nombre || ''}\nDestinatario: ${consignee.organizacion || consignee.nombre || ''} (${consignee.pais || ''})\n\nGenerado automáticamente desde Rincón Antiburocrata.`
+    await makeTransporter().sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to, subject, text,
+      attachments: [{ filename, content: pdfBuffer, contentType: 'application/pdf' }],
+    })
+    res.json({ ok: true, to })
+  } catch (err) {
+    console.error('Proforma enviar-email error:', err)
+    res.status(500).json({ error: err.message || 'Error al enviar el email.' })
+  }
+})
+
+app.post('/api/aduanas/cert-no-peligrosidad/enviar-email', async (req, res) => {
+  const to = process.env.CONTACT_EMAIL
+  if (!to) return res.status(500).json({ error: 'CONTACT_EMAIL no configurado en el servidor.' })
+  const { material, hsCode } = req.body
+  if (!material?.trim()) return res.status(400).json({ error: 'Campo obligatorio: material.' })
+  if (!hsCode?.trim())   return res.status(400).json({ error: 'Campo obligatorio: hsCode.' })
+  try {
+    const docxBuffer = await generateCertNoPeligrosidad(req.body)
+    const pdfBuffer  = docxToPdf(docxBuffer)
+    const num      = (req.body.numero || 'CertNoPeligrosidad').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 30)
+    const filename = `${num}.pdf`
+    const subject  = `Certificado de No Peligrosidad${req.body.numero ? ' ' + req.body.numero : ''} — ${material.slice(0, 80)}`
+    const text     = `Adjunto encontrarás el Certificado de No Peligrosidad${req.body.numero ? ' ' + req.body.numero : ''}.\n\nMaterial: ${material}\nCódigo HS: ${hsCode}\n\nGenerado automáticamente desde Rincón Antiburocrata.`
+    await makeTransporter().sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to, subject, text,
+      attachments: [{ filename, content: pdfBuffer, contentType: 'application/pdf' }],
+    })
+    res.json({ ok: true, to })
+  } catch (err) {
+    console.error('CertNoPeligrosidad enviar-email error:', err)
+    res.status(500).json({ error: err.message || 'Error al enviar el email.' })
+  }
+})
+
 // ── IA helpers ───────────────────────────────────────────────────────────────
 
 const IA_SYSTEM_PROMPT =
