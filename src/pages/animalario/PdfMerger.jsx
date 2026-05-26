@@ -117,10 +117,13 @@ export default function PdfMerger({ proyecto }) {
       }
 
       const blob = await res.blob()
+      const disposition = res.headers.get('Content-Disposition') ?? ''
+      const match = disposition.match(/filename\*?=(?:UTF-8'')?["']?([^"';\r\n]+)["']?/i)
+      const filename = match ? decodeURIComponent(match[1]) : 'Proyecto_unificado.pdf'
       const url  = URL.createObjectURL(blob)
       const a    = document.createElement('a')
       a.href = url
-      a.download = `Proyecto_unificado.pdf`
+      a.download = filename
       document.body.appendChild(a); a.click()
       document.body.removeChild(a); URL.revokeObjectURL(url)
     } catch (e) {
