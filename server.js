@@ -244,6 +244,27 @@ app.post('/api/contrato-menor', async (req, res) => {
 })
 
 // ── Aduanas: Factura Proforma ─────────────────────────────────────────────────
+
+// Shippers directory — readable/editable; falls back to public/data/shippers.json
+app.get('/api/aduanas/shippers', (_req, res) => {
+  try {
+    const overridePath = join(DATA_DIR, 'aduanas', 'shippers.json')
+    if (existsSync(overridePath)) return res.json(JSON.parse(readFileSync(overridePath, 'utf-8')))
+    const pubPath = join(__dirname, 'public', 'data', 'shippers.json')
+    if (existsSync(pubPath)) return res.json(JSON.parse(readFileSync(pubPath, 'utf-8')))
+    res.json([])
+  } catch (e) { res.status(500).json({ error: e.message }) }
+})
+
+app.put('/api/aduanas/shippers', (req, res) => {
+  try {
+    const dir = join(DATA_DIR, 'aduanas')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'shippers.json'), JSON.stringify(req.body, null, 2), 'utf-8')
+    res.json({ ok: true })
+  } catch (e) { res.status(500).json({ error: e.message }) }
+})
+
 app.post('/api/aduanas/documento-1403', async (req, res) => {
   const { firmante, producto, empresaOrigen, shipper } = req.body
 

@@ -61,6 +61,7 @@ export default function FacturaProforma() {
   // null=no shipper selected yet | 'loading' | 'ok' | 'error' | 'none'
   const [logoStatus, setLogoStatus] = useState(null)
   const logoFileRef = useRef(null)
+  const [showDirectory, setShowDirectory] = useState(false)
 
   const { records, saveRecord, deleteRecord } = useFacturaProformaStore()
 
@@ -68,11 +69,22 @@ export default function FacturaProforma() {
   const esUSA = (s) => /united states/i.test(s || '')
   const codigoTipo = esUSA(form.paisOrigen) || esUSA(form.shipper.pais) ? 'HTS' : 'HS'
 
-  // Load shippers.json
+  // Load shippers from API; auto-load CIC bioGUNE logo as default
   useEffect(() => {
-    fetch('/data/shippers.json')
+    fetch('/api/aduanas/shippers')
       .then(r => r.json())
-      .then(setShippers)
+      .then(data => {
+        setShippers(data)
+        // Auto-load CIC bioGUNE logo as default on first open
+        const cic = data.find(s => s.es_cicbiogune && s.logo)
+        if (cic) {
+          setLogoStatus('loading')
+          const url = `/assets/logos/${cic.logo}`
+          svgUrlToPng(url)
+            .then(d => { setLogoData({ ...d, previewUrl: url }); setLogoStatus('ok') })
+            .catch(() => setLogoStatus('none'))
+        }
+      })
       .catch(() => {})
   }, [])
 
@@ -414,6 +426,21 @@ export default function FacturaProforma() {
           />
         </div>
 
+        {/* Directory editor */}
+        <ShipperDirectory
+          shippers={shippers}
+          open={showDirectory}
+          onToggle={() => setShowDirectory(o => !o)}
+          onSave={updated => {
+            setShippers(updated)
+            fetch('/api/aduanas/shippers', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(updated),
+            }).catch(() => {})
+          }}
+        />
+
         {/* Hidden file input for logo upload */}
         <input
           ref={logoFileRef}
@@ -684,6 +711,164 @@ function PersonaSection({ title, values, onChange, shippers, onSelectShipper, lo
             />
           </div>
         ))}
+      </div>
+    </div>
+  )
+}
+
+// ── ShipperDirectory ──────────────────────────────────────────────────────────
+
+const EMPTY_SHIPPER = {
+  nombre_display: '', nombre_contacto: '', organizacion: '',
+  direccion_linea1: '', direccion_linea2: '', ciudad: '', codigo_postal: '',
+  pais: '', telefono: '', fax: '', email: '', vat_tax_id: '',
+  es_cicbiogune: false, logo: '', notas: '',
+}
+
+function ShipperDirectory({ shippers, open, onToggle, onSave }) {
+  const [list, setList]       = useState(shippers)
+  const [editId, setEditId]   = useState(null)  // id or 'new'
+  const [draft, setDraft]     = useState(null)
+  const [savedMsg, setSavedMsg] = useState(false)
+
+  // Sync when parent shippers change (e.g. initial load)
+  useEffect(() => { setList(shippers) }, [shippers])
+
+  function startEdit(entry) {
+    setEditId(entry.id)
+    setDraft({ ...entry })
+  }
+
+  function startNew() {
+    const tempId = `new_${Date.now()}`
+    setEditId(tempId)
+    setDraft({ ...EMPTY_SHIPPER, id: tempId, _isNew: true })
+  }
+
+  function cancelEdit() { setEditId(null); setDraft(null) }
+
+  function saveEntry() {
+    if (!draft) return
+    let updated
+    if (draft._isNew) {
+      const maxId = list.reduce((m, s) => Math.max(m, typeof s.id === 'number' ? s.id : 0), 0)
+      const clean = { ...draft, id: maxId + 1 }
+      delete clean._isNew
+      updated = [...list, clean]
+    } else {
+      updated = list.map(s => s.id === draft.id ? { ...draft } : s)
+    }
+    setList(updated)
+    setEditId(null)
+    setDraft(null)
+    onSave(updated)
+    flashSaved()
+  }
+
+  function deleteEntry(id) {
+    if (!window.confirm('¿Eliminar este contacto del directorio?')) return
+    const updated = list.filter(s => s.id !== id)
+    setList(updated)
+    if (editId === id) { setEditId(null); setDraft(null) }
+    onSave(updated)
+    flashSaved()
+  }
+
+  function flashSaved() {
+    setSavedMsg(true)
+    setTimeout(() => setSavedMsg(false), 2000)
+  }
+
+  function set(k, v) { setDraft(prev => ({ ...prev, [k]: v })) }
+
+  return (
+    <div className={styles.dirPanel}>
+      <button type="button" className={styles.dirHeader} onClick={onToggle}>
+        <span className={styles.dirHeaderTitle}>✎ Directorio de contactos ({list.length})</span>
+        <span className={styles.dirHeaderChevron} style={{ transform: open ? 'rotate(180deg)' : 'none' }}>▼</span>
+      </button>
+
+      {open && (
+        <div className={styles.dirBody}>
+          {list.map(entry => (
+            <div key={entry.id} className={styles.dirEntry}>
+              <div className={styles.dirEntryRow}>
+                <span className={styles.dirEntryName}>{entry.nombre_display || entry.nombre_contacto || '(sin nombre)'}</span>
+                <span className={styles.dirEntryOrg}>{entry.organizacion}{entry.ciudad ? ` · ${entry.ciudad}` : ''}</span>
+                <div className={styles.dirEntryActions}>
+                  <button type="button" className={styles.dirEditBtn}
+                    onClick={() => editId === entry.id ? cancelEdit() : startEdit(entry)}>
+                    {editId === entry.id ? 'Cancelar' : 'Editar'}
+                  </button>
+                  <button type="button" className={styles.dirDelBtn} onClick={() => deleteEntry(entry.id)}>✕</button>
+                </div>
+              </div>
+
+              {editId === entry.id && draft && (
+                <DirEntryForm draft={draft} set={set} onSave={saveEntry} onCancel={cancelEdit} styles={styles} />
+              )}
+            </div>
+          ))}
+
+          {editId && String(editId).startsWith('new_') && draft && (
+            <div className={styles.dirEntry}>
+              <div className={styles.dirEntryRow}>
+                <span className={styles.dirEntryName}>Nuevo contacto</span>
+                <div className={styles.dirEntryActions}>
+                  <button type="button" className={styles.dirEditBtn} onClick={cancelEdit}>Cancelar</button>
+                </div>
+              </div>
+              <DirEntryForm draft={draft} set={set} onSave={saveEntry} onCancel={cancelEdit} styles={styles} />
+            </div>
+          )}
+
+          <div className={styles.dirBottomBar}>
+            <button type="button" className={styles.dirAddBtn} onClick={startNew}>＋ Añadir contacto</button>
+            {savedMsg && <span className={styles.dirSavedMsg}>✓ Guardado</span>}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function DirEntryForm({ draft, set, onSave, onCancel, styles }) {
+  const fields = [
+    { k: 'nombre_display',    label: 'Nombre en lista',    full: true },
+    { k: 'nombre_contacto',   label: 'Nombre contacto' },
+    { k: 'organizacion',      label: 'Organización',       full: true },
+    { k: 'direccion_linea1',  label: 'Dirección línea 1',  full: true },
+    { k: 'direccion_linea2',  label: 'Dirección línea 2',  full: true },
+    { k: 'ciudad',            label: 'Ciudad' },
+    { k: 'codigo_postal',     label: 'Código postal' },
+    { k: 'pais',              label: 'País',               full: true },
+    { k: 'telefono',          label: 'Teléfono' },
+    { k: 'fax',               label: 'Fax' },
+    { k: 'email',             label: 'Email',              full: true },
+    { k: 'vat_tax_id',        label: 'VAT / Tax ID' },
+    { k: 'logo',              label: 'Logo (nombre SVG)' },
+    { k: 'notas',             label: 'Notas',              full: true },
+  ]
+  return (
+    <div className={styles.dirForm}>
+      {fields.map(f => (
+        <div key={f.k} className={f.full ? styles.dirFormFull : ''}>
+          <label className={styles.dirFormLabel}>{f.label}</label>
+          <input
+            className={styles.dirFormInput}
+            value={draft[f.k] || ''}
+            onChange={e => set(f.k, e.target.value)}
+            autoComplete="off"
+          />
+        </div>
+      ))}
+      <div className={styles.dirFormFull} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <label className={styles.dirFormLabel} style={{ margin: 0 }}>CIC bioGUNE</label>
+        <input type="checkbox" checked={!!draft.es_cicbiogune} onChange={e => set('es_cicbiogune', e.target.checked)} />
+      </div>
+      <div className={styles.dirFormActions}>
+        <button type="button" className={styles.dirCancelBtn} onClick={onCancel}>Cancelar</button>
+        <button type="button" className={styles.dirSaveBtn} onClick={onSave}>Guardar</button>
       </div>
     </div>
   )
