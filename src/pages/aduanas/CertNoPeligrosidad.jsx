@@ -34,13 +34,19 @@ export default function CertNoPeligrosidad() {
 
   const { records, saveRecord, deleteRecord } = useCertNoPeligrosidadStore()
 
-  // Auto-cargar logo CIC bioGUNE al montar
+  // Auto-cargar logo CIC bioGUNE al montar — dimensiones pequeñas para documento
   useEffect(() => {
     setLogoStatus('loading')
-    const url = '/assets/logos/CIC_bioGUNE.svg'
-    svgUrlToPng(url, 600, 200)
+    const url = '/logos/animalario/cicbiogune.png'
+    svgUrlToPng(url, 190, 65)
       .then(d => { setLogoData({ ...d, previewUrl: url }); setLogoStatus('ok') })
-      .catch(() => setLogoStatus('none'))
+      .catch(() => {
+        // Fallback al SVG de assets
+        const fallback = '/assets/logos/CIC_bioGUNE.svg'
+        svgUrlToPng(fallback, 190, 65)
+          .then(d => { setLogoData({ ...d, previewUrl: fallback }); setLogoStatus('ok') })
+          .catch(() => setLogoStatus('none'))
+      })
   }, [])
 
   function setField(key, value) {

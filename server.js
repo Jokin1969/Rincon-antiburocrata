@@ -811,7 +811,7 @@ function writeData(file, value) {
   writeFileSync(join(DATA_DIR, file), JSON.stringify(value), 'utf-8')
 }
 
-const VALID_COLS = new Set(['contrato', 'proforma', 'genscript-eus', 'genscript-moh', 'pqp-import', 'documento-1403', 'declaracion-exenta'])
+const VALID_COLS = new Set(['contrato', 'proforma', 'genscript-eus', 'genscript-moh', 'pqp-import', 'documento-1403', 'declaracion-exenta', 'cert-no-peligrosidad'])
 
 // Logos (binary stored as base64 strings inside JSON)
 app.get('/api/store/logos', (_req, res) => {

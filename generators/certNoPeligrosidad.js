@@ -90,8 +90,10 @@ export async function generateCertNoPeligrosidad(data) {
   if (incluirLogo && logoBase64) {
     logoBuffer = Buffer.from(logoBase64, 'base64')
   } else if (incluirLogo && esCIC) {
-    const cicPath = join(ASSETS, 'logo-cicbiogune.png')
-    if (existsSync(cicPath)) logoBuffer = readFileSync(cicPath)
+    const cicPath = join(__dirname, '..', 'public', 'logos', 'animalario', 'cicbiogune.png')
+    const fallback = join(ASSETS, 'logo-cicbiogune.png')
+    if (existsSync(cicPath))    logoBuffer = readFileSync(cicPath)
+    else if (existsSync(fallback)) logoBuffer = readFileSync(fallback)
   }
 
   // Texto compuesto del centro para cada idioma
@@ -100,13 +102,21 @@ export async function generateCertNoPeligrosidad(data) {
 
   const children = []
 
-  // ── 1. Logo / membrete ────────────────────────────────────────────────────
+  // ── 1. Logo / membrete — fixed small size regardless of source resolution ──
+  // Fit within 190×65 pt keeping aspect ratio
+  const MAX_LOGO_W = 190, MAX_LOGO_H = 65
+  let dispW = logoWidth  ?? MAX_LOGO_W
+  let dispH = logoHeight ?? MAX_LOGO_H
+  const scale = Math.min(MAX_LOGO_W / dispW, MAX_LOGO_H / dispH, 1)
+  dispW = Math.round(dispW * scale)
+  dispH = Math.round(dispH * scale)
+
   children.push(new Paragraph({
     children: logoBuffer
-      ? [new ImageRun({ data: logoBuffer, transformation: { width: logoWidth, height: logoHeight }, type: 'png' })]
+      ? [new ImageRun({ data: logoBuffer, transformation: { width: dispW, height: dispH }, type: 'png' })]
       : [t(centro || nombre || '', { bold: true, size: SZ_LG })],
     alignment: AlignmentType.LEFT,
-    spacing: { before: 0, after: 200 },
+    spacing: { before: 0, after: 160 },
   }))
 
   // ── 2. Título centrado ────────────────────────────────────────────────────
@@ -144,7 +154,7 @@ export async function generateCertNoPeligrosidad(data) {
         t(hsCode   || '______', { bold: true }),
         t('), no es tóxico, explosivo, oxidante, infeccioso, radioactivo, corrosivo ni magnético, y por tanto, no presenta ningún riesgo para su transporte.'),
       ],
-      { before: 80, after: showEn ? 320 : 80 }
+      { align: AlignmentType.BOTH, before: 80, after: showEn ? 240 : 80 }
     ))
   }
 
@@ -163,7 +173,7 @@ export async function generateCertNoPeligrosidad(data) {
         t(hsCode   || '______', { bold: true }),
         t('), is neither explosive, nor oxidizing, poisonous/toxic, infectious, radioactive, corrosive or magnetic, and therefore, it is proved not to be a dangerous goods for transportation.'),
       ],
-      { before: 80, after: 80 }
+      { align: AlignmentType.BOTH, before: 80, after: 80 }
     ))
   }
 
