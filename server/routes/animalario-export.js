@@ -122,13 +122,20 @@ const txBW = (text, opts = {}) => txB(text, { color: 'FFFFFF', ...opts })
 
 const tr = (...cells) => new TableRow({ children: cells })
 
-function tbl(rows) {
-  return new Table({ rows, width: { size: 100, type: WidthType.PERCENTAGE } })
-}
-
 // A4 content width in twips: 11906 (A4 210mm) − 2×1417 (2×2.5cm margins) = 9072
 const TABLE_W = 9072
-function w(pct) { return { size: Math.round(TABLE_W * pct / 100), type: WidthType.DXA } }
+const wp = (pct) => Math.round(TABLE_W * pct / 100)          // plain twips (for columnWidths)
+function w(pct) { return { size: wp(pct), type: WidthType.DXA } }
+
+// tbl(rows)            — auto tblGrid (equal columns)
+// tbl(rows, [p1,p2…]) — explicit column percentages → correct tblGrid for LibreOffice
+function tbl(rows, pcts) {
+  return new Table({
+    rows,
+    width: { size: TABLE_W, type: WidthType.DXA },
+    ...(pcts ? { columnWidths: pcts.map(wp) } : {}),
+  })
+}
 
 function kvRow(label, value, lw = 30) {
   return tr(
@@ -180,7 +187,7 @@ function makeHeader() {
     tc([new Paragraph({ children: aaa ? [scaledImgRun(aaa, 110)] : [tx('AAALAC')],     spacing: { before: 40, after: 40 } })],                              { borders: NON, w: w(25) }),
     tc([], { borders: NON, w: w(50) }),
     tc([new Paragraph({ children: cic ? [scaledImgRun(cic, 130)] : [tx('CIC bioGUNE')], alignment: AlignmentType.RIGHT, spacing: { before: 40, after: 40 } })], { borders: NON, w: w(25) }),
-  )])
+  )], [25, 50, 25])
 }
 
 function makeFooter(label) {
@@ -544,7 +551,7 @@ async function genSeccionA(proyectoId) {
             tct([par('')], { w: w(22) }),
           ))
         : []),
-    ]),
+    ], [60, 18, 22]),
     emptyLine(),
 
     // ── A.3 Duración, financiación y localización (light blue, thin borders) ─
@@ -639,7 +646,7 @@ async function genSeccionA(proyectoId) {
             tct([par('')], { w: w(18) }),
           )]
       ),
-    ]),
+    ], [5, 37, 22, 18, 18]),
     emptyLine(),
 
     par([
@@ -662,7 +669,7 @@ async function genSeccionA(proyectoId) {
           tct([par(c.acronimo ?? '')],                   { w: w(17) }),
           tct([par(String(c.num_animales ?? ''))],       { w: w(21) }),
         )),
-      ]),
+      ], [62, 17, 21]),
     ] : []),
     emptyLine(),
 
@@ -734,7 +741,7 @@ async function genSeccionB(procId, numeroOverride) {
     return [tbl([
       tr(...headers.map((h, i) => lbc([par([txBsm(h)])], { w: w(widths[i]) }))),
       ...rows.map(r => tr(...r.map((v, i) => tct([par(dash(v))], { w: w(widths[i]) })))),
-    ])]
+    ], widths)]
   }
 
   // kvRow with light-blue label (SeccionB style)
@@ -754,7 +761,7 @@ async function genSeccionB(procId, numeroOverride) {
     return tbl([
       tr(...ANA_HDRS.map((h, i) => lbc([par([txBsm(h)])], { w: w(ANA_COLS_W[i]) }))),
       ...dataRows,
-    ])
+    ], ANA_COLS_W)
   }
 
   // Reutilización destino label
@@ -781,7 +788,7 @@ async function genSeccionB(procId, numeroOverride) {
     tbl([tr(
       dbc([par([txBW('Número de procedimiento:')])], { w: w(70) }),
       dbc([par([txW(numeroLabel)])], { w: w(30) }),
-    )]),
+    )], [70, 30]),
     emptyLine(),
 
     // ── B.1 DATOS GENERALES DEL PROCEDIMIENTO ────────────────────────────────
@@ -798,7 +805,7 @@ async function genSeccionB(procId, numeroOverride) {
         lbc([par([txB('Duración')])], { w: w(25) }),
         tct([par(dash(dg.duracion))], { w: w(75) }),
       ),
-    ]),
+    ], [25, 75]),
     emptyLine(),
 
     // ── B.2 METODOLOGÍA Y FASES ───────────────────────────────────────────────
@@ -870,7 +877,7 @@ async function genSeccionB(procId, numeroOverride) {
       ...((ana.anestesia ?? []).length
         ? (ana.anestesia).map(r => tr(...[r.frecuencia, r.grupo_animales, r.producto_concentracion, r.dosis_mg_kg, r.volumen_ml_kg, r.via].map((v, i) => tct([par(dash(v))], { w: w(ANA_COLS_W[i]) }))))
         : [tr(...ANA_COLS_W.map(cw => tct([par('')], { w: w(cw) })))]),
-    ]),
+    ], ANA_COLS_W),
     emptyLine(),
 
     // ── B.7 ADMINISTRACIÓN DE OTRAS SUSTANCIAS ────────────────────────────────
@@ -895,7 +902,7 @@ async function genSeccionB(procId, numeroOverride) {
       return tbl([
         tr(...B8_HDRS.map((h, i) => lbc([par([txBsm(h)])], { w: w(B8_W[i]) }))),
         ...dataRows.map(r => tr(...B8_W.map((cw, i) => tct([par(dash(r[i]))], { w: w(cw) })))),
-      ])
+      ], B8_W)
     })(),
     emptyLine(),
 
@@ -909,7 +916,7 @@ async function genSeccionB(procId, numeroOverride) {
       return tbl([
         tr(...B9_HDRS.map((h, i) => lbc([par([txBsm(h)])], { w: w(B9_W[i]) }))),
         ...dataRows.map(r => tr(...B9_W.map((cw, i) => tct([par(dash(r[i]))], { w: w(cw) })))),
-      ])
+      ], B9_W)
     })(),
     emptyLine(),
 
@@ -1346,7 +1353,7 @@ async function genSeccionD(proyectoId) {
         tct([par(ag.lugar_manipulacion ?? '')],                   { w: w(24) }),
         tct([par(fmtProc(ag.numero_procedimiento))],              { w: w(24) }),
       )),
-    ])
+    ], [20, 20, 12, 24, 24])
   }
 
   function agQuimTable(rows) {
@@ -1364,7 +1371,7 @@ async function genSeccionD(proyectoId) {
         tct([par(aq.condiciones_manipulacion ?? '')],  { w: w(30) }),
         tct([par(fmtProc(aq.numero_procedimiento))],   { w: w(22) }),
       )),
-    ])
+    ], [22, 26, 30, 22])
   }
 
   const children = [
