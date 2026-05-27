@@ -126,7 +126,9 @@ function tbl(rows) {
   return new Table({ rows, width: { size: 100, type: WidthType.PERCENTAGE } })
 }
 
-function w(pct) { return { size: pct, type: WidthType.PERCENTAGE } }
+// A4 content width in twips: 11906 (A4 210mm) − 2×1417 (2×2.5cm margins) = 9072
+const TABLE_W = 9072
+function w(pct) { return { size: Math.round(TABLE_W * pct / 100), type: WidthType.DXA } }
 
 function kvRow(label, value, lw = 30) {
   return tr(
