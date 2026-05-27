@@ -1625,6 +1625,12 @@ function safeName(str) {
   return String(str ?? '').replace(/[^a-zA-Z0-9À-ÿ_ \-]/g, '').replace(/\s+/g, '_').substring(0, 40)
 }
 
+function criaSafeName(cria) {
+  const id  = cria?.seccionC?.identificacion ?? {}
+  const raw = id.acronimo?.trim() || id.nomenclatura_internacional?.trim() || cria?.id || 'sin_nombre'
+  return safeName(raw)
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // ROUTES
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1656,8 +1662,7 @@ router.get('/crias/:id/exportar', async (req, res) => {
   try {
     const formato  = req.query.formato ?? 'docx'
     const cria     = readCria(req.params.id)
-    const acronimo = cria?.seccionC?.identificacion?.acronimo || cria?.seccionC?.identificacion?.nomenclatura_internacional || req.params.id
-    const basename = `SeccionC_${safeName(acronimo)}`
+    const basename = `SeccionC_${criaSafeName(cria)}`
     await sendFile(res, () => genSeccionC(req.params.id), basename, formato)
   } catch (e) {
     res.status(500).json({ error: e.message })
@@ -1727,8 +1732,7 @@ router.get('/proyectos/:id/exportar/completo', async (req, res) => {
     if (a.hay_cria) {
       const crias = (proyecto.crias ?? []).map(ref => readCria(ref.id)).filter(Boolean)
       for (const cria of crias) {
-        const acronimo = safeName(cria.identificacion?.acronimo ?? cria.id)
-        await addFile(() => genSeccionC(cria.id), `SeccionC_${acronimo}`)
+        await addFile(() => genSeccionC(cria.id), `SeccionC_${criaSafeName(cria)}`)
       }
     }
 
