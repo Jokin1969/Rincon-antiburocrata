@@ -53,7 +53,8 @@ export default function ProyectosList() {
     const q = search.toLowerCase()
     return (
       p.titulo?.toLowerCase().includes(q) ||
-      p.referencia_cbba?.toLowerCase().includes(q)
+      p.referencia_cbba?.toLowerCase().includes(q) ||
+      p.acronimo?.toLowerCase().includes(q)
     )
   })
 
@@ -103,6 +104,11 @@ export default function ProyectosList() {
                   {p.referencia_cbba && (
                     <span className={styles.projectMetaItem}>
                       <strong>Ref. CBBA:</strong> {p.referencia_cbba}
+                    </span>
+                  )}
+                  {p.acronimo && (
+                    <span className={styles.projectMetaItem}>
+                      <strong>Acrónimo:</strong> {p.acronimo}
                     </span>
                   )}
                   {p.responsable_nombre && (

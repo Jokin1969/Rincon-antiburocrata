@@ -41,6 +41,7 @@ const FINALIDADES = [
 const EMPTY_FORM = {
   titulo:          '',
   referencia_cbba: '',
+  acronimo:        '',
   responsable: {
     nif_pasaporte:        '16287336R',
     nombre_apellidos:     'Joaquín Castilla',
@@ -538,6 +539,15 @@ export default function SeccionAForm() {
               value={form.referencia_cbba}
               onChange={e => update('referencia_cbba', e.target.value)}
               placeholder="Ej. CBBA-2024-001"
+            />
+          </div>
+          <div className="form-group">
+            <label>Acrónimo</label>
+            <input
+              type="text"
+              value={form.acronimo}
+              onChange={e => update('acronimo', e.target.value)}
+              placeholder="Ej. hTfR1-Prion"
             />
           </div>
         </div>
