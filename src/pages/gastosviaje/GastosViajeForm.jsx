@@ -12,6 +12,12 @@ const CECO_OPTIONS = [
   { code: '324P0749', label: 'POCTEFA (2024-2027) (324P0749)' },
 ]
 
+// Proyectos CJD Foundation / Fundación Priónicas → 0.29 €/km; resto → 0.26 €/km
+const CECO_RATE_029 = new Set(['324P0894'])
+function kmRateParaCeco(ceco) {
+  return CECO_RATE_029.has(ceco) ? 0.29 : 0.26
+}
+
 const TICKET_TIPOS = {
   autopista: { label: 'Autopista / Peaje', icon: '🛣️' },
   avion:     { label: 'Avión',             icon: '✈️' },
@@ -337,10 +343,15 @@ function TicketList({ items, onRemove, onEdit, onDuplicate, viajeId }) {
 
 // ── Sub-component: CocheForm ──────────────────────────────────────────────────
 
-function CocheForm({ onAdd }) {
+function CocheForm({ onAdd, kmRate = 0.26 }) {
   const [fields, setFields] = useState({
-    desde: '', hasta: '', kmIda: '', kmVuelta: '', precioPorKm: 0.29, precioCustom: false,
+    desde: '', hasta: '', kmIda: '', kmVuelta: '', precioPorKm: kmRate,
   })
+
+  // Sync rate when parent project changes
+  useEffect(() => {
+    setFields(prev => ({ ...prev, precioPorKm: kmRate }))
+  }, [kmRate])
 
   function set(k, v) { setFields(prev => ({ ...prev, [k]: v })) }
 
@@ -351,7 +362,7 @@ function CocheForm({ onAdd }) {
     if (!fields.kmIda && !fields.kmVuelta) return
     onAdd({ desde: fields.desde, hasta: fields.hasta, kmIda: fields.kmIda,
             kmVuelta: fields.kmVuelta, precioPorKm: fields.precioPorKm, id: uid() })
-    setFields({ desde: '', hasta: '', kmIda: '', kmVuelta: '', precioPorKm: 0.29, precioCustom: false })
+    setFields({ desde: '', hasta: '', kmIda: '', kmVuelta: '', precioPorKm: kmRate })
   }
 
   return (
@@ -384,25 +395,15 @@ function CocheForm({ onAdd }) {
           <div className={styles.kmToggle}>
             <button
               type="button"
-              className={`${styles.toggleBtn} ${!fields.precioCustom && fields.precioPorKm === 0.29 ? styles.toggleActive : ''}`}
-              onClick={() => setFields(p => ({ ...p, precioPorKm: 0.29, precioCustom: false }))}
+              className={`${styles.toggleBtn} ${fields.precioPorKm === 0.29 ? styles.toggleActive : ''}`}
+              onClick={() => set('precioPorKm', 0.29)}
             >0,29 €</button>
             <button
               type="button"
-              className={`${styles.toggleBtn} ${!fields.precioCustom && fields.precioPorKm === 0.26 ? styles.toggleActive : ''}`}
-              onClick={() => setFields(p => ({ ...p, precioPorKm: 0.26, precioCustom: false }))}
+              className={`${styles.toggleBtn} ${fields.precioPorKm === 0.26 ? styles.toggleActive : ''}`}
+              onClick={() => set('precioPorKm', 0.26)}
             >0,26 €</button>
-            <button
-              type="button"
-              className={`${styles.toggleBtn} ${fields.precioCustom ? styles.toggleActive : ''}`}
-              onClick={() => setFields(p => ({ ...p, precioCustom: !p.precioCustom }))}
-            >Otro</button>
           </div>
-          {fields.precioCustom && (
-            <input type="text" inputMode="decimal" value={fields.precioPorKm}
-              onChange={e => set('precioPorKm', e.target.value)}
-              placeholder="0.29" style={{ marginTop: '0.4rem' }} autoComplete="off" />
-          )}
         </div>
       </div>
       <div className={styles.cocheCalc}>
@@ -1447,7 +1448,7 @@ export default function GastosViajeForm() {
 
         {/* Coche */}
         <SubSection icon="🚗" label="Coche (vehículo propio)" badge={tr.coche.length}>
-          <CocheForm onAdd={item => addTransporte('coche', item)} />
+          <CocheForm onAdd={item => addTransporte('coche', item)} kmRate={kmRateParaCeco(viaje.ceco)} />
           <CocheList items={tr.coche} onRemove={id => removeTransporte('coche', id)}
             onEdit={(id, ch) => editTransporte('coche', id, ch)} onDuplicate={id => dupTransporte('coche', id)} viajeId={viajeId} />
         </SubSection>
