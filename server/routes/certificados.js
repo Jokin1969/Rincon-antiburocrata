@@ -200,13 +200,15 @@ async function generateBlankPdf(evento) {
   }
   y -= 10
 
-  // Checkboxes
-  const checkboxes = [
-    '☐  AUTORIZO el tratamiento de mis imágenes para los fines indicados',
-    '☐  ACEPTO recibir comunicaciones informativas de la Fundación',
+  // Checkboxes — dibujados como rectángulos (evita problemas de encoding Unicode)
+  const checkboxLabels = [
+    'AUTORIZO el tratamiento de mis imágenes para los fines indicados',
+    'ACEPTO recibir comunicaciones informativas de la Fundación',
   ]
-  for (const cb of checkboxes) {
-    page.drawText(cb, { x: margin, y, size: 9, font: fontBold, color: rgb(0.1, 0.1, 0.1) })
+  for (const label of checkboxLabels) {
+    const boxSize = 8
+    page.drawRectangle({ x: margin, y: y - 1, width: boxSize, height: boxSize, borderColor: rgb(0.1, 0.1, 0.1), borderWidth: 1 })
+    page.drawText(label, { x: margin + boxSize + 5, y, size: 9, font: fontBold, color: rgb(0.1, 0.1, 0.1) })
     y -= 16
   }
   y -= 10
@@ -337,13 +339,18 @@ async function generateSignedPdf(evento, firma) {
   }
   y -= 10
 
-  // Checkboxes (checked)
-  const checkboxes = [
-    '☑  AUTORIZO el tratamiento de mis imágenes para los fines indicados',
-    '☑  ACEPTO recibir comunicaciones informativas de la Fundación',
+  // Checkboxes marcados — rectángulo + aspa dibujada
+  const checkboxLabels = [
+    'AUTORIZO el tratamiento de mis imágenes para los fines indicados',
+    'ACEPTO recibir comunicaciones informativas de la Fundación',
   ]
-  for (const cb of checkboxes) {
-    page.drawText(cb, { x: margin, y, size: 9, font: fontBold, color: rgb(0.1, 0.1, 0.1) })
+  for (const label of checkboxLabels) {
+    const boxSize = 8
+    page.drawRectangle({ x: margin, y: y - 1, width: boxSize, height: boxSize, borderColor: rgb(0.1, 0.1, 0.1), borderWidth: 1 })
+    // Aspa interior (X) para indicar marcado
+    page.drawLine({ start: { x: margin + 1, y: y - 1 + boxSize - 1 }, end: { x: margin + boxSize - 1, y: y }, thickness: 1, color: rgb(0.1, 0.35, 0.7) })
+    page.drawLine({ start: { x: margin + 1, y: y }, end: { x: margin + boxSize - 1, y: y - 1 + boxSize - 1 }, thickness: 1, color: rgb(0.1, 0.35, 0.7) })
+    page.drawText(label, { x: margin + boxSize + 5, y, size: 9, font: fontBold, color: rgb(0.1, 0.1, 0.1) })
     y -= 16
   }
   y -= 10
