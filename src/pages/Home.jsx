@@ -58,6 +58,14 @@ const MODULES = [
     href: '/animalario',
     status: 'ready',
   },
+  {
+    id: 'certificados',
+    name: 'Certificados',
+    description: 'Gestión de autorizaciones de imagen y filmación para eventos. Genera formularios imprimibles con QR y recoge firmas digitales.',
+    icon: '📸',
+    href: '/certificados',
+    status: 'ready',
+  },
 ]
 
 export default function Home() {

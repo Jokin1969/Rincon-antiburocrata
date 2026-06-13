@@ -1,0 +1,316 @@
+.page {
+  min-height: 100vh;
+  background: #f0f4f8;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+  width: 100%;
+  max-width: 560px;
+  overflow: hidden;
+}
+
+.header {
+  background: #1a1a2e;
+  color: #fff;
+  padding: 1.5rem 1.5rem 1.25rem;
+  text-align: center;
+}
+
+.logo {
+  max-height: 56px;
+  max-width: 200px;
+  object-fit: contain;
+  margin-bottom: 0.75rem;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.eventName {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0 0 0.35rem;
+  line-height: 1.3;
+}
+
+.eventMeta {
+  font-size: 0.82rem;
+  opacity: 0.7;
+  margin: 0;
+}
+
+.step {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.stepTitle {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0;
+}
+
+.stepDesc {
+  font-size: 0.875rem;
+  color: #555;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.firmante {
+  font-size: 0.875rem;
+  color: #333;
+  margin: 0;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.fieldLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.fieldInput {
+  width: 100%;
+  padding: 0.65rem 0.875rem;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1rem;
+  color: #111;
+  background: #f9fafb;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+
+.fieldInput:focus {
+  outline: none;
+  border-color: #4f46e5;
+  background: #fff;
+}
+
+.legalBlock {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.legalToggle {
+  width: 100%;
+  background: #f9fafb;
+  border: none;
+  padding: 0.65rem 1rem;
+  text-align: left;
+  font-size: 0.82rem;
+  color: #4f46e5;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.legalToggle:hover {
+  background: #f0f0ff;
+}
+
+.legalText {
+  font-size: 0.7rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  color: #555;
+  margin: 0;
+  padding: 1rem;
+  background: #fff;
+  font-family: inherit;
+  border-top: 1px solid #e5e7eb;
+}
+
+.canvasWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.canvasLabel {
+  font-size: 0.8rem;
+  color: #555;
+  margin: 0;
+}
+
+.canvas {
+  width: 100%;
+  height: 160px;
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  background: #f9fafb;
+  touch-action: none;
+  cursor: crosshair;
+  display: block;
+}
+
+.btnClear {
+  align-self: flex-end;
+  background: none;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  color: #666;
+  cursor: pointer;
+}
+
+.btnClear:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+.checkboxGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-size: 0.875rem;
+  color: #222;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  flex-shrink: 0;
+  accent-color: #4f46e5;
+  cursor: pointer;
+}
+
+.lugar {
+  font-size: 0.82rem;
+  color: #555;
+  font-style: italic;
+  margin: 0;
+}
+
+.errorText {
+  font-size: 0.82rem;
+  color: #dc2626;
+  margin: 0;
+  background: #fee2e2;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #fca5a5;
+}
+
+.loadingText {
+  text-align: center;
+  color: #888;
+  padding: 2rem;
+  margin: 0;
+}
+
+.subtext {
+  text-align: center;
+  font-size: 0.82rem;
+  color: #888;
+  margin: 0;
+}
+
+.btnPrimary {
+  display: block;
+  width: 100%;
+  padding: 0.875rem 1rem;
+  background: #4f46e5;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  transition: background 0.15s;
+  box-sizing: border-box;
+}
+
+.btnPrimary:hover {
+  background: #4338ca;
+}
+
+.btnConfirm {
+  display: block;
+  width: 100%;
+  padding: 0.875rem 1rem;
+  background: #059669;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.15s;
+  box-sizing: border-box;
+}
+
+.btnConfirm:hover:not(:disabled) {
+  background: #047857;
+}
+
+.btnConfirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.successIcon {
+  text-align: center;
+  font-size: 3.5rem;
+}
+
+.successTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #065f46;
+  text-align: center;
+  margin: 0;
+}
+
+.successDesc {
+  text-align: center;
+  font-size: 0.9rem;
+  color: #555;
+  margin: 0;
+  line-height: 1.5;
+}
+
+@media (max-width: 600px) {
+  .page {
+    padding: 0;
+    align-items: stretch;
+  }
+
+  .card {
+    border-radius: 0;
+    min-height: 100vh;
+    box-shadow: none;
+  }
+}

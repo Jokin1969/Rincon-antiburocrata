@@ -25,6 +25,10 @@ import SeccionDForm from './pages/animalario/seccionD/SeccionDForm'
 import ModificacionForm from './pages/animalario/modificacion/ModificacionForm'
 import GastosViajeList from './pages/gastosviaje/GastosViajeList'
 import GastosViajeForm from './pages/gastosviaje/GastosViajeForm'
+import CertificadosHub from './pages/certificados/CertificadosHub'
+import AutorizacionImagenList from './pages/certificados/autorizacion-imagen/AutorizacionImagenList'
+import AutorizacionImagenForm from './pages/certificados/autorizacion-imagen/AutorizacionImagenForm'
+import FirmaDigital from './pages/certificados/autorizacion-imagen/FirmaDigital'
 import NotFound from './pages/NotFound'
 
 export default function App() {
@@ -66,8 +70,18 @@ export default function App() {
         <Route path="/animalario/proyecto/:proyectoId/modificacion/nueva" element={<ModificacionForm />} />
         <Route path="/animalario/proyecto/:proyectoId/modificacion/:mId" element={<ModificacionForm />} />
 
+        {/* Certificados */}
+        <Route path="/certificados" element={<CertificadosHub />} />
+        <Route path="/certificados/autorizacion-imagen" element={<AutorizacionImagenList />} />
+        <Route path="/certificados/autorizacion-imagen/nuevo" element={<AutorizacionImagenForm />} />
+        <Route path="/certificados/autorizacion-imagen/:id" element={<AutorizacionImagenForm />} />
+
         <Route path="*" element={<NotFound />} />
       </Route>
+
+      {/* Firma digital pública (sin layout) */}
+      <Route path="/firma/:eventoId" element={<FirmaDigital />} />
+      <Route path="/firma/:eventoId/:participanteId" element={<FirmaDigital />} />
     </Routes>
   )
 }

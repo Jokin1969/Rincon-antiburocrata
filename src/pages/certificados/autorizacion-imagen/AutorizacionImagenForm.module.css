@@ -1,0 +1,281 @@
+.loading {
+  padding: 2rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.sectionTitle {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 600px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.875rem;
+  box-sizing: border-box;
+}
+
+.input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.saveRow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.savedMsg {
+  font-size: 0.875rem;
+  color: #059669;
+}
+
+.logoDrop {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  outline: none;
+}
+
+.logoDrop:focus {
+  border-color: var(--accent);
+}
+
+.logoPreview {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.logoImg {
+  max-height: 80px;
+  max-width: 300px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.logoPlaceholder {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+  flex-wrap: wrap;
+}
+
+.hint {
+  font-size: 0.8rem;
+  color: var(--muted-light);
+  margin: 0.5rem 0;
+  line-height: 1.5;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 1rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.table th {
+  background: var(--surface);
+  padding: 0.6rem 1rem;
+  text-align: left;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.table td {
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.link {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.inlineForm {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 0.75rem;
+}
+
+.legalPreview {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.legalText {
+  font-size: 0.72rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  color: var(--muted-light);
+  margin: 0 0 0.75rem;
+  font-family: inherit;
+}
+
+.checkboxes {
+  font-size: 0.8rem;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.qrSection {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.qrImg {
+  width: 120px;
+  height: 120px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.pdfActions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.emailRow {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.emailRow .input {
+  flex: 1;
+  min-width: 200px;
+}
+
+.emailMsg {
+  font-size: 0.875rem;
+  color: var(--text);
+  margin: 0;
+}
+
+.firmasHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0;
+}
+
+.badge {
+  display: inline-block;
+  background: var(--accent);
+  color: white;
+  border-radius: 999px;
+  padding: 0.15em 0.6em;
+  font-size: 0.75rem;
+  font-weight: 700;
+  min-width: 1.5rem;
+  text-align: center;
+}
+
+.tipoBadge {
+  display: inline-block;
+  border-radius: 4px;
+  padding: 0.1em 0.5em;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.tipoDigital {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.tipoQr {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.zipRow {
+  margin-top: 1rem;
+}
