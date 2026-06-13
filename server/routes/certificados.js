@@ -203,7 +203,6 @@ async function generateBlankPdf(evento) {
   // Checkboxes — dibujados como rectángulos (evita problemas de encoding Unicode)
   const checkboxLabels = [
     'AUTORIZO el tratamiento de mis imágenes para los fines indicados',
-    'ACEPTO recibir comunicaciones informativas de la Fundación',
   ]
   for (const label of checkboxLabels) {
     const boxSize = 8
@@ -342,7 +341,6 @@ async function generateSignedPdf(evento, firma) {
   // Checkboxes marcados — rectángulo + aspa dibujada
   const checkboxLabels = [
     'AUTORIZO el tratamiento de mis imágenes para los fines indicados',
-    'ACEPTO recibir comunicaciones informativas de la Fundación',
   ]
   for (const label of checkboxLabels) {
     const boxSize = 8

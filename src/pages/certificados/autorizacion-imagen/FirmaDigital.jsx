@@ -42,7 +42,6 @@ export default function FirmaDigital() {
 
   const [legalExpanded, setLegalExpanded] = useState(false)
   const [autorizo, setAutorizo]           = useState(false)
-  const [acepto, setAcepto]               = useState(false)
   const [firmando, setFirmando]           = useState(false)
   const [firmaError, setFirmaError]       = useState(null)
   const [pdfUrl, setPdfUrl]               = useState(null)
@@ -153,7 +152,6 @@ export default function FirmaDigital() {
   async function handleConfirmar() {
     if (!hasDrawnRef.current) { setFirmaError('Por favor, firma en el recuadro antes de continuar.'); return }
     if (!autorizo) { setFirmaError('Debes marcar la casilla de autorización de imágenes.'); return }
-    if (!acepto)   { setFirmaError('Debes marcar la casilla de comunicaciones.'); return }
 
     const canvas      = canvasRef.current
     const firma_base64 = canvas ? canvas.toDataURL('image/png') : null
@@ -310,15 +308,6 @@ export default function FirmaDigital() {
                   className={styles.checkbox}
                 />
                 <span>AUTORIZO el tratamiento de mis imágenes para los fines indicados</span>
-              </label>
-              <label className={styles.checkboxLabel}>
-                <input
-                  type="checkbox"
-                  checked={acepto}
-                  onChange={e => setAcepto(e.target.checked)}
-                  className={styles.checkbox}
-                />
-                <span>ACEPTO recibir comunicaciones informativas de la Fundación</span>
               </label>
             </div>
 
