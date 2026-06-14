@@ -59,6 +59,14 @@ const MODULES = [
     status: 'ready',
   },
   {
+    id: 'cartas-referencia',
+    name: 'Cartas de referencia',
+    description: 'Genera cartas de referencia profesionales, de apoyo a proyectos o para Green Card/Visa. IA integrada (Claude, ChatGPT, Gemini), descarga en DOCX/PDF y envío por email.',
+    icon: '📜',
+    href: '/cartas-referencia',
+    status: 'ready',
+  },
+  {
     id: 'autorizaciones',
     name: 'Autorizaciones',
     description: 'Gestiona autorizaciones de todo tipo para eventos, reuniones y actividades: imagen, asistencia, consentimientos… con firma digital desde móvil y registro permanente.',

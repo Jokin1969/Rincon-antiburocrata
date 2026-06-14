@@ -1,4 +1,5 @@
 import express from 'express'
+import cartasReferenciaRouter     from './server/routes/cartasReferencia.js'
 import animalarioRouter       from './server/routes/animalario.js'
 import animalarioExportRouter from './server/routes/animalario-export.js'
 import animalarioBackupRouter, { initAutoBackup } from './server/routes/animalario-backup.js'
@@ -1022,6 +1023,7 @@ initAutoBackup()
 app.use('/api/gastos-viaje', gastosViajeRouter)
 app.use('/api/gastos-viaje', gastosViajeBackupRouter)
 app.use('/api/certificados', certificadosRouter)
+app.use('/api/cartas-referencia', cartasReferenciaRouter)
 initGastosViajeAutoBackup()
 
 app.post('/api/gastos-viaje/:id/generar', async (req, res) => {

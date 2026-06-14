@@ -30,6 +30,8 @@ import CertificadosHub from './pages/certificados/CertificadosHub'
 import AutorizacionImagenList from './pages/certificados/autorizacion-imagen/AutorizacionImagenList'
 import AutorizacionImagenForm from './pages/certificados/autorizacion-imagen/AutorizacionImagenForm'
 import FirmaDigital from './pages/certificados/autorizacion-imagen/FirmaDigital'
+import CartasReferenciaList from './pages/cartasreferencia/CartasReferenciaList'
+import CartaReferenciaForm  from './pages/cartasreferencia/CartaReferenciaForm'
 import NotFound from './pages/NotFound'
 
 export default function App() {
@@ -79,6 +81,11 @@ export default function App() {
         <Route path="/autorizaciones/autorizacion-imagen" element={<AutorizacionImagenList />} />
         <Route path="/autorizaciones/autorizacion-imagen/nuevo" element={<AutorizacionImagenForm />} />
         <Route path="/autorizaciones/autorizacion-imagen/:id" element={<AutorizacionImagenForm />} />
+
+        {/* Cartas de referencia */}
+        <Route path="/cartas-referencia" element={<CartasReferenciaList />} />
+        <Route path="/cartas-referencia/nueva" element={<CartaReferenciaForm />} />
+        <Route path="/cartas-referencia/:id" element={<CartaReferenciaForm />} />
 
         <Route path="*" element={<NotFound />} />
       </Route>
