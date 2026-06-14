@@ -6,7 +6,7 @@ const DOCS = [
   {
     id: 'autorizacion-imagen',
     name: 'Autorización de imagen',
-    description: 'Autorización RGPD para captación y uso de fotografías y vídeos en eventos. Formulario imprimible con QR y firma digital desde móvil.',
+    description: 'Autorización de captación y uso de imagen conforme al RGPD. Genera el formulario imprimible con QR y recoge firmas digitales desde cualquier dispositivo.',
     icon: '📸',
     href: '/autorizaciones/autorizacion-imagen',
     status: 'ready',
@@ -24,11 +24,12 @@ export default function CertificadosHub() {
       />
 
       <div className={styles.context}>
-        <span className="badge">Firmas digitales</span>
+        <span className="badge">Gestión de autorizaciones</span>
         <p>
-          Crea y gestiona autorizaciones de todo tipo: imagen, asistencia, consentimientos
-          informados… Genera formularios imprimibles con QR y recoge firmas digitales desde
-          cualquier dispositivo. Todas las firmas quedan registradas y disponibles para descarga.
+          Crea y gestiona autorizaciones de todo tipo: imagen, asistencia a eventos, consentimientos
+          informados, acuerdos de confidencialidad… Genera formularios imprimibles con QR y recoge
+          firmas digitales desde cualquier dispositivo. Todas las autorizaciones quedan registradas
+          y disponibles para consulta y descarga en cualquier momento.
         </p>
       </div>
 
