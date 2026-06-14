@@ -469,7 +469,6 @@ export default function AutorizacionImagenForm() {
           <pre className={styles.legalText}>{buildLegalPreview(form)}</pre>
           <div className={styles.checkboxes}>
             <p>☐ AUTORIZO el tratamiento de mis imágenes para los fines indicados</p>
-            <p>☐ ACEPTO recibir comunicaciones informativas de la Fundación</p>
           </div>
         </div>
 

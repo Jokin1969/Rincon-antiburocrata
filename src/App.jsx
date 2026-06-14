@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom'
+import DocumentosCicHub from './pages/documentos-cic/DocumentosCicHub'
 import Layout from './components/Layout'
 import Home from './pages/Home'
 import GenScriptHome from './pages/genscript/GenScriptHome'
@@ -69,6 +70,9 @@ export default function App() {
         <Route path="/animalario/proyecto/:proyectoId/productos" element={<SeccionDForm />} />
         <Route path="/animalario/proyecto/:proyectoId/modificacion/nueva" element={<ModificacionForm />} />
         <Route path="/animalario/proyecto/:proyectoId/modificacion/:mId" element={<ModificacionForm />} />
+
+        {/* Documentos CIC bioGUNE */}
+        <Route path="/documentos-cic" element={<DocumentosCicHub />} />
 
         {/* Autorizaciones */}
         <Route path="/autorizaciones" element={<CertificadosHub />} />

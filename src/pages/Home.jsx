@@ -27,11 +27,11 @@ const MODULES = [
     status: 'ready',
   },
   {
-    id: 'contrato-menor',
-    name: 'Contrato Menor',
-    description: 'Generación del expediente de contrato menor con justificación, comparativa de proveedores y firma.',
-    icon: '📄',
-    href: '/contrato-menor',
+    id: 'documentos-cic',
+    name: 'Documentos CIC bioGUNE',
+    description: 'Documentos y expedientes internos de CIC bioGUNE: contrato menor, justificaciones, comparativas de proveedores y otros trámites administrativos.',
+    icon: '🏛️',
+    href: '/documentos-cic',
     status: 'ready',
   },
   {
