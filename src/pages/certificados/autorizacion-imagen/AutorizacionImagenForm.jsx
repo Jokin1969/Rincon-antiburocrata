@@ -246,6 +246,26 @@ export default function AutorizacionImagenForm() {
     }
   }
 
+  async function handleDescargarCartel() {
+    if (!id) { alert('Guarda el evento primero.'); return }
+    try {
+      const res  = await fetch(`/api/certificados/eventos/${id}/cartel-pdf`)
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Error generando cartel')
+      }
+      const blob = await res.blob()
+      const url  = URL.createObjectURL(blob)
+      const a    = document.createElement('a')
+      a.href     = url
+      a.download = `cartel_${form.nombre || id}.pdf`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      alert('Error al generar el cartel: ' + e.message)
+    }
+  }
+
   async function handleExportZip() {
     if (!id) return
     try {
@@ -483,6 +503,9 @@ export default function AutorizacionImagenForm() {
         <div className={styles.pdfActions}>
           <button className="btn btn-primary" onClick={handleGenerarPdf} disabled={genPdf || !id}>
             {genPdf ? 'Generando…' : '📄 Generar PDF en blanco'}
+          </button>
+          <button className="btn" onClick={handleDescargarCartel} disabled={!id}>
+            📢 Descargar cartel QR
           </button>
           <div className={styles.emailRow}>
             <input

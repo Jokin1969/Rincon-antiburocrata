@@ -1,6 +1,6 @@
 import { Router }                                         from 'express'
 import { existsSync, mkdirSync, readdirSync,
-         readFileSync, writeFileSync, unlinkSync }        from 'fs'
+         readFileSync, writeFileSync, unlinkSync, rmSync } from 'fs'
 import { join, dirname }                                  from 'path'
 import { fileURLToPath }                                  from 'url'
 import { contentDispositionHeader }                       from '../../utils/contentDisposition.js'
@@ -39,26 +39,37 @@ function writeEvento(evento) {
   )
 }
 
+function eventoFirmasDir(eventoId) {
+  return join(FIRMAS_DIR, eventoId)
+}
+
 function readFirma(id) {
-  const path = join(FIRMAS_DIR, `firma_${id}.json`)
-  if (!existsSync(path)) return null
-  return JSON.parse(readFileSync(path, 'utf-8'))
+  ensureDir(FIRMAS_DIR)
+  for (const entry of readdirSync(FIRMAS_DIR, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue
+    const dir = join(FIRMAS_DIR, entry.name)
+    const hit = readdirSync(dir).find(f => f.endsWith(`_${id}.json`))
+    if (hit) return JSON.parse(readFileSync(join(dir, hit), 'utf-8'))
+  }
+  return null
 }
 
 function writeFirma(firma) {
-  ensureDir(FIRMAS_DIR)
+  const dir = eventoFirmasDir(firma.eventoId)
+  ensureDir(dir)
   writeFileSync(
-    join(FIRMAS_DIR, `firma_${firma.eventoId}_${firma.id}.json`),
+    join(dir, `firma_${firma.eventoId}_${firma.id}.json`),
     JSON.stringify(firma, null, 2),
     'utf-8'
   )
 }
 
 function listFirmasDeEvento(eventoId) {
-  ensureDir(FIRMAS_DIR)
-  return readdirSync(FIRMAS_DIR)
-    .filter(f => f.startsWith(`firma_${eventoId}_`) && f.endsWith('.json'))
-    .map(f => JSON.parse(readFileSync(join(FIRMAS_DIR, f), 'utf-8')))
+  const dir = eventoFirmasDir(eventoId)
+  if (!existsSync(dir)) return []
+  return readdirSync(dir)
+    .filter(f => f.startsWith('firma_') && f.endsWith('.json'))
+    .map(f => JSON.parse(readFileSync(join(dir, f), 'utf-8')))
 }
 
 function makeId() {
@@ -411,7 +422,10 @@ router.get('/eventos', (_req, res) => {
     const files   = readdirSync(EVENTOS_DIR).filter(f => f.startsWith('evento_') && f.endsWith('.json'))
     const eventos = files.map(f => {
       const ev = JSON.parse(readFileSync(join(EVENTOS_DIR, f), 'utf-8'))
-      const firmasCount = readdirSync(FIRMAS_DIR).filter(ff => ff.startsWith(`firma_${ev.id}_`)).length
+      const firmaSubdir = eventoFirmasDir(ev.id)
+      const firmasCount = existsSync(firmaSubdir)
+        ? readdirSync(firmaSubdir).filter(f => f.startsWith('firma_') && f.endsWith('.json')).length
+        : 0
       return { ...ev, logo: undefined, firmasCount }
     })
     eventos.sort((a, b) => (b.creado || '').localeCompare(a.creado || ''))
@@ -474,15 +488,10 @@ router.delete('/eventos/:id', (req, res) => {
     const path = join(EVENTOS_DIR, `evento_${id}.json`)
     if (!existsSync(path)) return res.status(404).json({ error: 'Evento no encontrado' })
     unlinkSync(path)
-    // Borrar firmas
-    ensureDir(FIRMAS_DIR)
-    const firmaFiles = readdirSync(FIRMAS_DIR).filter(f => f.startsWith(`firma_${id}_`))
-    for (const ff of firmaFiles) {
-      try {
-        const firma = JSON.parse(readFileSync(join(FIRMAS_DIR, ff), 'utf-8'))
-        if (firma.pdf_path && existsSync(firma.pdf_path)) unlinkSync(firma.pdf_path)
-        unlinkSync(join(FIRMAS_DIR, ff))
-      } catch { /* ignore */ }
+    // Borrar subdir de firmas del evento
+    const firmasSubdir = eventoFirmasDir(id)
+    if (existsSync(firmasSubdir)) {
+      try { rmSync(firmasSubdir, { recursive: true, force: true }) } catch { /* ignore */ }
     }
     res.json({ ok: true })
   } catch (e) {
@@ -543,10 +552,11 @@ router.post('/firmas', async (req, res) => {
     const timestamp = new Date().toISOString()
     const firma     = { id, eventoId, nombre_apellidos, dni, firma_base64, timestamp, tipo: tipo || 'digital' }
 
-    // Generar PDF firmado
-    const pdfBytes  = await generateSignedPdf(ev, firma)
-    const pdfPath   = join(FIRMAS_DIR, `pdf_${id}.pdf`)
-    ensureDir(FIRMAS_DIR)
+    // Generar PDF firmado y guardar en subdir del evento
+    const pdfBytes   = await generateSignedPdf(ev, firma)
+    const eventoDir  = eventoFirmasDir(eventoId)
+    ensureDir(eventoDir)
+    const pdfPath    = join(eventoDir, `pdf_${id}.pdf`)
     writeFileSync(pdfPath, pdfBytes)
     firma.pdf_path  = pdfPath
 
@@ -579,11 +589,8 @@ router.post('/firmas', async (req, res) => {
 
 router.get('/firmas/:id/pdf', (req, res) => {
   try {
-    // Find the firma JSON (we don't know the eventoId so scan all)
-    ensureDir(FIRMAS_DIR)
-    const files = readdirSync(FIRMAS_DIR).filter(f => f.endsWith(`_${req.params.id}.json`))
-    if (!files.length) return res.status(404).json({ error: 'Firma no encontrada' })
-    const firma = JSON.parse(readFileSync(join(FIRMAS_DIR, files[0]), 'utf-8'))
+    const firma = readFirma(req.params.id)
+    if (!firma) return res.status(404).json({ error: 'Firma no encontrada' })
     if (!firma.pdf_path || !existsSync(firma.pdf_path)) {
       return res.status(404).json({ error: 'PDF no encontrado' })
     }
@@ -642,6 +649,119 @@ router.get('/eventos/:id/qr', async (req, res) => {
     const qrUrl   = `${appUrl}/firma/${ev.id}`
     const dataUrl = await QRCode.toDataURL(qrUrl, { width: 200, margin: 2 })
     res.json({ dataUrl, url: qrUrl })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+async function generatePosterPdf(evento) {
+  const pdfDoc = await PDFDocument.create()
+  const page   = pdfDoc.addPage([595, 842])
+  const { width, height } = page.getSize()
+  const margin = 50
+  const cw     = width - margin * 2
+
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+  const fontReg  = await pdfDoc.embedFont(StandardFonts.Helvetica)
+
+  // Barra superior de color
+  page.drawRectangle({ x: 0, y: height - 10, width, height: 10, color: rgb(0.1, 0.2, 0.7) })
+
+  let y = height - 30
+
+  // Logo centrado
+  if (evento.logo && evento.logo.startsWith('data:image/')) {
+    try {
+      const b64  = evento.logo.replace(/^data:image\/[^;]+;base64,/, '')
+      const imgBytes = Buffer.from(b64, 'base64')
+      const img  = evento.logo.includes('image/png')
+        ? await pdfDoc.embedPng(imgBytes)
+        : await pdfDoc.embedJpg(imgBytes)
+      const logoH = 55
+      const logoW = Math.min(img.width * (logoH / img.height), cw)
+      page.drawImage(img, { x: margin + (cw - logoW) / 2, y: y - logoH, width: logoW, height: logoH })
+      y -= logoH + 22
+    } catch { /* ignore */ }
+  }
+
+  // Titular principal
+  const lines1 = ['¡AUTORIZA TU IMAGEN', 'DIGITALMENTE!']
+  const hSize  = 34
+  for (const line of lines1) {
+    const lw = fontBold.widthOfTextAtSize(line, hSize)
+    page.drawText(line, { x: margin + (cw - lw) / 2, y, size: hSize, font: fontBold, color: rgb(0.1, 0.2, 0.7) })
+    y -= hSize + 6
+  }
+  y -= 18
+
+  // QR grande y centrado
+  const appUrl    = process.env.APP_URL || 'https://tu-app.railway.app'
+  const qrUrl     = `${appUrl}/firma/${evento.id}`
+  const qrDataUrl = await QRCode.toDataURL(qrUrl, { width: 500, margin: 2 })
+  const qrBase64  = qrDataUrl.replace(/^data:image\/png;base64,/, '')
+  const qrImg     = await pdfDoc.embedPng(Buffer.from(qrBase64, 'base64'))
+  const qrSize    = 230
+  page.drawImage(qrImg, { x: (width - qrSize) / 2, y: y - qrSize, width: qrSize, height: qrSize })
+  y -= qrSize + 22
+
+  // Subtítulo de llamada a la acción
+  const subText = 'Escanea este código con la cámara de tu móvil'
+  const subW    = fontBold.widthOfTextAtSize(subText, 12)
+  page.drawText(subText, { x: margin + (cw - subW) / 2, y, size: 12, font: fontBold, color: rgb(0.2, 0.2, 0.2) })
+  y -= 18
+
+  // Pasos
+  const steps = [
+    '1.  Abre la cámara de tu móvil y apunta al código QR',
+    '2.  Toca el enlace que aparece en pantalla',
+    '3.  Rellena tu nombre y DNI',
+    '4.  Firma con el dedo directamente en la pantalla',
+    '5.  Pulsa «Enviar» — ¡listo en menos de un minuto!',
+  ]
+  const stepSize = 11
+  y -= 6
+  for (const step of steps) {
+    const sw = fontReg.widthOfTextAtSize(step, stepSize)
+    page.drawText(step, { x: margin + (cw - sw) / 2, y, size: stepSize, font: fontReg, color: rgb(0.25, 0.25, 0.25) })
+    y -= stepSize + 6
+  }
+  y -= 10
+
+  // Nota RGPD
+  const nota = 'Tus datos se tratan conforme al RGPD. Recibirás una copia firmada por email.'
+  const notaW = fontReg.widthOfTextAtSize(nota, 8)
+  page.drawText(nota, { x: margin + (cw - notaW) / 2, y, size: 8, font: fontReg, color: rgb(0.55, 0.55, 0.55) })
+  y -= 22
+
+  // Línea separadora inferior
+  page.drawLine({ start: { x: margin, y }, end: { x: width - margin, y }, thickness: 0.5, color: rgb(0.8, 0.8, 0.8) })
+  y -= 14
+
+  // Info del evento
+  const infoLines = [
+    evento.nombre,
+    [evento.fecha, evento.lugar].filter(Boolean).join('  ·  '),
+  ].filter(Boolean)
+  for (const line of infoLines) {
+    const lw = fontBold.widthOfTextAtSize(line, 10)
+    page.drawText(line, { x: margin + (cw - lw) / 2, y, size: 10, font: fontBold, color: rgb(0.3, 0.3, 0.3) })
+    y -= 14
+  }
+
+  // Barra inferior de color
+  page.drawRectangle({ x: 0, y: 0, width, height: 10, color: rgb(0.1, 0.2, 0.7) })
+
+  return pdfDoc.save()
+}
+
+router.get('/eventos/:id/cartel-pdf', async (req, res) => {
+  try {
+    const ev = readEvento(req.params.id)
+    if (!ev) return res.status(404).json({ error: 'Evento no encontrado' })
+    const pdfBytes = await generatePosterPdf(ev)
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', contentDispositionHeader('attachment', `cartel_${ev.nombre || ev.id}.pdf`))
+    res.send(Buffer.from(pdfBytes))
   } catch (e) {
     res.status(500).json({ error: e.message })
   }
