@@ -76,6 +76,16 @@ function makeId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
 }
 
+// Normaliza DNI: elimina espacios/puntos/guiones, mayúsculas,
+// y rellena con ceros iniciales si el número tiene menos de 8 dígitos
+// Ej: "1.234.567-R" → "01234567R"  |  "12345678A" → "12345678A"
+function normalizeDni(s) {
+  let v = (s || '').trim().toUpperCase().replace(/[\s\-.]/g, '')
+  const m = v.match(/^(\d{1,7})([A-Z])$/)
+  if (m) v = m[1].padStart(8, '0') + m[2]
+  return v
+}
+
 function makeTransporter() {
   return nodemailer.createTransport({
     host:   process.env.SMTP_HOST,
@@ -544,9 +554,8 @@ router.get('/eventos/:id/firmas/buscar-dni', (req, res) => {
   try {
     const { dni } = req.query
     if (!dni) return res.json({ firma: null })
-    const norm  = s => (s || '').trim().toUpperCase().replace(/[\s\-.]/g, '')
     const firmas = listFirmasDeEvento(req.params.id)
-    const found  = firmas.find(f => norm(f.dni) === norm(dni)) || null
+    const found  = firmas.find(f => normalizeDni(f.dni) === normalizeDni(dni)) || null
     res.json({
       firma: found
         ? { id: found.id, nombre_apellidos: found.nombre_apellidos, timestamp: found.timestamp }
@@ -581,7 +590,8 @@ router.post('/firmas', async (req, res) => {
 
     const id        = makeId()
     const timestamp = new Date().toISOString()
-    const firma     = { id, eventoId, nombre_apellidos, dni, firma_base64, timestamp, tipo: tipo || 'digital' }
+    const dniNorm   = normalizeDni(dni)
+    const firma     = { id, eventoId, nombre_apellidos, dni: dniNorm, firma_base64, timestamp, tipo: tipo || 'digital' }
 
     // Generar PDF firmado y guardar en subdir del evento
     const pdfBytes   = await generateSignedPdf(ev, firma)

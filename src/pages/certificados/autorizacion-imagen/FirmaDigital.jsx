@@ -26,6 +26,13 @@ function buildLegal(evento) {
     .replace('[nif]', evento?.nif_organizador || '')
 }
 
+function normalizeDni(s) {
+  let v = (s || '').trim().toUpperCase().replace(/[\s\-.]/g, '')
+  const m = v.match(/^(\d{1,7})([A-Z])$/)
+  if (m) v = m[1].padStart(8, '0') + m[2]
+  return v
+}
+
 export default function FirmaDigital() {
   const { eventoId, participanteId } = useParams()
 
@@ -140,8 +147,7 @@ export default function FirmaDigital() {
     if (participanteId) {
       if (!participante) { setIdError('Participante no encontrado en este evento.'); return }
       if (!dniInput.trim()) { setIdError('Introduce tu DNI o identificación.'); return }
-      const norm = s => (s || '').trim().toUpperCase().replace(/[\s\-.]/g, '')
-      if (norm(dniInput) !== norm(participante.dni || '')) {
+      if (normalizeDni(dniInput) !== normalizeDni(participante.dni || '')) {
         setIdError('El DNI introducido no coincide con el registrado.')
         return
       }
@@ -174,7 +180,7 @@ export default function FirmaDigital() {
     const canvas      = canvasRef.current
     const firma_base64 = canvas ? canvas.toDataURL('image/png') : null
     const nombre      = participante?.nombre_apellidos || nombreInput
-    const dni         = participante?.dni || dniInput
+    const dni         = normalizeDni(participante?.dni || dniInput)
 
     setFirmando(true)
     setFirmaError(null)
