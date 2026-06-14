@@ -1,4 +1,5 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
 import DocumentosCicHub from './pages/documentos-cic/DocumentosCicHub'
 import Layout from './components/Layout'
 import Home from './pages/Home'
@@ -32,12 +33,52 @@ import AutorizacionImagenForm from './pages/certificados/autorizacion-imagen/Aut
 import FirmaDigital from './pages/certificados/autorizacion-imagen/FirmaDigital'
 import CartasReferenciaList from './pages/cartasreferencia/CartasReferenciaList'
 import CartaReferenciaForm  from './pages/cartasreferencia/CartaReferenciaForm'
+import LoginPage from './pages/auth/LoginPage'
+import ChangePasswordPage from './pages/auth/ChangePasswordPage'
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
+import ResetPasswordPage from './pages/auth/ResetPasswordPage'
+import AdminPanel from './pages/admin/AdminPanel'
 import NotFound from './pages/NotFound'
 
-export default function App() {
+function RequireAuth({ children }) {
+  const { user, loading } = useAuth()
+  const location          = useLocation()
+
+  if (loading) return <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--muted)' }}>Cargando…</div>
+  if (!user)   return <Navigate to="/login" state={{ from: location }} replace />
+  if (user.must_change_pw && location.pathname !== '/change-password') {
+    return <Navigate to="/change-password" replace />
+  }
+  return children
+}
+
+function GuestOnly({ children }) {
+  const { user, loading } = useAuth()
+  if (loading) return null
+  if (user && !user.must_change_pw) return <Navigate to="/" replace />
+  return children
+}
+
+function RequireSession() {
+  const { user, loading } = useAuth()
+  if (loading) return null
+  if (!user) return <Navigate to="/login" replace />
+  return <ChangePasswordPage />
+}
+
+function AppRoutes() {
   return (
     <Routes>
-      <Route element={<Layout />}>
+      {/* Public auth pages */}
+      <Route path="/login" element={<GuestOnly><LoginPage /></GuestOnly>} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+      {/* Change password (requires session but not full auth) */}
+      <Route path="/change-password" element={<RequireSession />} />
+
+      {/* Protected app */}
+      <Route element={<RequireAuth><Layout /></RequireAuth>}>
         <Route path="/" element={<Home />} />
         <Route path="/genscript" element={<GenScriptHome />} />
         <Route path="/genscript/end-user-statement" element={<EndUserStatement />} />
@@ -53,12 +94,10 @@ export default function App() {
         <Route path="/contrato-menor" element={<ContratoMenorPage />} />
         <Route path="/contrato-menor/certificado-exclusividad" element={<CertificadoExclusividad />} />
 
-        {/* Gastos de viaje */}
         <Route path="/gastos-viaje" element={<GastosViajeList />} />
         <Route path="/gastos-viaje/nuevo" element={<GastosViajeForm />} />
         <Route path="/gastos-viaje/:id" element={<GastosViajeForm />} />
 
-        {/* Animalario */}
         <Route path="/animalario" element={<AnimalarioHub />} />
         <Route path="/animalario/proyectos" element={<ProyectosList />} />
         <Route path="/animalario/proyecto/nuevo" element={<SeccionAForm />} />
@@ -73,26 +112,33 @@ export default function App() {
         <Route path="/animalario/proyecto/:proyectoId/modificacion/nueva" element={<ModificacionForm />} />
         <Route path="/animalario/proyecto/:proyectoId/modificacion/:mId" element={<ModificacionForm />} />
 
-        {/* Documentos CIC bioGUNE */}
         <Route path="/documentos-cic" element={<DocumentosCicHub />} />
 
-        {/* Autorizaciones */}
         <Route path="/autorizaciones" element={<CertificadosHub />} />
         <Route path="/autorizaciones/autorizacion-imagen" element={<AutorizacionImagenList />} />
         <Route path="/autorizaciones/autorizacion-imagen/nuevo" element={<AutorizacionImagenForm />} />
         <Route path="/autorizaciones/autorizacion-imagen/:id" element={<AutorizacionImagenForm />} />
 
-        {/* Cartas de referencia */}
         <Route path="/cartas-referencia" element={<CartasReferenciaList />} />
         <Route path="/cartas-referencia/nueva" element={<CartaReferenciaForm />} />
         <Route path="/cartas-referencia/:id" element={<CartaReferenciaForm />} />
 
+        <Route path="/admin" element={<AdminPanel />} />
+
         <Route path="*" element={<NotFound />} />
       </Route>
 
-      {/* Firma digital pública (sin layout) */}
+      {/* Firma digital pública (sin layout, sin auth) */}
       <Route path="/firma/:eventoId" element={<FirmaDigital />} />
       <Route path="/firma/:eventoId/:participanteId" element={<FirmaDigital />} />
     </Routes>
+  )
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppRoutes />
+    </AuthProvider>
   )
 }

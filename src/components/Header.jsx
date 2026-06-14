@@ -1,4 +1,5 @@
-import { Link, NavLink } from 'react-router-dom'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import styles from './Header.module.css'
 
 const NAV_ITEMS = [
@@ -13,15 +14,34 @@ const NAV_ITEMS = [
 ]
 
 export default function Header() {
+  const { user, logout } = useAuth()
+  const navigate         = useNavigate()
+
+  async function handleLogout() {
+    await logout()
+    navigate('/login')
+  }
+
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
-        <Link to="/" className={styles.brand}>
-          <span className={styles.eyebrow}>El Rincón del</span>
-          <span className={styles.title}>
-            Adhócrata
-          </span>
-        </Link>
+        <div className={styles.topRow}>
+          <Link to="/" className={styles.brand}>
+            <span className={styles.eyebrow}>El Rincón del</span>
+            <span className={styles.title}>Adhócrata</span>
+          </Link>
+
+          {user && (
+            <div className={styles.userBar}>
+              <span className={styles.userName}>{user.display_name || user.email}</span>
+              {user.is_admin && (
+                <Link to="/admin" className={styles.adminLink}>Admin</Link>
+              )}
+              <button className={styles.logoutBtn} onClick={handleLogout}>Salir</button>
+            </div>
+          )}
+        </div>
+
         <p className={styles.tagline}>Código vibrante, burocracia menguante</p>
         <p className={styles.sub}>
           Grupo de Enfermedades Priónicas · CIC bioGUNE

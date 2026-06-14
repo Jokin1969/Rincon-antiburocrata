@@ -1,4 +1,5 @@
 import ModuleCard from '../components/ModuleCard'
+import { useAuth } from '../contexts/AuthContext'
 import styles from './Home.module.css'
 
 const MODULES = [
@@ -59,14 +60,6 @@ const MODULES = [
     status: 'ready',
   },
   {
-    id: 'cartas-referencia',
-    name: 'Cartas de referencia',
-    description: 'Genera cartas de referencia profesionales, de apoyo a proyectos o para Green Card/Visa. IA integrada (Claude, ChatGPT, Gemini), descarga en DOCX/PDF y envío por email.',
-    icon: '📜',
-    href: '/cartas-referencia',
-    status: 'ready',
-  },
-  {
     id: 'autorizaciones',
     name: 'Autorizaciones',
     description: 'Gestiona autorizaciones de todo tipo para eventos, reuniones y actividades: imagen, asistencia, consentimientos… con firma digital desde móvil y registro permanente.',
@@ -74,9 +67,24 @@ const MODULES = [
     href: '/autorizaciones',
     status: 'ready',
   },
+  {
+    id: 'cartas-referencia',
+    name: 'Cartas de referencia',
+    description: 'Genera cartas de referencia profesionales, de apoyo a proyectos o para Green Card/Visa. IA integrada (Claude, ChatGPT, Gemini), descarga en DOCX/PDF y envío por email.',
+    icon: '📜',
+    href: '/cartas-referencia',
+    status: 'ready',
+  },
 ]
 
 export default function Home() {
+  const { user } = useAuth()
+  const visibleApps = user?.visibleApps || []
+
+  const visibleModules = user?.is_admin
+    ? MODULES
+    : MODULES.filter(m => visibleApps.includes(m.id))
+
   return (
     <div>
       <div className={styles.intro}>
@@ -89,7 +97,7 @@ export default function Home() {
       <section>
         <h2 className={styles.sectionLabel}>Módulos disponibles</h2>
         <div className={styles.grid}>
-          {MODULES.map(mod => (
+          {visibleModules.map(mod => (
             <ModuleCard key={mod.id} {...mod} />
           ))}
         </div>

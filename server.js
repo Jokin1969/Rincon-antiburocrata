@@ -1,6 +1,8 @@
 import express from 'express'
-import cartasReferenciaRouter     from './server/routes/cartasReferencia.js'
-import animalarioRouter       from './server/routes/animalario.js'
+import authRouter              from './server/routes/authRoutes.js'
+import adminRouter             from './server/routes/adminRoutes.js'
+import cartasReferenciaRouter  from './server/routes/cartasReferencia.js'
+import animalarioRouter        from './server/routes/animalario.js'
 import animalarioExportRouter from './server/routes/animalario-export.js'
 import animalarioBackupRouter, { initAutoBackup } from './server/routes/animalario-backup.js'
 import gastosViajeRouter      from './server/routes/gastosViaje.js'
@@ -28,6 +30,8 @@ import { docxToPdf }                       from './utils/pdf.js'
 import { mergePdfs, attachmentToPdf }      from './utils/mergePdf.js'
 import nodemailer                          from 'nodemailer'
 import { contentDispositionHeader }        from './utils/contentDisposition.js'
+import { initUsers }                       from './server/auth/users.js'
+import { getSession }                      from './server/auth/session.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -35,7 +39,31 @@ const __dirname = dirname(__filename)
 const app = express()
 const PORT = process.env.PORT || 3000
 
+initUsers()
+
 app.use(express.json({ limit: '20mb' }))
+
+// ── Auth routes (public) ──────────────────────────────────────────────────────
+app.use('/api/auth', authRouter)
+app.use('/api/admin', adminRouter)
+
+// ── Auth middleware (protects all /api/* except /api/auth and public firma) ───
+// Paths (full URL) that don't require authentication (public signing flow)
+const PUBLIC_API = [
+  /^\/api\/auth\//,
+  /^\/api\/certificados\/eventos\/[^/]+$/,                  // GET event info for signing page
+  /^\/api\/certificados\/eventos\/[^/]+\/firmas/,           // buscar-dni + submit + zip
+  /^\/api\/certificados\/firmas\/[^/]+\/pdf$/,              // download signed PDF
+]
+
+app.use('/api', (req, res, next) => {
+  const url = req.originalUrl.split('?')[0]
+  if (PUBLIC_API.some(re => re.test(url))) return next()
+  const session = getSession(req)
+  if (!session) return res.status(401).json({ error: 'No autenticado' })
+  next()
+})
+
 app.use(express.static(join(__dirname, 'dist')))
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } })
