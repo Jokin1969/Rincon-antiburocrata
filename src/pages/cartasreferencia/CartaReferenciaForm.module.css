@@ -1,0 +1,367 @@
+/* ── Back link ────────────────────────────────────────────────────────────── */
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--accent, #2563eb);
+  text-decoration: none;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--accent, #2563eb);
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  transition: background 0.15s;
+}
+
+.backLink:hover {
+  background: rgba(37, 99, 235, 0.06);
+}
+
+/* ── Sections ─────────────────────────────────────────────────────────────── */
+
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.sectionTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 1.25rem 0;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── Grid ─────────────────────────────────────────────────────────────────── */
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 640px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.formGroupFull {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  grid-column: 1 / -1;
+}
+
+/* ── Labels & inputs ──────────────────────────────────────────────────────── */
+
+.label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.95rem;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 8px);
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+
+.input:focus {
+  border-color: var(--accent, #2563eb);
+}
+
+.textarea {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.95rem;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 8px);
+  outline: none;
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.5;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+
+.textarea:focus {
+  border-color: var(--accent, #2563eb);
+}
+
+.textareaBody {
+  composes: textarea;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 0.93rem;
+}
+
+.hint {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 0.2rem;
+}
+
+/* ── Toggle group ─────────────────────────────────────────────────────────── */
+
+.toggleGroup {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 8px);
+  overflow: hidden;
+  width: fit-content;
+}
+
+.toggleBtn {
+  padding: 0.45rem 1rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  background: var(--bg);
+  color: var(--text-muted);
+  transition: background 0.15s, color 0.15s;
+}
+
+.toggleBtn + .toggleBtn {
+  border-left: 1px solid var(--border);
+}
+
+.toggleBtnActive {
+  background: var(--accent, #2563eb);
+  color: #fff;
+}
+
+/* ── Template grid ────────────────────────────────────────────────────────── */
+
+.templateGrid {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.templateBtn {
+  padding: 0.45rem 1rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 8px);
+  cursor: pointer;
+  background: var(--bg);
+  color: var(--text-muted);
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.templateBtn:hover {
+  border-color: var(--accent, #2563eb);
+}
+
+.templateBtnActive {
+  border-color: var(--accent, #2563eb);
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--accent, #2563eb);
+  font-weight: 700;
+}
+
+/* ── Tipo buttons ─────────────────────────────────────────────────────────── */
+
+.tipoGrid {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.tipoBtn {
+  padding: 0.45rem 1rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 8px);
+  cursor: pointer;
+  background: var(--bg);
+  color: var(--text-muted);
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.tipoBtn:hover {
+  border-color: var(--accent, #2563eb);
+}
+
+.tipoBtnActive {
+  border-color: var(--accent, #2563eb);
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--accent, #2563eb);
+  font-weight: 700;
+}
+
+/* ── Save row ─────────────────────────────────────────────────────────────── */
+
+.saveRow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.savedMsg {
+  font-size: 0.88rem;
+  color: #16a34a;
+  font-weight: 600;
+}
+
+/* ── AI row ───────────────────────────────────────────────────────────────── */
+
+.aiRow {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+  align-items: center;
+}
+
+.aiBtnClaude {
+  padding: 0.45rem 1rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius, 8px);
+  cursor: pointer;
+  background: #7c3aed;
+  color: #fff;
+  transition: opacity 0.15s;
+}
+
+.aiBtnClaude:hover { opacity: 0.88; }
+.aiBtnClaude:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.aiBtnOpenai {
+  padding: 0.45rem 1rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius, 8px);
+  cursor: pointer;
+  background: #16a34a;
+  color: #fff;
+  transition: opacity 0.15s;
+}
+
+.aiBtnOpenai:hover { opacity: 0.88; }
+.aiBtnOpenai:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.aiBtnGemini {
+  padding: 0.45rem 1rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius, 8px);
+  cursor: pointer;
+  background: #1d4ed8;
+  color: #fff;
+  transition: opacity 0.15s;
+}
+
+.aiBtnGemini:hover { opacity: 0.88; }
+.aiBtnGemini:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.aiBtnClear {
+  padding: 0.45rem 0.9rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 8px);
+  cursor: pointer;
+  background: var(--bg);
+  color: var(--text-muted);
+  transition: border-color 0.15s;
+}
+
+.aiBtnClear:hover { border-color: var(--accent, #2563eb); }
+
+.aiError {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(220, 38, 38, 0.08);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  border-radius: 6px;
+  font-size: 0.82rem;
+  color: #dc2626;
+}
+
+/* ── Email row ────────────────────────────────────────────────────────────── */
+
+.emailRow {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.emailRow .formGroup {
+  flex: 1;
+  min-width: 220px;
+}
+
+/* ── Actions / download ───────────────────────────────────────────────────── */
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+/* ── Loading ──────────────────────────────────────────────────────────────── */
+
+.loading {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-muted);
+}
+
+/* ── Highlight ────────────────────────────────────────────────────────────── */
+
+.highlighted {
+  border-left: 3px solid var(--accent, #2563eb);
+  padding-left: 0.5rem;
+}
+
+/* ── Result message ───────────────────────────────────────────────────────── */
+
+.resultMsg {
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+.resultOk {
+  color: #16a34a;
+}
+
+.resultErr {
+  color: #dc2626;
+}
