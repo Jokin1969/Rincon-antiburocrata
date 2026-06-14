@@ -538,6 +538,63 @@ router.delete('/eventos/:id/participantes/:pid', (req, res) => {
   }
 })
 
+router.post('/eventos/:id/participantes/:pid/enviar-email', async (req, res) => {
+  try {
+    const ev = readEvento(req.params.id)
+    if (!ev) return res.status(404).json({ error: 'Evento no encontrado' })
+    const participante = (ev.participantes || []).find(p => p.id === req.params.pid)
+    if (!participante) return res.status(404).json({ error: 'Participante no encontrado' })
+
+    const to = req.body.email || participante.email
+    if (!to) return res.status(400).json({ error: 'Email requerido' })
+
+    // Guardar el email en el participante si no lo tenía
+    if (!participante.email && req.body.email) {
+      participante.email = req.body.email
+      ev.actualizado = new Date().toISOString()
+      writeEvento(ev)
+    }
+
+    const appUrl  = process.env.APP_URL || 'https://tu-app.railway.app'
+    const enlace  = `${appUrl}/firma/${ev.id}/${participante.id}`
+    const nombre  = participante.nombre_apellidos || 'participante'
+    const org     = ev.organizador || 'la organización'
+    const fechaLugar = [
+      ev.fecha ? `el ${ev.fecha}` : '',
+      ev.lugar ? `en ${ev.lugar}` : '',
+    ].filter(Boolean).join(' ')
+
+    const subject = `Solicitud de autorización de imagen – ${ev.nombre}`
+    const text = `Estimado/a ${nombre},
+
+Le escribo en nombre de ${org} en relación al evento "${ev.nombre}"${fechaLugar ? `, que tendrá lugar ${fechaLugar}` : ''}.
+
+Para completar la tramitación de la autorización de captación y uso de imagen, le ruego que utilice el siguiente enlace personal para firmar digitalmente. El proceso es sencillo y solo le llevará un minuto:
+
+${enlace}
+
+Al acceder al enlace, se le pedirá que introduzca su DNI para verificar su identidad. Podrá leer el texto completo de la autorización y firmar con el dedo directamente en la pantalla de su dispositivo.
+
+Si tiene cualquier duda, puede ponerse en contacto conmigo respondiendo a este correo.
+
+Muchas gracias por su colaboración.
+
+Un cordial saludo,
+${org}`
+
+    const transporter = makeTransporter()
+    await transporter.sendMail({
+      from:    process.env.SMTP_FROM || process.env.SMTP_USER,
+      to,
+      subject,
+      text,
+    })
+    res.json({ ok: true, to })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 // ── Firmas ────────────────────────────────────────────────────────────────────
 
 router.get('/eventos/:id/firmas', (req, res) => {

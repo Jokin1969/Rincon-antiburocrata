@@ -279,3 +279,26 @@
 .zipRow {
   margin-top: 1rem;
 }
+
+.rowActions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.emailParticPanel {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.emailParticTitle {
+  font-size: 0.875rem;
+  color: var(--text);
+  margin: 0;
+}

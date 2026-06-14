@@ -51,9 +51,13 @@ export default function AutorizacionImagenForm() {
   const [error, setError]                 = useState(null)
 
   // Participantes
-  const [newPartic, setNewPartic]         = useState({ nombre_apellidos: '', dni: '' })
+  const [newPartic, setNewPartic]         = useState({ nombre_apellidos: '', dni: '', email: '' })
   const [addingPartic, setAddingPartic]   = useState(false)
   const [savingPartic, setSavingPartic]   = useState(false)
+  const [enviandoPartic, setEnviandoPartic]   = useState(null)  // participante obj
+  const [emailParticInput, setEmailParticInput] = useState('')
+  const [loadingEmailPartic, setLoadingEmailPartic] = useState(false)
+  const [emailParticMsg, setEmailParticMsg]     = useState(null)
 
   // Firmas
   const [firmas, setFirmas]               = useState([])
@@ -184,7 +188,7 @@ export default function AutorizacionImagenForm() {
         const p = { id: Date.now().toString(36), ...newPartic }
         setForm(prev => ({ ...prev, participantes: [...(prev.participantes || []), p] }))
       }
-      setNewPartic({ nombre_apellidos: '', dni: '' })
+      setNewPartic({ nombre_apellidos: '', dni: '', email: '' })
       setAddingPartic(false)
     } catch (e) {
       alert('Error al añadir participante: ' + e.message)
@@ -201,6 +205,39 @@ export default function AutorizacionImagenForm() {
       } catch { /* ignore */ }
     }
     setForm(prev => ({ ...prev, participantes: (prev.participantes || []).filter(p => p.id !== pid) }))
+  }
+
+  function abrirEnvioPartic(p) {
+    setEnviandoPartic(p)
+    setEmailParticInput(p.email || '')
+    setEmailParticMsg(null)
+  }
+
+  async function handleEnviarEnlaceParticipante() {
+    if (!emailParticInput.trim()) { setEmailParticMsg('❌ Introduce un email.'); return }
+    setLoadingEmailPartic(true)
+    setEmailParticMsg(null)
+    try {
+      const res  = await fetch(`/api/certificados/eventos/${id}/participantes/${enviandoPartic.id}/enviar-email`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email: emailParticInput.trim() }),
+      })
+      const data = await res.json()
+      if (data.error) throw new Error(data.error)
+      setEmailParticMsg(`✅ Enlace enviado a ${data.to}`)
+      // Actualizar email en el participante local si se acaba de guardar
+      setForm(prev => ({
+        ...prev,
+        participantes: (prev.participantes || []).map(p =>
+          p.id === enviandoPartic.id ? { ...p, email: emailParticInput.trim() } : p
+        ),
+      }))
+    } catch (e) {
+      setEmailParticMsg(`❌ Error: ${e.message}`)
+    } finally {
+      setLoadingEmailPartic(false)
+    }
   }
 
   async function handleGenerarPdf() {
@@ -414,43 +451,90 @@ export default function AutorizacionImagenForm() {
         </p>
 
         {(form.participantes || []).length > 0 && (
-          <div className={styles.tableWrapper}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Nombre y apellidos</th>
-                  <th>DNI / ID</th>
-                  <th>Enlace</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {(form.participantes || []).map(p => (
-                  <tr key={p.id}>
-                    <td>{p.nombre_apellidos}</td>
-                    <td>{p.dni || '—'}</td>
-                    <td>
-                      {id && (
-                        <a
-                          href={`/firma/${id}/${p.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={styles.link}
-                        >
-                          Ver enlace
-                        </a>
-                      )}
-                    </td>
-                    <td>
-                      <button className="btn btn-sm btn-danger" onClick={() => handleDeleteParticipante(p.id)}>
-                        Eliminar
-                      </button>
-                    </td>
+          <>
+            <div className={styles.tableWrapper}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Nombre y apellidos</th>
+                    <th>DNI / ID</th>
+                    <th>Email</th>
+                    <th>Enlace</th>
+                    <th></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {(form.participantes || []).map(p => (
+                    <tr key={p.id}>
+                      <td>{p.nombre_apellidos}</td>
+                      <td>{p.dni || '—'}</td>
+                      <td>{p.email || '—'}</td>
+                      <td>
+                        {id && (
+                          <a
+                            href={`/firma/${id}/${p.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={styles.link}
+                          >
+                            Ver enlace
+                          </a>
+                        )}
+                      </td>
+                      <td>
+                        <div className={styles.rowActions}>
+                          {id && (
+                            <button
+                              className="btn btn-sm"
+                              onClick={() => abrirEnvioPartic(p)}
+                              title="Enviar enlace de firma por email"
+                            >
+                              ✉ Enviar
+                            </button>
+                          )}
+                          <button className="btn btn-sm btn-danger" onClick={() => handleDeleteParticipante(p.id)}>
+                            Eliminar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Panel de envío de enlace */}
+            {enviandoPartic && (
+              <div className={styles.emailParticPanel}>
+                <p className={styles.emailParticTitle}>
+                  Enviar enlace personal de firma a <strong>{enviandoPartic.nombre_apellidos}</strong>:
+                </p>
+                <div className={styles.emailRow}>
+                  <input
+                    className={styles.input}
+                    type="email"
+                    placeholder="Email del participante"
+                    value={emailParticInput}
+                    onChange={e => setEmailParticInput(e.target.value)}
+                  />
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={handleEnviarEnlaceParticipante}
+                    disabled={loadingEmailPartic}
+                  >
+                    {loadingEmailPartic ? 'Enviando…' : '✉ Enviar'}
+                  </button>
+                  <button
+                    className="btn btn-sm"
+                    onClick={() => { setEnviandoPartic(null); setEmailParticMsg(null) }}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+                {emailParticMsg && <p className={styles.emailMsg}>{emailParticMsg}</p>}
+              </div>
+            )}
+          </>
         )}
 
         {addingPartic ? (
@@ -467,10 +551,17 @@ export default function AutorizacionImagenForm() {
               value={newPartic.dni}
               onChange={e => setNewPartic(prev => ({ ...prev, dni: e.target.value }))}
             />
+            <input
+              className={styles.input}
+              type="email"
+              placeholder="Email (para enviarle el enlace)"
+              value={newPartic.email}
+              onChange={e => setNewPartic(prev => ({ ...prev, email: e.target.value }))}
+            />
             <button className="btn btn-primary btn-sm" onClick={handleAddParticipante} disabled={savingPartic}>
               {savingPartic ? '…' : 'Añadir'}
             </button>
-            <button className="btn btn-sm" onClick={() => { setAddingPartic(false); setNewPartic({ nombre_apellidos: '', dni: '' }) }}>
+            <button className="btn btn-sm" onClick={() => { setAddingPartic(false); setNewPartic({ nombre_apellidos: '', dni: '', email: '' }) }}>
               Cancelar
             </button>
           </div>
