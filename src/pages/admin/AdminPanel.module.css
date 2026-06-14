@@ -209,6 +209,19 @@
 }
 .btnEdit:hover { border-color: var(--accent); color: var(--accent); }
 
+.btnReset {
+  padding: 0.3rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius);
+  background: #fffbeb;
+  color: #92400e;
+  cursor: pointer;
+  margin-right: 0.35rem;
+}
+.btnReset:hover { background: #fef3c7; }
+
 .btnDelete {
   padding: 0.3rem 0.65rem;
   font-size: 0.78rem;

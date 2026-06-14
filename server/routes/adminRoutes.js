@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import {
   getAllUsers, getUserById, createUser, updateUser, deleteUser,
-  safeUser, ALL_APPS,
+  safeUser, ALL_APPS, resetPasswordToDefault,
 } from '../auth/users.js'
 import { getSession } from '../auth/session.js'
 
@@ -40,6 +40,16 @@ router.put('/users/:id', (req, res) => {
   const updated = updateUser(req.params.id, { display_name, is_admin, is_active, allowed_apps })
   if (!updated) return res.status(404).json({ error: 'Usuario no encontrado' })
   res.json(safeUser(updated))
+})
+
+// POST /api/admin/users/:id/reset-password
+router.post('/users/:id/reset-password', (req, res) => {
+  if (req.params.id === req.adminUser.id) {
+    return res.status(400).json({ error: 'No puedes resetear tu propia contraseña desde aquí' })
+  }
+  const updated = resetPasswordToDefault(req.params.id)
+  if (!updated) return res.status(404).json({ error: 'Usuario no encontrado' })
+  res.json({ ok: true })
 })
 
 // DELETE /api/admin/users/:id

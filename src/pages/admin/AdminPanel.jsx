@@ -76,6 +76,14 @@ export default function AdminPanel() {
     }
   }
 
+  async function resetPassword(id, name) {
+    if (!confirm(`¿Resetear la contraseña de ${name} a 12345678 y obligarle a cambiarla al entrar?`)) return
+    const res = await fetch(`/api/admin/users/${id}/reset-password`, { method: 'POST' })
+    if (res.ok) {
+      setUsers(prev => prev.map(u => u.id === id ? { ...u, must_change_pw: true } : u))
+    }
+  }
+
   async function deleteUser(id) {
     if (!confirm('¿Eliminar este usuario?')) return
     const res = await fetch(`/api/admin/users/${id}`, { method: 'DELETE' })
@@ -183,9 +191,16 @@ export default function AdminPanel() {
                     Editar
                   </button>
                   {u.id !== user.id && (
-                    <button className={styles.btnDelete} onClick={() => deleteUser(u.id)}>
-                      Eliminar
-                    </button>
+                    <>
+                      <button className={styles.btnReset}
+                        onClick={() => resetPassword(u.id, u.display_name || u.email)}
+                        title="Resetear contraseña a 12345678">
+                        Resetear PW
+                      </button>
+                      <button className={styles.btnDelete} onClick={() => deleteUser(u.id)}>
+                        Eliminar
+                      </button>
+                    </>
                   )}
                 </td>
               </tr>

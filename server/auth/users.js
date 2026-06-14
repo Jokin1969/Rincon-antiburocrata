@@ -133,6 +133,10 @@ export function setPassword(id, newPassword) {
   return updateUser(id, { password_hash: hashPassword(newPassword).stored, must_change_pw: false })
 }
 
+export function resetPasswordToDefault(id) {
+  return updateUser(id, { password_hash: hashPassword('12345678').stored, must_change_pw: true })
+}
+
 export function generateResetToken(id) {
   const token = randomBytes(32).toString('hex')
   const exp   = new Date(Date.now() + 60 * 60 * 1000).toISOString()
