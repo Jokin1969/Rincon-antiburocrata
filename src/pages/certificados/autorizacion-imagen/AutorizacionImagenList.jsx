@@ -51,14 +51,14 @@ export default function AutorizacionImagenList() {
   return (
     <div>
       <PageHeader
-        back="/certificados"
+        back="/autorizaciones"
         backLabel="Certificados"
         title="Autorización de imagen"
         subtitle="Gestiona los eventos y recoge autorizaciones de captación de imagen."
       />
 
       <div className={styles.toolbar}>
-        <button className="btn btn-primary" onClick={() => navigate('/certificados/autorizacion-imagen/nuevo')}>
+        <button className="btn btn-primary" onClick={() => navigate('/autorizaciones/autorizacion-imagen/nuevo')}>
           + Nuevo evento
         </button>
       </div>
@@ -74,7 +74,7 @@ export default function AutorizacionImagenList() {
             <span className={styles.emptyIcon}>📸</span>
             <p>No hay ningún evento registrado todavía.</p>
             <p className={styles.emptyHint}>Crea un evento para empezar a recoger autorizaciones de imagen.</p>
-            <button className="btn btn-primary" onClick={() => navigate('/certificados/autorizacion-imagen/nuevo')}>
+            <button className="btn btn-primary" onClick={() => navigate('/autorizaciones/autorizacion-imagen/nuevo')}>
               + Crear primer evento
             </button>
           </div>
@@ -97,7 +97,7 @@ export default function AutorizacionImagenList() {
                 {eventos.map(ev => (
                   <tr key={ev.id} className={styles.row}>
                     <td>
-                      <Link to={`/certificados/autorizacion-imagen/${ev.id}`} className={styles.nameLink}>
+                      <Link to={`/autorizaciones/autorizacion-imagen/${ev.id}`} className={styles.nameLink}>
                         {ev.nombre || '(sin nombre)'}
                       </Link>
                     </td>
@@ -114,7 +114,7 @@ export default function AutorizacionImagenList() {
                     <td className={styles.actions}>
                       <button
                         className="btn btn-sm"
-                        onClick={() => navigate(`/certificados/autorizacion-imagen/${ev.id}`)}
+                        onClick={() => navigate(`/autorizaciones/autorizacion-imagen/${ev.id}`)}
                       >
                         Abrir
                       </button>

@@ -70,11 +70,11 @@ export default function App() {
         <Route path="/animalario/proyecto/:proyectoId/modificacion/nueva" element={<ModificacionForm />} />
         <Route path="/animalario/proyecto/:proyectoId/modificacion/:mId" element={<ModificacionForm />} />
 
-        {/* Certificados */}
-        <Route path="/certificados" element={<CertificadosHub />} />
-        <Route path="/certificados/autorizacion-imagen" element={<AutorizacionImagenList />} />
-        <Route path="/certificados/autorizacion-imagen/nuevo" element={<AutorizacionImagenForm />} />
-        <Route path="/certificados/autorizacion-imagen/:id" element={<AutorizacionImagenForm />} />
+        {/* Autorizaciones */}
+        <Route path="/autorizaciones" element={<CertificadosHub />} />
+        <Route path="/autorizaciones/autorizacion-imagen" element={<AutorizacionImagenList />} />
+        <Route path="/autorizaciones/autorizacion-imagen/nuevo" element={<AutorizacionImagenForm />} />
+        <Route path="/autorizaciones/autorizacion-imagen/:id" element={<AutorizacionImagenForm />} />
 
         <Route path="*" element={<NotFound />} />
       </Route>

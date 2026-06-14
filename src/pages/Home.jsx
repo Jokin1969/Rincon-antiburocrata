@@ -59,11 +59,11 @@ const MODULES = [
     status: 'ready',
   },
   {
-    id: 'certificados',
-    name: 'Certificados',
-    description: 'Gestión de autorizaciones de imagen y filmación para eventos. Genera formularios imprimibles con QR y recoge firmas digitales.',
-    icon: '📸',
-    href: '/certificados',
+    id: 'autorizaciones',
+    name: 'Autorizaciones',
+    description: 'Gestiona autorizaciones de todo tipo para eventos, reuniones y actividades: imagen, asistencia, consentimientos… con firma digital desde móvil y registro permanente.',
+    icon: '📋',
+    href: '/autorizaciones',
     status: 'ready',
   },
 ]

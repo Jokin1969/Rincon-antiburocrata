@@ -126,7 +126,7 @@ export default function AutorizacionImagenForm() {
       const data   = await res.json()
       if (data.error) throw new Error(data.error)
       if (isNew) {
-        navigate(`/certificados/autorizacion-imagen/${data.id}`, { replace: true })
+        navigate(`/autorizaciones/autorizacion-imagen/${data.id}`, { replace: true })
       } else {
         setForm(data)
         setSaved(true)
@@ -267,7 +267,7 @@ export default function AutorizacionImagenForm() {
   return (
     <div>
       <PageHeader
-        back="/certificados/autorizacion-imagen"
+        back="/autorizaciones/autorizacion-imagen"
         backLabel="Eventos"
         title={isNew ? 'Nuevo evento' : (form.nombre || 'Editar evento')}
         subtitle="Autorización de captación y uso de imagen."

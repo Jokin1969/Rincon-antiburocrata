@@ -6,9 +6,9 @@ const DOCS = [
   {
     id: 'autorizacion-imagen',
     name: 'Autorización de imagen',
-    description: 'Genera formularios de autorización de captación y uso de imagen para eventos. Incluye QR para firma digital móvil y panel de gestión de firmas recibidas.',
+    description: 'Autorización RGPD para captación y uso de fotografías y vídeos en eventos. Formulario imprimible con QR y firma digital desde móvil.',
     icon: '📸',
-    href: '/certificados/autorizacion-imagen',
+    href: '/autorizaciones/autorizacion-imagen',
     status: 'ready',
   },
 ]
@@ -19,20 +19,20 @@ export default function CertificadosHub() {
       <PageHeader
         back="/"
         backLabel="Módulos"
-        title="Certificados"
-        subtitle="Gestión de autorizaciones de imagen y filmación para eventos."
+        title="Autorizaciones"
+        subtitle="Gestión de autorizaciones para eventos, reuniones y actividades."
       />
 
       <div className={styles.context}>
         <span className="badge">Firmas digitales</span>
         <p>
-          Genera formularios imprimibles con QR para recoger autorizaciones de imagen de los
-          participantes en tus eventos. Los firmantes pueden firmar digitalmente desde su móvil
-          escaneando el QR o directamente en tablet/ordenador.
+          Crea y gestiona autorizaciones de todo tipo: imagen, asistencia, consentimientos
+          informados… Genera formularios imprimibles con QR y recoge firmas digitales desde
+          cualquier dispositivo. Todas las firmas quedan registradas y disponibles para descarga.
         </p>
       </div>
 
-      <h2 className={styles.sectionLabel}>Documentos</h2>
+      <h2 className={styles.sectionLabel}>Tipos de autorización</h2>
       <div className={styles.grid}>
         {DOCS.map(doc => (
           <ModuleCard key={doc.id} {...doc} />
