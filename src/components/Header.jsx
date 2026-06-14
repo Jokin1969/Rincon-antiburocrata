@@ -3,14 +3,15 @@ import { useAuth } from '../contexts/AuthContext'
 import styles from './Header.module.css'
 
 const NAV_ITEMS = [
-  { href: '/',               label: 'Inicio',          icon: '🏠', end: true  },
-  { href: '/genscript',      label: 'GenScript',       icon: '🧬', end: false },
-  { href: '/adaptar-carta',  label: 'Adaptar carta',   icon: '📝', end: false },
-  { href: '/logos',          label: 'Logos',            icon: '🖼', end: false },
-  { href: '/contrato-menor', label: 'Contrato Menor',  icon: '📄', end: false },
-  { href: '/aduanas',        label: 'Aduanas',          icon: '📦', end: false },
-  { href: '/animalario',    label: 'Animalario',       icon: '🐭', end: false },
-  { href: '/gastos-viaje', label: 'Gastos de viaje',  icon: '✈️', end: false },
+  { href: '/',               label: 'Inicio',           icon: '🏠', end: true  },
+  { href: '/genscript',      label: 'GenScript',        icon: '🧬', end: false },
+  { href: '/adaptar-carta',  label: 'Adaptar carta',    icon: '📝', end: false },
+  { href: '/logos',          label: 'Logos',             icon: '🖼', end: false },
+  { href: '/documentos-cic', label: 'Documentos CIC',   icon: '🏛️', end: false },
+  { href: '/aduanas',        label: 'Aduanas',           icon: '📦', end: false },
+  { href: '/animalario',     label: 'Animalario',        icon: '🐭', end: false },
+  { href: '/gastos-viaje',   label: 'Gastos de viaje',  icon: '✈️', end: false },
+  { href: '/autorizaciones', label: 'Autorizaciones',   icon: '📋', end: false },
 ]
 
 export default function Header() {
