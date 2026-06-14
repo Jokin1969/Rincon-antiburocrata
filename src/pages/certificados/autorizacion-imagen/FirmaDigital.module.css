@@ -302,6 +302,31 @@
   line-height: 1.5;
 }
 
+.dupIcon {
+  text-align: center;
+  font-size: 2.5rem;
+}
+
+.btnSecondary {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  color: #4f46e5;
+  border: 2px solid #4f46e5;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.15s, color 0.15s;
+  box-sizing: border-box;
+}
+
+.btnSecondary:hover {
+  background: #eef2ff;
+}
+
 @media (max-width: 600px) {
   .page {
     padding: 0;

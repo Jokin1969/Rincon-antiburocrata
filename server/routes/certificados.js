@@ -540,13 +540,44 @@ router.get('/eventos/:id/firmas', (req, res) => {
   }
 })
 
+router.get('/eventos/:id/firmas/buscar-dni', (req, res) => {
+  try {
+    const { dni } = req.query
+    if (!dni) return res.json({ firma: null })
+    const norm  = s => (s || '').trim().toUpperCase().replace(/[\s\-.]/g, '')
+    const firmas = listFirmasDeEvento(req.params.id)
+    const found  = firmas.find(f => norm(f.dni) === norm(dni)) || null
+    res.json({
+      firma: found
+        ? { id: found.id, nombre_apellidos: found.nombre_apellidos, timestamp: found.timestamp }
+        : null,
+    })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 router.post('/firmas', async (req, res) => {
   try {
-    const { eventoId, nombre_apellidos, dni, firma_base64, tipo } = req.body
+    const { eventoId, nombre_apellidos, dni, firma_base64, tipo, overwriteId } = req.body
     if (!eventoId) return res.status(400).json({ error: 'eventoId requerido' })
 
     const ev = readEvento(eventoId)
     if (!ev) return res.status(404).json({ error: 'Evento no encontrado' })
+
+    // Si se pide sobreescribir una firma previa, eliminar PDF y JSON antiguos
+    if (overwriteId) {
+      const old = readFirma(overwriteId)
+      if (old) {
+        if (old.pdf_path && existsSync(old.pdf_path)) {
+          try { unlinkSync(old.pdf_path) } catch { /* ignore */ }
+        }
+        const oldJson = join(eventoFirmasDir(old.eventoId), `firma_${old.eventoId}_${old.id}.json`)
+        if (existsSync(oldJson)) {
+          try { unlinkSync(oldJson) } catch { /* ignore */ }
+        }
+      }
+    }
 
     const id        = makeId()
     const timestamp = new Date().toISOString()

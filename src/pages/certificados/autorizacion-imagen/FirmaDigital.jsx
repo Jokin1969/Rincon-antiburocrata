@@ -33,12 +33,15 @@ export default function FirmaDigital() {
   const [loading, setLoading]             = useState(true)
   const [error, setError]                 = useState(null)
 
-  // Steps: 1=identificacion, 2=firma, 3=exito
+  // Steps: 1=identificacion, 'duplicado'=ya firmado antes, 2=firma, 3=exito
   const [paso, setPaso]                   = useState(1)
   const [dniInput, setDniInput]           = useState('')
   const [nombreInput, setNombreInput]     = useState('')
   const [participante, setParticipante]   = useState(null)
   const [idError, setIdError]             = useState(null)
+  const [checkingDni, setCheckingDni]     = useState(false)
+  const [firmaPrevia, setFirmaPrevia]     = useState(null) // {id, nombre_apellidos, timestamp}
+  const [overwriteId, setOverwriteId]     = useState(null)
 
   const [legalExpanded, setLegalExpanded] = useState(false)
   const [autorizo, setAutorizo]           = useState(false)
@@ -132,7 +135,7 @@ export default function FirmaDigital() {
     hasDrawnRef.current = false
   }
 
-  function handleVerificarIdentidad() {
+  async function handleVerificarIdentidad() {
     setIdError(null)
     if (participanteId) {
       if (!participante) { setIdError('Participante no encontrado en este evento.'); return }
@@ -145,6 +148,21 @@ export default function FirmaDigital() {
     } else {
       if (!nombreInput.trim()) { setIdError('Introduce tu nombre y apellidos.'); return }
       if (!dniInput.trim()) { setIdError('Introduce tu DNI o identificación.'); return }
+    }
+
+    // Comprobar si ya existe una firma con este DNI
+    setCheckingDni(true)
+    try {
+      const res  = await fetch(`/api/certificados/eventos/${eventoId}/firmas/buscar-dni?dni=${encodeURIComponent(dniInput.trim())}`)
+      const data = await res.json()
+      if (data.firma) {
+        setFirmaPrevia(data.firma)
+        setPaso('duplicado')
+        return
+      }
+    } catch { /* Si falla la comprobación, continuamos normalmente */ }
+    finally {
+      setCheckingDni(false)
     }
     setPaso(2)
   }
@@ -170,6 +188,7 @@ export default function FirmaDigital() {
           dni,
           firma_base64,
           tipo: participanteId ? 'digital' : 'qr',
+          ...(overwriteId ? { overwriteId } : {}),
         }),
       })
       const data = await res.json()
@@ -260,8 +279,44 @@ export default function FirmaDigital() {
 
             {idError && <p className={styles.errorText}>{idError}</p>}
 
-            <button className={styles.btnPrimary} onClick={handleVerificarIdentidad}>
-              Continuar →
+            <button className={styles.btnPrimary} onClick={handleVerificarIdentidad} disabled={checkingDni}>
+              {checkingDni ? 'Comprobando…' : 'Continuar →'}
+            </button>
+          </div>
+        )}
+
+        {/* Paso duplicado: ya ha firmado antes */}
+        {paso === 'duplicado' && firmaPrevia && (
+          <div className={styles.step}>
+            <div className={styles.dupIcon}>⚠️</div>
+            <h2 className={styles.stepTitle}>Ya has firmado este evento</h2>
+            <p className={styles.stepDesc}>
+              Encontramos una autorización registrada para el DNI introducido
+              {firmaPrevia.nombre_apellidos ? ` (${firmaPrevia.nombre_apellidos})` : ''}, firmada el{' '}
+              <strong>
+                {firmaPrevia.timestamp
+                  ? new Date(firmaPrevia.timestamp).toLocaleString('es-ES')
+                  : '—'}
+              </strong>.
+            </p>
+            <p className={styles.stepDesc}>
+              ¿Qué deseas hacer?
+            </p>
+            <button
+              className={styles.btnPrimary}
+              onClick={() => { setPaso(3) }}
+            >
+              ✅ Mi firma ya está registrada, gracias
+            </button>
+            <button
+              className={styles.btnSecondary}
+              onClick={() => {
+                setOverwriteId(firmaPrevia.id)
+                hasDrawnRef.current = false
+                setPaso(2)
+              }}
+            >
+              ✏️ Volver a firmar (reemplazará la anterior)
             </button>
           </div>
         )}
@@ -333,7 +388,9 @@ export default function FirmaDigital() {
             <div className={styles.successIcon}>✅</div>
             <h2 className={styles.successTitle}>Autorización registrada</h2>
             <p className={styles.successDesc}>
-              Hemos enviado una copia al organizador del evento.
+              {pdfUrl
+                ? 'Tu autorización ha sido enviada al organizador del evento.'
+                : 'Tu autorización ya constaba registrada. No es necesario volver a firmar.'}
             </p>
             {pdfUrl && (
               <a href={pdfUrl} download className={styles.btnPrimary}>
