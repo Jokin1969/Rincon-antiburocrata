@@ -765,7 +765,7 @@ async function generatePosterPdf(evento) {
   // Barra superior de color
   page.drawRectangle({ x: 0, y: height - 10, width, height: 10, color: rgb(0.1, 0.2, 0.7) })
 
-  let y = height - 30
+  let y = height - 90
 
   // Logo centrado
   if (evento.logo && evento.logo.startsWith('data:image/')) {
