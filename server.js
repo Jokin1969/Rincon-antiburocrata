@@ -972,6 +972,22 @@ function writeData(file, value) {
 const VALID_COLS = new Set(['contrato', 'proforma', 'genscript-eus', 'genscript-moh', 'pqp-import', 'documento-1403', 'declaracion-exenta', 'cert-no-peligrosidad'])
 
 // Logos (binary stored as base64 strings inside JSON)
+app.get('/api/store/logos/shared', (_req, res) => {
+  const list = readData('logos.json', [])
+  res.json(
+    list
+      .filter(l => l.shared)
+      .map(({ data, ...meta }) => ({ ...meta, imageUrl: `/api/store/logos/${meta.id}/image` }))
+  )
+})
+app.patch('/api/store/logos/:id/shared', (req, res) => {
+  const list = readData('logos.json', [])
+  const idx  = list.findIndex(l => l.id === req.params.id)
+  if (idx === -1) return res.status(404).json({ error: 'No encontrado' })
+  list[idx] = { ...list[idx], shared: Boolean(req.body.shared) }
+  writeData('logos.json', list)
+  res.json({ ok: true })
+})
 app.get('/api/store/logos', (_req, res) => {
   const list = readData('logos.json', [])
   // Strip binary payload — client loads each image individually via /:id/image

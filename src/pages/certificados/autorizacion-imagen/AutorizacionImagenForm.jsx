@@ -3,6 +3,25 @@ import { useParams, useNavigate } from 'react-router-dom'
 import PageHeader from '../../../components/PageHeader'
 import styles from './AutorizacionImagenForm.module.css'
 
+function normalizeLogoForHeader(src, maxW = 280, maxH = 90) {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      const scale = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight, 1)
+      const w = Math.round(img.naturalWidth * scale)
+      const h = Math.round(img.naturalHeight * scale)
+      const canvas = document.createElement('canvas')
+      canvas.width = w
+      canvas.height = h
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+      resolve(canvas.toDataURL('image/png'))
+    }
+    img.onerror = reject
+    img.src = src
+  })
+}
+
 const DEFAULTS = {
   nombre:          '',
   fecha:           '',
@@ -71,6 +90,30 @@ export default function AutorizacionImagenForm() {
   const [qrDataUrl, setQrDataUrl]         = useState(null)
 
   const logoFileRef = useRef(null)
+
+  // Shared logos picker
+  const [sharedLogos, setSharedLogos]     = useState([])
+  const [loadingLogos, setLoadingLogos]   = useState(true)
+  const [pickingLogo, setPickingLogo]     = useState(false)
+
+  useEffect(() => {
+    fetch('/api/store/logos/shared')
+      .then(r => r.ok ? r.json() : [])
+      .then(list => { setSharedLogos(list); setLoadingLogos(false) })
+      .catch(() => setLoadingLogos(false))
+  }, [])
+
+  async function handlePickLogo(logo) {
+    try {
+      const dataUrl = await normalizeLogoForHeader(logo.imageUrl)
+      setField('logo', dataUrl)
+      setPickingLogo(false)
+    } catch {
+      // fall back to direct URL if canvas fails
+      setField('logo', logo.imageUrl)
+      setPickingLogo(false)
+    }
+  }
 
   // Load evento
   useEffect(() => {
@@ -410,36 +453,38 @@ export default function AutorizacionImagenForm() {
       {/* Sección 2: Logo */}
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>2. Logo del evento</h2>
-        <div
-          className={styles.logoDrop}
-          onPaste={handleLogoPaste}
-          onDrop={handleLogoDrop}
-          onDragOver={e => e.preventDefault()}
-          tabIndex={0}
-        >
-          {form.logo ? (
-            <div className={styles.logoPreview}>
-              <img src={form.logo} alt="Logo del evento" className={styles.logoImg} />
-              <button className="btn btn-sm btn-danger" onClick={() => setField('logo', null)}>
-                Quitar logo
-              </button>
-            </div>
-          ) : (
-            <div className={styles.logoPlaceholder}>
-              <span>Arrastra una imagen aquí, pega con Ctrl+V o</span>
-              <button className="btn btn-sm" type="button" onClick={() => logoFileRef.current?.click()}>
-                Seleccionar archivo
-              </button>
-            </div>
-          )}
-        </div>
-        <input
-          ref={logoFileRef}
-          type="file"
-          accept="image/*"
-          style={{ display: 'none' }}
-          onChange={e => handleLogoFile(e.target.files?.[0])}
-        />
+
+        {form.logo ? (
+          <div className={styles.logoPreview}>
+            <img src={form.logo} alt="Logo del evento" className={styles.logoImg} />
+            <button className="btn btn-sm btn-danger" onClick={() => setField('logo', null)}>
+              Quitar logo
+            </button>
+          </div>
+        ) : (
+          <button className={styles.logoPickBtn} onClick={() => setPickingLogo(p => !p)}>
+            {loadingLogos ? 'Cargando logos…' : `Seleccionar logo compartido (${sharedLogos.length})`}
+          </button>
+        )}
+
+        {pickingLogo && (
+          <div className={styles.logoPicker}>
+            {sharedLogos.length === 0 ? (
+              <p className={styles.logoPickerEmpty}>
+                No hay logos compartidos. Ve a la app de <strong>Logos</strong> y activa el botón "↗ Compartir" en los que quieras usar aquí.
+              </p>
+            ) : (
+              <div className={styles.logoPickerGrid}>
+                {sharedLogos.map(l => (
+                  <button key={l.id} className={styles.logoPickerCard} onClick={() => handlePickLogo(l)}>
+                    <img src={l.imageUrl} alt={l.name} className={styles.logoPickerImg} />
+                    <span className={styles.logoPickerName}>{l.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       {/* Sección 3: Participantes */}

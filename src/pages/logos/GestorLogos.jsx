@@ -782,7 +782,7 @@ function DetailPanel({ logo, onClose, onSave, onSaveNew, onDelete, fetchLogoData
 
 // ── Logo card ─────────────────────────────────────────────────────────────────
 
-function LogoCard({ logo, onClick, onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd, isDragOver }) {
+function LogoCard({ logo, onClick, onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd, isDragOver, onToggleShare }) {
   const ext = MIME_EXT[logo.mimeType]?.toUpperCase() ?? '?'
   const dims = logo.width ? `${logo.width}×${logo.height}` : null
 
@@ -817,6 +817,13 @@ function LogoCard({ logo, onClick, onDragStart, onDragOver, onDragLeave, onDrop,
             ))}
           </div>
         )}
+        <button
+          className={logo.shared ? styles.shareActive : styles.shareBtn}
+          title={logo.shared ? 'Quitar de logos compartidos' : 'Compartir con otras apps'}
+          onClick={e => { e.stopPropagation(); onToggleShare(logo) }}
+        >
+          {logo.shared ? '✓ Compartido' : '↗ Compartir'}
+        </button>
       </div>
     </div>
   )
@@ -836,6 +843,16 @@ export default function GestorLogos() {
   const dragId = useRef(null)
   const dropRef = useRef()
   const fileRef = useRef()
+
+  async function toggleShare(logo) {
+    const newShared = !logo.shared
+    await fetch(`/api/store/logos/${logo.id}/shared`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ shared: newShared }),
+    })
+    await saveLogo({ ...logo, shared: newShared })
+  }
 
   function handleCardDrop(targetId) {
     const fromId = dragId.current
@@ -985,6 +1002,7 @@ export default function GestorLogos() {
               onDrop={e => { e.preventDefault(); e.stopPropagation(); handleCardDrop(logo.id) }}
               onDragEnd={() => { dragId.current = null; setDragOverId(null) }}
               isDragOver={dragOverId === logo.id}
+              onToggleShare={toggleShare}
             />
           ))}
         </div>

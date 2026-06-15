@@ -123,13 +123,8 @@
   max-width: 1000px;
   margin: 0 auto;
   display: flex;
-  gap: 0.15rem;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.navInner::-webkit-scrollbar {
-  display: none;
+  flex-wrap: wrap;
+  gap: 0.1rem;
 }
 
 .navLink {

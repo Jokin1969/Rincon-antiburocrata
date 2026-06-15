@@ -3,15 +3,16 @@ import { useAuth } from '../contexts/AuthContext'
 import styles from './Header.module.css'
 
 const NAV_ITEMS = [
-  { href: '/',               label: 'Inicio',           icon: '🏠', end: true  },
-  { href: '/genscript',      label: 'GenScript',        icon: '🧬', end: false },
-  { href: '/adaptar-carta',  label: 'Adaptar carta',    icon: '📝', end: false },
-  { href: '/logos',          label: 'Logos',             icon: '🖼', end: false },
-  { href: '/documentos-cic', label: 'Documentos CIC',   icon: '🏛️', end: false },
-  { href: '/aduanas',        label: 'Aduanas',           icon: '📦', end: false },
-  { href: '/animalario',     label: 'Animalario',        icon: '🐭', end: false },
-  { href: '/gastos-viaje',   label: 'Gastos de viaje',  icon: '✈️', end: false },
-  { href: '/autorizaciones', label: 'Autorizaciones',   icon: '📋', end: false },
+  { href: '/',                  label: 'Inicio',           icon: '🏠', end: true },
+  { href: '/genscript',         label: 'GenScript',        icon: '🧬', appId: 'genscript' },
+  { href: '/adaptar-carta',     label: 'Adaptar carta',    icon: '📝', appId: 'adaptar-carta' },
+  { href: '/logos',             label: 'Logos',             icon: '🖼', appId: 'logos' },
+  { href: '/documentos-cic',    label: 'Documentos CIC',   icon: '🏛️', appId: 'documentos-cic' },
+  { href: '/aduanas',           label: 'Aduanas',           icon: '📦', appId: 'aduanas' },
+  { href: '/animalario',        label: 'Animalario',        icon: '🐭', appId: 'animalario' },
+  { href: '/gastos-viaje',      label: 'Gastos de viaje',  icon: '✈️', appId: 'gastos-viaje' },
+  { href: '/autorizaciones',    label: 'Autorizaciones',   icon: '📋', appId: 'autorizaciones' },
+  { href: '/cartas-referencia', label: 'Cartas de ref.',   icon: '📜', appId: 'cartas-referencia' },
 ]
 
 export default function Header() {
@@ -22,6 +23,10 @@ export default function Header() {
     await logout()
     navigate('/login')
   }
+
+  const visibleNav = NAV_ITEMS.filter(item =>
+    !item.appId || user?.is_admin || user?.visibleApps?.includes(item.appId)
+  )
 
   return (
     <header className={styles.header}>
@@ -51,19 +56,18 @@ export default function Header() {
 
       <nav className={styles.nav}>
         <div className={styles.navInner}>
-          {NAV_ITEMS.map(({ href, label, icon, end, wip }) => (
+          {visibleNav.map(({ href, label, icon, end }) => (
             <NavLink
               key={href}
               to={href}
               end={end}
               className={({ isActive }) =>
-                [styles.navLink, isActive && styles.navLinkActive, wip && styles.navLinkWip]
+                [styles.navLink, isActive && styles.navLinkActive]
                   .filter(Boolean).join(' ')
               }
             >
               <span className={styles.navIcon}>{icon}</span>
               <span className={styles.navLabel}>{label}</span>
-              {wip && <span className={styles.wipDot} />}
             </NavLink>
           ))}
         </div>

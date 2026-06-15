@@ -260,6 +260,34 @@
   padding: 0.1rem 0.4rem;
 }
 
+.shareBtn {
+  margin-top: 0.4rem;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  align-self: flex-start;
+}
+.shareBtn:hover { border-color: var(--accent); color: var(--accent); }
+
+.shareActive {
+  margin-top: 0.4rem;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border: 1px solid #059669;
+  border-radius: 4px;
+  background: #d1fae5;
+  color: #065f46;
+  cursor: pointer;
+  align-self: flex-start;
+}
+.shareActive:hover { background: #a7f3d0; }
+
 /* ── Upload zone ─────────────────────────────────────────────────────────── */
 
 .uploadCard {
