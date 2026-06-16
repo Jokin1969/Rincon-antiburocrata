@@ -778,7 +778,7 @@ async function generatePosterPdf(evento) {
       const logoH = 55
       const logoW = Math.min(img.width * (logoH / img.height), cw)
       page.drawImage(img, { x: margin + (cw - logoW) / 2, y: y - logoH, width: logoW, height: logoH })
-      y -= logoH + 45
+      y -= logoH + 80
     } catch { /* ignore */ }
   }
 
