@@ -3,22 +3,27 @@ import { useParams, useNavigate } from 'react-router-dom'
 import PageHeader from '../../../components/PageHeader'
 import styles from './AutorizacionImagenForm.module.css'
 
-function normalizeLogoForHeader(src, maxW = 280, maxH = 90) {
+async function normalizeLogoForHeader(imageUrl, maxW = 280, maxH = 90) {
+  // Fetch as blob first to avoid canvas taint with crossOrigin on same-origin images
+  const res  = await fetch(imageUrl)
+  const blob = await res.blob()
+  const objectUrl = URL.createObjectURL(blob)
+
   return new Promise((resolve, reject) => {
     const img = new Image()
-    img.crossOrigin = 'anonymous'
     img.onload = () => {
+      URL.revokeObjectURL(objectUrl)
       const scale = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight, 1)
       const w = Math.round(img.naturalWidth * scale)
       const h = Math.round(img.naturalHeight * scale)
       const canvas = document.createElement('canvas')
-      canvas.width = w
+      canvas.width  = w
       canvas.height = h
       canvas.getContext('2d').drawImage(img, 0, 0, w, h)
       resolve(canvas.toDataURL('image/png'))
     }
-    img.onerror = reject
-    img.src = src
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Load failed')) }
+    img.src = objectUrl
   })
 }
 
@@ -107,12 +112,21 @@ export default function AutorizacionImagenForm() {
     try {
       const dataUrl = await normalizeLogoForHeader(logo.imageUrl)
       setField('logo', dataUrl)
-      setPickingLogo(false)
     } catch {
-      // fall back to direct URL if canvas fails
-      setField('logo', logo.imageUrl)
-      setPickingLogo(false)
+      // Canvas failed — at least store the raw base64 so PDF generator can use it
+      try {
+        const res  = await fetch(logo.imageUrl)
+        const blob = await res.blob()
+        await new Promise((resolve) => {
+          const reader = new FileReader()
+          reader.onload = e => { setField('logo', e.target.result); resolve() }
+          reader.readAsDataURL(blob)
+        })
+      } catch {
+        setField('logo', null)
+      }
     }
+    setPickingLogo(false)
   }
 
   // Load evento
