@@ -13,9 +13,11 @@ async function normalizeLogoForHeader(imageUrl, maxW = 280, maxH = 90) {
     const img = new Image()
     img.onload = () => {
       URL.revokeObjectURL(objectUrl)
-      const scale = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight, 1)
-      const w = Math.round(img.naturalWidth * scale)
-      const h = Math.round(img.naturalHeight * scale)
+      const nw = img.naturalWidth  || maxW
+      const nh = img.naturalHeight || maxH
+      const scale = Math.min(maxW / nw, maxH / nh, 1)
+      const w = Math.max(1, Math.round(nw * scale))
+      const h = Math.max(1, Math.round(nh * scale))
       const canvas = document.createElement('canvas')
       canvas.width  = w
       canvas.height = h
