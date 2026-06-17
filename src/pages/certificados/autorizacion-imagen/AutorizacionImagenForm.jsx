@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import PageHeader from '../../../components/PageHeader'
 import styles from './AutorizacionImagenForm.module.css'
 
-async function normalizeLogoForHeader(imageUrl, maxW = 280, maxH = 90) {
+async function normalizeLogoForHeader(imageUrl, maxW = 700, maxH = 220) {
   // Fetch as blob first to avoid canvas taint with crossOrigin on same-origin images
   const res  = await fetch(imageUrl)
   const blob = await res.blob()
@@ -15,13 +15,17 @@ async function normalizeLogoForHeader(imageUrl, maxW = 280, maxH = 90) {
       URL.revokeObjectURL(objectUrl)
       const nw = img.naturalWidth  || maxW
       const nh = img.naturalHeight || maxH
-      const scale = Math.min(maxW / nw, maxH / nh, 1)
+      // Scale up to maxW/maxH but never beyond 2× the original size
+      const scale = Math.min(maxW / nw, maxH / nh, 2)
       const w = Math.max(1, Math.round(nw * scale))
       const h = Math.max(1, Math.round(nh * scale))
       const canvas = document.createElement('canvas')
       canvas.width  = w
       canvas.height = h
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+      const ctx = canvas.getContext('2d')
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
+      ctx.drawImage(img, 0, 0, w, h)
       resolve(canvas.toDataURL('image/png'))
     }
     img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Load failed')) }
