@@ -4,6 +4,14 @@ import styles from './Home.module.css'
 
 const MODULES = [
   {
+    id: 'qr',
+    name: 'Generador de QRs',
+    description: 'Códigos QR estilizados con logo, marcos y exportación a PNG, JPEG, WEBP, SVG y PDF.',
+    icon: '🔳',
+    href: '/qr',
+    status: 'ready',
+  },
+  {
     id: 'genscript',
     name: 'GenScript',
     description: 'Documentación de cumplimiento para síntesis de plásmidos con características reguladas.',
