@@ -7,12 +7,6 @@ import { listQrs, getQr, saveQr, deleteQr, listLogos, saveLogo, renameLogo, dele
 const router = Router()
 router.use(express.json({ limit: '1mb' }))
 
-// Global shared repo — no per-user scoping
-router.use((req, _res, next) => {
-  req.user = { id: null, email: process.env.EMAIL_TO || '' }
-  next()
-})
-
 function safeStem(name) {
   return String(name ?? '').replace(/[^\w.\- áéíóúñÁÉÍÓÚÑ]/g, '_').slice(0, 80) || 'qr'
 }
@@ -53,7 +47,7 @@ router.post('/email', async (req, res) => {
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS)
     return res.status(503).json({ error: 'SMTP no configurado' })
   const { config, format, name, to } = req.body ?? {}
-  const dest = to || req.user.email || process.env.EMAIL_TO
+  const dest = to || process.env.EMAIL_TO
   if (!validEmail(dest)) return res.status(400).json({ error: 'Destinatario inválido' })
   const fmt = ['png','jpeg','webp','svg','pdf'].includes(format) ? format : 'png'
   try {
@@ -89,7 +83,7 @@ router.post('/email', async (req, res) => {
 })
 
 // GET /list
-router.get('/list', (req, res) => res.json({ items: listQrs(req.user.id) }))
+router.get('/list', (req, res) => res.json({ items: listQrs(null) }))
 
 // POST /save
 router.post('/save', (req, res) => {
@@ -97,40 +91,40 @@ router.post('/save', (req, res) => {
   try {
     const cfg = sanitizeConfig(config)
     const { svg } = buildSvg(cfg)
-    const item = saveQr({ userId: req.user.id, name: name ?? '', url: cfg.url, config: cfg, thumb: svg })
+    const item = saveQr({ userId: null, name: name ?? '', url: cfg.url, config: cfg, thumb: svg })
     res.status(201).json({ item })
   } catch (e) { res.status(e.status || 500).json({ error: e.message }) }
 })
 
 // Literal routes BEFORE /:id — avoids collision
-router.get('/logos',              (req, res) => res.json({ items: listLogos(req.user.id) }))
+router.get('/logos',              (req, res) => res.json({ items: listLogos(null) }))
 router.post('/logos',             (req, res) => {
   const { name, data } = req.body ?? {}
   if (!String(data ?? '').startsWith('data:image/'))
     return res.status(400).json({ error: 'data debe ser data:image/…' })
   if (String(data).length > 1_200_000)
     return res.status(413).json({ error: 'Logo demasiado grande' })
-  res.status(201).json({ item: saveLogo({ userId: req.user.id, name: name ?? 'Logo', data }) })
+  res.status(201).json({ item: saveLogo({ userId: null, name: name ?? 'Logo', data }) })
 })
 router.patch('/logos/:id(\\d+)',  (req, res) => {
-  const ok = renameLogo(Number(req.params.id), req.user.id, req.body?.name)
+  const ok = renameLogo(Number(req.params.id), null, req.body?.name)
   if (!ok) return res.status(404).json({ error: 'No encontrado' })
   res.json({ ok: true })
 })
 router.delete('/logos/:id(\\d+)', (req, res) => {
-  const ok = deleteLogo(Number(req.params.id), req.user.id)
+  const ok = deleteLogo(Number(req.params.id), null)
   if (!ok) return res.status(404).json({ error: 'No encontrado' })
   res.json({ ok: true })
 })
 
 // GET /:id  DELETE /:id
 router.get('/:id(\\d+)', (req, res) => {
-  const item = getQr(Number(req.params.id), req.user.id)
+  const item = getQr(Number(req.params.id), null)
   if (!item) return res.status(404).json({ error: 'No encontrado' })
   res.json({ item })
 })
 router.delete('/:id(\\d+)', (req, res) => {
-  const ok = deleteQr(Number(req.params.id), req.user.id)
+  const ok = deleteQr(Number(req.params.id), null)
   if (!ok) return res.status(404).json({ error: 'No encontrado' })
   res.json({ ok: true })
 })

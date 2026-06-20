@@ -11,7 +11,7 @@ const AUTH_DIR   = join(DATA_DIR, 'auth')
 const USERS_FILE = join(AUTH_DIR, 'users.json')
 
 export const ALL_APPS = [
-  'genscript', 'adaptar-carta', 'logos', 'documentos-cic',
+  'qr', 'genscript', 'adaptar-carta', 'logos', 'documentos-cic',
   'aduanas', 'gastos-viaje', 'animalario', 'autorizaciones', 'cartas-referencia',
 ]
 

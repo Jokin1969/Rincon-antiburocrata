@@ -47,7 +47,6 @@ app.use(express.json({ limit: '20mb' }))
 // ── Auth routes (public) ──────────────────────────────────────────────────────
 app.use('/api/auth', authRouter)
 app.use('/api/admin', adminRouter)
-app.use('/api/qr', qrRouter)
 
 // ── Auth middleware (protects all /api/* except /api/auth and public firma) ───
 // Paths (full URL) that don't require authentication (public signing flow)
@@ -1070,6 +1069,7 @@ app.use('/api/gastos-viaje', gastosViajeRouter)
 app.use('/api/gastos-viaje', gastosViajeBackupRouter)
 app.use('/api/certificados', certificadosRouter)
 app.use('/api/cartas-referencia', cartasReferenciaRouter)
+app.use('/api/qr', qrRouter)
 initGastosViajeAutoBackup()
 
 app.post('/api/gastos-viaje/:id/generar', async (req, res) => {
