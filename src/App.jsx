@@ -7,6 +7,7 @@ import GenScriptHome from './pages/genscript/GenScriptHome'
 import EndUserStatement from './pages/genscript/EndUserStatement'
 import MOHQuestions from './pages/genscript/MOHQuestions'
 import AduanasHome from './pages/aduanas/AduanasHome'
+import QrHome from './pages/qr/QrHome'
 import FacturaProforma from './pages/aduanas/FacturaProforma'
 import PqpImport from './pages/aduanas/PqpImport'
 import Documento1403 from './pages/aduanas/Documento1403'
@@ -86,6 +87,7 @@ function AppRoutes() {
         <Route path="/adaptar-carta" element={<AdaptarCarta />} />
         <Route path="/logos" element={<GestorLogos />} />
         <Route path="/aduanas" element={<AduanasHome />} />
+        <Route path="/qr" element={<QrHome />} />
         <Route path="/aduanas/factura-proforma" element={<FacturaProforma />} />
         <Route path="/aduanas/pqp-import" element={<PqpImport />} />
         <Route path="/aduanas/documento-1403" element={<Documento1403 />} />

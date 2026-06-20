@@ -8,6 +8,7 @@ import animalarioBackupRouter, { initAutoBackup } from './server/routes/animalar
 import gastosViajeRouter      from './server/routes/gastosViaje.js'
 import gastosViajeBackupRouter, { initGastosViajeAutoBackup } from './server/routes/gastosViaje-backup.js'
 import certificadosRouter     from './server/routes/certificados.js'
+import qrRouter               from './server/routes/qr-routes.js'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'fs'
@@ -1068,6 +1069,7 @@ app.use('/api/gastos-viaje', gastosViajeRouter)
 app.use('/api/gastos-viaje', gastosViajeBackupRouter)
 app.use('/api/certificados', certificadosRouter)
 app.use('/api/cartas-referencia', cartasReferenciaRouter)
+app.use('/api/qr', qrRouter)
 initGastosViajeAutoBackup()
 
 app.post('/api/gastos-viaje/:id/generar', async (req, res) => {
