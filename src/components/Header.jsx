@@ -4,6 +4,7 @@ import styles from './Header.module.css'
 
 const NAV_ITEMS = [
   { href: '/',                  label: 'Inicio',           icon: '🏠', end: true },
+  { href: '/qr',                label: 'QRs',              icon: '🔳', appId: 'qr' },
   { href: '/genscript',         label: 'GenScript',        icon: '🧬', appId: 'genscript' },
   { href: '/adaptar-carta',     label: 'Adaptar carta',    icon: '📝', appId: 'adaptar-carta' },
   { href: '/logos',             label: 'Logos',             icon: '🖼', appId: 'logos' },
