@@ -25,3 +25,42 @@
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1rem;
 }
+
+.cardWrapper {
+  position: relative;
+}
+
+.dragHandle {
+  display: none;
+}
+
+/* Drag-to-reorder — desktop only (devices with precise pointer and hover) */
+@media (hover: hover) and (pointer: fine) {
+  .dragHandle {
+    display: block;
+    position: absolute;
+    top: 0.55rem;
+    right: 0.6rem;
+    font-size: 1.1rem;
+    line-height: 1;
+    color: var(--border);
+    cursor: grab;
+    z-index: 1;
+    user-select: none;
+    transition: color 0.15s;
+  }
+  .cardWrapper:hover .dragHandle {
+    color: var(--muted);
+  }
+  .dragHandle:active {
+    cursor: grabbing;
+  }
+  .dragging {
+    opacity: 0.35;
+  }
+  .dragOver {
+    outline: 2px dashed var(--accent);
+    outline-offset: 3px;
+    border-radius: var(--radius);
+  }
+}

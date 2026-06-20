@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import ModuleCard from '../components/ModuleCard'
 import { useAuth } from '../contexts/AuthContext'
 import styles from './Home.module.css'
@@ -93,6 +94,61 @@ export default function Home() {
     ? MODULES
     : MODULES.filter(m => visibleApps.includes(m.id))
 
+  const [moduleOrder, setModuleOrder] = useState(null)
+  const [dragSrc,     setDragSrc]     = useState(null)
+  const [dragOver,    setDragOver]    = useState(null)
+
+  useEffect(() => {
+    if (user?.module_order?.length) setModuleOrder(user.module_order)
+  }, [user?.module_order])
+
+  const sortedModules = moduleOrder
+    ? [...visibleModules].sort((a, b) => {
+        const ai = moduleOrder.indexOf(a.id)
+        const bi = moduleOrder.indexOf(b.id)
+        if (ai === -1 && bi === -1) return 0
+        if (ai === -1) return 1
+        if (bi === -1) return -1
+        return ai - bi
+      })
+    : visibleModules
+
+  function handleDragStart(e, idx) {
+    setDragSrc(idx)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  function handleDragOver(e, idx) {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (idx !== dragOver) setDragOver(idx)
+  }
+
+  function handleDrop(e, idx) {
+    e.preventDefault()
+    if (dragSrc === null || dragSrc === idx) { setDragSrc(null); setDragOver(null); return }
+
+    const next = [...sortedModules]
+    const [moved] = next.splice(dragSrc, 1)
+    next.splice(idx, 0, moved)
+    const ids = next.map(m => m.id)
+
+    setModuleOrder(ids)
+    setDragSrc(null)
+    setDragOver(null)
+
+    fetch('/api/auth/me/module-order', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ module_order: ids }),
+    })
+  }
+
+  function handleDragEnd() {
+    setDragSrc(null)
+    setDragOver(null)
+  }
+
   return (
     <div>
       <div className={styles.intro}>
@@ -105,8 +161,27 @@ export default function Home() {
       <section>
         <h2 className={styles.sectionLabel}>Módulos disponibles</h2>
         <div className={styles.grid}>
-          {visibleModules.map(mod => (
-            <ModuleCard key={mod.id} {...mod} />
+          {sortedModules.map((mod, idx) => (
+            <div
+              key={mod.id}
+              onDragOver={(e) => handleDragOver(e, idx)}
+              onDrop={(e) => handleDrop(e, idx)}
+              className={[
+                styles.cardWrapper,
+                dragSrc === idx                     ? styles.dragging : '',
+                dragOver === idx && dragSrc !== idx ? styles.dragOver : '',
+              ].join(' ')}
+            >
+              <span
+                className={styles.dragHandle}
+                draggable
+                onDragStart={(e) => handleDragStart(e, idx)}
+                onDragEnd={handleDragEnd}
+                aria-hidden="true"
+                title="Arrastrar para reordenar"
+              >⠿</span>
+              <ModuleCard {...mod} />
+            </div>
           ))}
         </div>
       </section>
