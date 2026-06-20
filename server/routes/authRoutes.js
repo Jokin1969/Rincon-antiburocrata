@@ -75,6 +75,18 @@ router.post('/login', (req, res) => {
   res.json({ ...safeUser(user), visibleApps })
 })
 
+// ── PATCH /api/auth/me/module-order ─────────────────────────────────────────
+router.patch('/me/module-order', (req, res) => {
+  const session = getSession(req)
+  if (!session) return res.status(401).json({ error: 'No autenticado' })
+  const user = getUserById(session.uid)
+  if (!user) return res.status(401).json({ error: 'No autenticado' })
+  const { module_order } = req.body || {}
+  if (!Array.isArray(module_order)) return res.status(400).json({ error: 'module_order debe ser un array' })
+  updateUser(user.id, { module_order })
+  res.json({ ok: true })
+})
+
 // ── POST /api/auth/logout ────────────────────────────────────────────────────
 router.post('/logout', (req, res) => {
   clearSession(res)
