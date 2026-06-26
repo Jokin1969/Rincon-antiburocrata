@@ -1795,6 +1795,10 @@ router.post('/proyectos/:id/exportar/pdf-unificado', uploadMem.any(), async (req
         const f = uploadedFiles.find(f => f.fieldname === `file_${item.fileIndex}`)
         if (f) pdfBuffers.push(f.buffer)
         continue
+      } else if (item.type === 'extra') {
+        const extraPath = join(PROYECTOS_DIR, `proyecto_${req.params.id}_extras`, item.name)
+        if (existsSync(extraPath)) pdfBuffers.push(readFileSync(extraPath))
+        continue
       }
 
       if (docxBuf) {
