@@ -10,6 +10,26 @@ import AutoExpandTextarea from '../../../components/animalario/AutoExpandTextare
 
 function clone(o) { return JSON.parse(JSON.stringify(o)) }
 
+// Deep-merge: fills missing keys in `data` with defaults from `base`
+// (arrays and primitives from `data` always win; only plain objects are merged recursively)
+function mergeDefaults(base, data) {
+  if (data === null || data === undefined) return clone(base)
+  if (typeof base !== 'object' || Array.isArray(base)) return data
+  const result = clone(base)
+  for (const key of Object.keys(data)) {
+    if (
+      data[key] !== null &&
+      typeof data[key] === 'object' && !Array.isArray(data[key]) &&
+      typeof result[key] === 'object' && !Array.isArray(result[key])
+    ) {
+      result[key] = mergeDefaults(result[key], data[key])
+    } else {
+      result[key] = data[key]
+    }
+  }
+  return result
+}
+
 const BASE_ESPECIES = ['Mus musculus', 'Rattus norvegicus', 'Oryctolagus cuniculus', 'Sus scrofa', 'Gallus gallus']
 
 const EMPTY_FORM = {
@@ -290,7 +310,7 @@ export default function SeccionBForm() {
         setProyecto(proy)
         const merged = [...new Set([...BASE_ESPECIES, ...(Array.isArray(especiesRepo) ? especiesRepo : [])])]
         setEspecies(merged)
-        if (existing) setForm(existing)
+        if (existing) setForm(mergeDefaults(EMPTY_FORM, existing))
         setLoading(false)
       })
       .catch(err => { setError(err.message); setLoading(false) })
@@ -744,8 +764,8 @@ export default function SeccionBForm() {
         defaultOpen={false}
       >
         {[
-          { label: 'Analgesia', rows: form.analgesia_anestesia.analgesia ?? [], add: addAna, remove: removeAna, upd: updAna },
-          { label: 'Anestesia', rows: form.analgesia_anestesia.anestesia ?? [], add: addAnes, remove: removeAnes, upd: updAnes },
+          { label: 'Analgesia', rows: form.analgesia_anestesia?.analgesia ?? [], add: addAna, remove: removeAna, upd: updAna },
+          { label: 'Anestesia', rows: form.analgesia_anestesia?.anestesia ?? [], add: addAnes, remove: removeAnes, upd: updAnes },
         ].map(({ label, rows, add, remove, upd }) => (
           <div key={label} className="form-group">
             <label>{label}</label>
