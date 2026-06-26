@@ -35,7 +35,8 @@ export default function PdfMerger({ proyecto }) {
   const [dragKey, setDragKey]   = useState(null)
   const [open, setOpen]         = useState(false)
   const fileInputRef            = useRef(null)
-  const extraKeyRef             = useRef(0)
+  // Start extra keys beyond all doc keys to avoid collisions
+  const extraKeyRef             = useRef(docs.length)
 
   // ── All items combined (docs + extras) ──────────────────────────────────────
   const allItems = [
