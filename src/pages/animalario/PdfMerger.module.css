@@ -62,7 +62,8 @@
   user-select: none;
 }
 .row:active { cursor: grabbing; }
-.row.dragging { opacity: 0.4; box-shadow: 0 0 0 2px var(--accent); }
+.row.dragging   { opacity: 0.4; box-shadow: 0 0 0 2px var(--accent); }
+.row.dragTarget { border-color: var(--accent); background: var(--accent-dim, #eff6ff); }
 
 .handle {
   color: var(--muted);

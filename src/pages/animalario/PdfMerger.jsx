@@ -1,140 +1,177 @@
-import { useState, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import s from './PdfMerger.module.css'
 
-function buildDocs(proyecto) {
-  const docs = []
-  let key = 0
-
+function buildDocItems(proyecto) {
+  const items = []
   if (proyecto.seccionA) {
-    docs.push({ key: key++, id: 'seccionA', type: 'seccionA', ref: null, label: 'Sección A — Información general', enabled: true })
+    items.push({ key: 'doc:seccionA', origin: 'doc', type: 'seccionA', ref: null, label: 'Sección A — Información general', enabled: true })
   }
-
   const procs = proyecto.procedimientos ?? []
   procs.forEach((procId, i) => {
     const titulo = proyecto._procTitulos?.[procId] ?? `Procedimiento ${i + 1}`
-    docs.push({ key: key++, id: `seccionB_${procId}`, type: 'seccionB', ref: procId, label: `Sección B — ${titulo}`, enabled: true })
+    items.push({ key: `doc:seccionB_${procId}`, origin: 'doc', type: 'seccionB', ref: procId, label: `Sección B — ${titulo}`, enabled: true })
   })
-
   const crias = proyecto.crias ?? []
   crias.forEach(cria => {
     const nombre = cria.acronimo || cria.nomenclatura_internacional || `Cría ${cria.id.slice(0, 6)}`
-    docs.push({ key: key++, id: `seccionC_${cria.id}`, type: 'seccionC', ref: cria.id, label: `Sección C — ${nombre}`, enabled: true })
+    items.push({ key: `doc:seccionC_${cria.id}`, origin: 'doc', type: 'seccionC', ref: cria.id, label: `Sección C — ${nombre}`, enabled: true })
   })
-
   if (proyecto.hay_productos_riesgo && proyecto.seccionD_id) {
-    docs.push({ key: key++, id: 'seccionD', type: 'seccionD', ref: null, label: 'Sección D — Productos con riesgo', enabled: true })
+    items.push({ key: 'doc:seccionD', origin: 'doc', type: 'seccionD', ref: null, label: 'Sección D — Productos con riesgo', enabled: true })
   }
-
-  return docs
+  return items
 }
 
 export default function PdfMerger({ proyecto }) {
-  const [docs, setDocs]         = useState(() => buildDocs(proyecto))
-  const [extras, setExtras]     = useState([])   // [{key, file, label, enabled}]
-  const [merging, setMerging]   = useState(false)
-  const [dragKey, setDragKey]   = useState(null)
-  const [open, setOpen]         = useState(false)
-  const fileInputRef            = useRef(null)
-  // Start extra keys beyond all doc keys to avoid collisions
-  const extraKeyRef             = useRef(docs.length)
+  const [items,     setItems]     = useState(() => buildDocItems(proyecto))
+  const [merging,   setMerging]   = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [open,      setOpen]      = useState(false)
+  // Drag state — ref for src key (no re-render needed in handler), state for visual feedback
+  const dragSrcRef                = useRef(null)
+  const [dragSrc,   setDragSrc]   = useState(null)
+  const [dragOver,  setDragOver]  = useState(null)
+  const fileInputRef              = useRef(null)
 
-  // ── All items combined (docs + extras) ──────────────────────────────────────
-  const allItems = [
-    ...docs.map(d => ({ ...d, origin: 'doc' })),
-    ...extras.map(e => ({ ...e, origin: 'extra' })),
-  ]
+  // Load server-stored extras on mount
+  useEffect(() => {
+    fetch(`/api/animalario/proyectos/${proyecto.id}/extra-pdfs`)
+      .then(r => r.json())
+      .then(({ items: serverExtras = [] }) => {
+        if (!serverExtras.length) return
+        setItems(prev => [
+          ...prev,
+          ...serverExtras.map(e => ({
+            key:    `extra:${e.name}`,
+            origin: 'extra',
+            name:   e.name,
+            label:  e.label,
+            enabled: true,
+          })),
+        ])
+      })
+      .catch(() => {})
+  }, [proyecto.id])
 
-  function setItemEnabled(key, val) {
-    setDocs(prev => prev.map(d => d.key === key ? { ...d, enabled: val } : d))
-    setExtras(prev => prev.map(e => e.key === key ? { ...e, enabled: val } : e))
+  // ── Item helpers ─────────────────────────────────────────────────────────────
+
+  function toggleEnabled(key, val) {
+    setItems(prev => prev.map(i => i.key === key ? { ...i, enabled: val } : i))
   }
 
-  function removeItem(key) {
-    setDocs(prev => prev.filter(d => d.key !== key))
-    setExtras(prev => prev.filter(e => e.key !== key))
+  async function removeItem(key) {
+    const item = items.find(i => i.key === key)
+    if (item?.origin === 'extra') {
+      await fetch(`/api/animalario/proyectos/${proyecto.id}/extra-pdfs/${item.name}`, { method: 'DELETE' })
+        .catch(() => {})
+    }
+    setItems(prev => prev.filter(i => i.key !== key))
+  }
+
+  // ── Upload extra PDF ─────────────────────────────────────────────────────────
+
+  async function onFileChange(e) {
+    const files = Array.from(e.target.files)
+    e.target.value = ''
+    if (!files.length) return
+    setUploading(true)
+    try {
+      const results = await Promise.all(files.map(async file => {
+        const fd = new FormData()
+        fd.append('file', file)
+        fd.append('label', file.name.replace(/\.pdf$/i, ''))
+        const res  = await fetch(`/api/animalario/proyectos/${proyecto.id}/extra-pdfs`, { method: 'POST', body: fd })
+        if (!res.ok) throw new Error(`Error subiendo ${file.name}`)
+        const { item } = await res.json()
+        return { key: `extra:${item.name}`, origin: 'extra', name: item.name, label: item.label, enabled: true }
+      }))
+      setItems(prev => [...prev, ...results])
+    } catch (err) {
+      alert(`Error al subir PDF: ${err.message}`)
+    } finally {
+      setUploading(false)
+    }
   }
 
   // ── Drag & drop ─────────────────────────────────────────────────────────────
-  function onDragStart(key) { setDragKey(key) }
+  // dragSrcRef: never stale in handlers; dragSrc/dragOver: state for CSS classes
 
-  function onDrop(targetKey) {
-    if (dragKey === null || dragKey === targetKey) return
-    const combined = [...allItems]
-    const fromIdx  = combined.findIndex(i => i.key === dragKey)
-    const toIdx    = combined.findIndex(i => i.key === targetKey)
-    if (fromIdx === -1 || toIdx === -1) return
-
-    const reordered = [...combined]
-    const [moved]   = reordered.splice(fromIdx, 1)
-    reordered.splice(toIdx, 0, moved)
-
-    setDocs(reordered.filter(i => i.origin === 'doc').map(({ origin, ...rest }) => rest))
-    setExtras(reordered.filter(i => i.origin === 'extra').map(({ origin, ...rest }) => rest))
-    setDragKey(null)
+  function onDragStart(e, key) {
+    dragSrcRef.current = key
+    setDragSrc(key)
+    setDragOver(null)
+    e.dataTransfer.effectAllowed = 'move'
   }
 
-  // ── Add extra PDF ────────────────────────────────────────────────────────────
-  function onFileChange(e) {
-    const files = Array.from(e.target.files)
-    const newExtras = files.map(file => ({
-      key:     extraKeyRef.current++,
-      file,
-      label:   file.name.replace(/\.pdf$/i, ''),
-      enabled: true,
-    }))
-    setExtras(prev => [...prev, ...newExtras])
-    e.target.value = ''
+  function onDragOver(e, key) {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (dragOver !== key) setDragOver(key)
+  }
+
+  function onDrop(e, key) {
+    e.preventDefault()
+    const src = dragSrcRef.current
+    clearDrag()
+    if (!src || src === key) return
+    setItems(prev => {
+      const from = prev.findIndex(i => i.key === src)
+      const to   = prev.findIndex(i => i.key === key)
+      if (from === -1 || to === -1) return prev
+      const next = [...prev]
+      const [moved] = next.splice(from, 1)
+      next.splice(to, 0, moved)
+      return next
+    })
+  }
+
+  function clearDrag() {
+    dragSrcRef.current = null
+    setDragSrc(null)
+    setDragOver(null)
   }
 
   // ── Merge & download ─────────────────────────────────────────────────────────
-  async function handleMerge() {
-    const combined = allItems
-    const enabledItems = combined.filter(i => i.enabled)
-    if (!enabledItems.length) return alert('Selecciona al menos un documento.')
 
+  async function handleMerge() {
+    const enabled = items.filter(i => i.enabled)
+    if (!enabled.length) return alert('Selecciona al menos un documento.')
     setMerging(true)
     try {
       const formData = new FormData()
-
-      let fileIndex = 0
-      const itemsMeta = enabledItems.map(item => {
-        if (item.origin === 'extra') {
-          formData.append(`file_${fileIndex}`, item.file)
-          return { type: 'upload', fileIndex: fileIndex++, enabled: true }
-        }
-        return { type: item.type, ref: item.ref, enabled: true }
-      })
-
-      formData.append('items', JSON.stringify(itemsMeta))
+      formData.append('items', JSON.stringify(
+        enabled.map(item =>
+          item.origin === 'extra'
+            ? { type: 'extra', name: item.name, enabled: true }
+            : { type: item.type, ref: item.ref, enabled: true }
+        )
+      ))
 
       const res = await fetch(`/api/animalario/proyectos/${proyecto.id}/exportar/pdf-unificado`, {
         method: 'POST',
         body: formData,
       })
-
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
         throw new Error(err.error ?? `Error ${res.status}`)
       }
-
-      const blob = await res.blob()
+      const blob        = await res.blob()
       const disposition = res.headers.get('Content-Disposition') ?? ''
-      const match = disposition.match(/filename\*?=(?:UTF-8'')?["']?([^"';\r\n]+)["']?/i)
-      const filename = match ? decodeURIComponent(match[1]) : 'Proyecto_unificado.pdf'
-      const url  = URL.createObjectURL(blob)
-      const a    = document.createElement('a')
-      a.href = url
-      a.download = filename
+      const match       = disposition.match(/filename\*?=(?:UTF-8'')?["']?([^"';\r\n]+)["']?/i)
+      const filename    = match ? decodeURIComponent(match[1]) : 'Proyecto_unificado.pdf'
+      const url         = URL.createObjectURL(blob)
+      const a           = document.createElement('a')
+      a.href = url; a.download = filename
       document.body.appendChild(a); a.click()
       document.body.removeChild(a); URL.revokeObjectURL(url)
-    } catch (e) {
-      alert(`Error al generar el PDF: ${e.message}`)
+    } catch (err) {
+      alert(`Error al generar el PDF: ${err.message}`)
     } finally {
       setMerging(false)
     }
   }
 
-  const enabledCount = allItems.filter(i => i.enabled).length
+  const enabledCount = items.filter(i => i.enabled).length
 
   return (
     <div className={s.merger}>
@@ -146,26 +183,31 @@ export default function PdfMerger({ proyecto }) {
       {open && (
         <div className={s.body}>
           <p className={s.hint}>
-            Activa, desactiva y arrastra los documentos para establecer el orden. Puedes añadir artículos u otros PDFs externos.
+            Activa, desactiva y arrastra los documentos para establecer el orden.
+            Los PDFs externos se guardan en el servidor y son visibles para todos los usuarios.
           </p>
 
           <div className={s.list}>
-            {allItems.map(item => (
+            {items.map(item => (
               <div
                 key={item.key}
-                className={`${s.row} ${dragKey === item.key ? s.dragging : ''}`}
                 draggable
-                onDragStart={() => onDragStart(item.key)}
-                onDragOver={e => e.preventDefault()}
-                onDrop={() => onDrop(item.key)}
-                onDragEnd={() => setDragKey(null)}
+                onDragStart={e => onDragStart(e, item.key)}
+                onDragOver={e  => onDragOver(e,  item.key)}
+                onDrop={e      => onDrop(e,       item.key)}
+                onDragEnd={clearDrag}
+                className={[
+                  s.row,
+                  dragSrc  === item.key                    ? s.dragging   : '',
+                  dragOver === item.key && dragSrc !== item.key ? s.dragTarget : '',
+                ].filter(Boolean).join(' ')}
               >
                 <span className={s.handle} title="Arrastrar para reordenar">⠿</span>
                 <input
                   type="checkbox"
                   className={s.check}
                   checked={item.enabled}
-                  onChange={e => setItemEnabled(item.key, e.target.checked)}
+                  onChange={e => toggleEnabled(item.key, e.target.checked)}
                 />
                 <span className={`${s.rowLabel} ${!item.enabled ? s.disabled : ''}`}>
                   {item.origin === 'extra' && <span className={s.badge}>PDF externo</span>}
@@ -176,8 +218,7 @@ export default function PdfMerger({ proyecto }) {
                 )}
               </div>
             ))}
-
-            {allItems.length === 0 && (
+            {items.length === 0 && (
               <p className={s.empty}>No hay documentos disponibles. Completa primero las secciones del proyecto.</p>
             )}
           </div>
@@ -185,9 +226,10 @@ export default function PdfMerger({ proyecto }) {
           <div className={s.footer}>
             <button
               className={s.addBtn}
+              disabled={uploading}
               onClick={() => fileInputRef.current?.click()}
             >
-              ＋ Añadir PDF externo
+              {uploading ? 'Subiendo…' : '＋ Añadir PDF externo'}
             </button>
             <input
               ref={fileInputRef}

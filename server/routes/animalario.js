@@ -18,7 +18,8 @@ const MODIF_DIR       = join(DATA_DIR, 'animalario', 'modificaciones')
 const REPO_FILE       = join(DATA_DIR, 'animalario', 'repositorio', 'campos_frecuentes.json')
 const CERT_DIR        = join(DATA_DIR, 'animalario', 'certificados')
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } })
+const upload      = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } })
+const uploadExtra = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } })
 
 const router = Router()
 
@@ -1019,6 +1020,67 @@ router.delete('/proyectos/:id/certificado', (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
+})
+
+// ── Extra PDFs por proyecto ───────────────────────────────────────────────────
+
+function extrasDir(proyectoId)   { return join(PROYECTOS_DIR, `proyecto_${proyectoId}_extras`) }
+function extrasIndex(proyectoId) { return join(extrasDir(proyectoId), 'index.json') }
+
+function readExtrasIndex(proyectoId) {
+  const f = extrasIndex(proyectoId)
+  if (!existsSync(f)) return []
+  try { return JSON.parse(readFileSync(f, 'utf-8')) } catch { return [] }
+}
+
+function writeExtrasIndex(proyectoId, items) {
+  ensureDir(extrasDir(proyectoId))
+  writeFileSync(extrasIndex(proyectoId), JSON.stringify(items, null, 2), 'utf-8')
+}
+
+router.get('/proyectos/:id/extra-pdfs', (req, res) => {
+  res.json({ items: readExtrasIndex(req.params.id) })
+})
+
+router.post('/proyectos/:id/extra-pdfs', uploadExtra.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No se recibió ningún archivo' })
+  if (!readProyecto(req.params.id)) return res.status(404).json({ error: 'Proyecto no encontrado' })
+
+  const name      = `${randomUUID()}.pdf`
+  const label     = (req.body.label || req.file.originalname || 'Documento').replace(/\.pdf$/i, '')
+  const createdAt = new Date().toISOString()
+
+  ensureDir(extrasDir(req.params.id))
+  writeFileSync(join(extrasDir(req.params.id), name), req.file.buffer)
+
+  const items = readExtrasIndex(req.params.id)
+  const item  = { name, label, createdAt }
+  items.push(item)
+  writeExtrasIndex(req.params.id, items)
+
+  res.status(201).json({ item })
+})
+
+router.patch('/proyectos/:id/extra-pdfs/:name', (req, res) => {
+  const { label } = req.body ?? {}
+  if (!label) return res.status(400).json({ error: 'label requerido' })
+  const items = readExtrasIndex(req.params.id)
+  const idx   = items.findIndex(i => i.name === req.params.name)
+  if (idx === -1) return res.status(404).json({ error: 'No encontrado' })
+  items[idx].label = label
+  writeExtrasIndex(req.params.id, items)
+  res.json({ ok: true })
+})
+
+router.delete('/proyectos/:id/extra-pdfs/:name', (req, res) => {
+  const items = readExtrasIndex(req.params.id)
+  const idx   = items.findIndex(i => i.name === req.params.name)
+  if (idx === -1) return res.status(404).json({ error: 'No encontrado' })
+  const filePath = join(extrasDir(req.params.id), req.params.name)
+  if (existsSync(filePath)) unlinkSync(filePath)
+  items.splice(idx, 1)
+  writeExtrasIndex(req.params.id, items)
+  res.json({ ok: true })
 })
 
 export default router
