@@ -717,3 +717,236 @@
   color: var(--accent, #2563eb);
   text-decoration: underline;
 }
+
+/* ── Camera / mobile upload ──────────────────────────────────────────────── */
+
+/* Marker class so we can hide just the TicketUploader drop zone on mobile
+   without hiding the AdjuntosSection drop zone */
+.dropZoneTicket { /* inherits .dropZone styles, no extra rules needed here */ }
+
+.mobileUploadBtns {
+  display: none; /* hidden on desktop */
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cameraBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.9rem 1rem;
+  background: #1F4E79;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+  min-height: 56px;
+}
+.cameraBtn:hover { background: #163b5c; }
+.cameraBtn:active { background: #122d47; }
+
+.galleryBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--text);
+  transition: background 0.15s;
+  min-height: 44px;
+}
+.galleryBtn:hover { background: var(--surface-hover, rgba(0,0,0,0.03)); }
+
+.mobileFileSelected {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  font-size: 0.88rem;
+  color: var(--text);
+}
+
+.mobileFileSelectedName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.mobileFileClearBtn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.1rem 0.3rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+/* Camera button in ItemAdjuntoRow — hidden on desktop, shown on mobile */
+.adjuntoCameraBtn {
+  display: none;
+}
+
+/* ── Responsive / Mobile (≤ 640px) ──────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  /* Show mobile upload UI, hide desktop drop zone in TicketUploader */
+  .dropZoneTicket {
+    display: none;
+  }
+
+  .mobileUploadBtns {
+    display: flex;
+  }
+
+  /* Show camera button in per-item adjunto row */
+  .adjuntoCameraBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 38px;
+    padding: 0.1rem 0.5rem;
+  }
+
+  /* Stack field rows vertically */
+  .fieldRow {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .fieldRow > .form-group,
+  .fieldRow > div {
+    min-width: unset;
+    width: 100%;
+  }
+
+  /* Taller section/subsection tap targets */
+  .sectionBtn {
+    min-height: 56px;
+  }
+
+  .subSectionBtn {
+    min-height: 50px;
+  }
+
+  /* Less padding on cards */
+  .headerCard {
+    padding: 1rem;
+  }
+
+  .pedidoCard {
+    padding: 1rem;
+  }
+
+  .totalCard {
+    padding: 1rem;
+    margin-top: 1rem;
+  }
+
+  .sectionBody {
+    padding: 0 0.75rem 1rem;
+  }
+
+  .subSectionBody {
+    padding: 0.5rem 0.75rem 0.75rem;
+  }
+
+  /* Item rows */
+  .itemRow {
+    gap: 0.4rem;
+    padding: 0.7rem 0.75rem;
+  }
+
+  /* Meal type buttons — keep row but full-width each */
+  .tipoSelector {
+    gap: 0.3rem;
+  }
+
+  .tipoBtn {
+    flex: 1;
+    min-height: 44px;
+    text-align: center;
+    font-size: 0.82rem;
+  }
+
+  /* Km mode toggle — stack vertically */
+  .kmToggle {
+    flex-direction: column;
+  }
+
+  .toggleBtn {
+    min-height: 44px;
+    text-align: center;
+  }
+
+  /* Add button fills its wrapper */
+  .addBtnWrapper {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .addBtnWrapper > button {
+    width: 100%;
+    min-height: 48px;
+    font-size: 1rem;
+  }
+
+  /* Inline edit action buttons */
+  .inlineEditActions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    min-width: unset;
+    width: 100%;
+    gap: 0.5rem;
+  }
+
+  .inlineEditActions > button {
+    flex: 1;
+    min-height: 44px;
+  }
+
+  /* Actions bar — stack vertically, full-width buttons */
+  .actions {
+    flex-direction: column;
+  }
+
+  .actions > button {
+    width: 100%;
+    min-height: 50px;
+    font-size: 1rem;
+    justify-content: center;
+  }
+
+  /* Repo link fills width */
+  .repoLink {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Coche calculation box */
+  .cocheCalc {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
