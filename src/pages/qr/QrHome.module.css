@@ -134,3 +134,58 @@
 .repoName { font-size: 0.8rem; font-weight: 700; color: var(--text, #111); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .repoUrl  { font-size: 0.7rem; color: var(--muted, #888); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .repoActions { display: flex; gap: 0.4rem; align-items: center; margin-top: auto; }
+
+/* ── Mobile (≤ 640px) ─────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  /* font-size ≥ 1rem prevents iOS Safari from zooming in on input focus */
+  .input  { font-size: 1rem; min-height: 44px; padding: 0.6rem 0.75rem; }
+  .select { font-size: 1rem; min-height: 44px; padding: 0.6rem 0.75rem; }
+
+  .btn        { min-height: 44px; padding: 0.55rem 0.85rem; font-size: 0.875rem; }
+  .btnPrimary { min-height: 44px; padding: 0.55rem 1rem;   font-size: 0.875rem; }
+  .iconBtn    { min-width: 44px; min-height: 44px; padding: 0.35rem 0.5rem; font-size: 0.85rem; }
+
+  /* Bigger colour swatch tap target */
+  .colorInput { width: 44px; height: 44px; }
+
+  /* Checkboxes / radios: taller click area */
+  .checkLabel { min-height: 44px; }
+  .radioLabel { min-height: 44px; }
+
+  /* Preview: remove sticky when stacked in single column */
+  .previewCol { position: static; }
+  .previewBox { min-height: 200px; padding: 0.75rem; }
+
+  /* Export section: full-width stacked buttons */
+  .exportRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* Email row: stack and let input shrink */
+  .emailRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .emailRow .input { min-width: 0; }
+
+  /* Logo actions: full-width stacked */
+  .logoActions { flex-direction: column; align-items: stretch; }
+
+  /* Repo: 1 column; cards go horizontal */
+  .repoGrid { grid-template-columns: 1fr; }
+
+  .repoCard {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .repoThumb { width: 64px; height: 64px; flex-shrink: 0; }
+  .repoInfo  { flex: 1; min-width: 0; }
+  .repoActions { width: 100%; margin-top: 0; justify-content: flex-end; }
+
+  /* Section padding tighter */
+  .section { padding: 1rem; }
+}
