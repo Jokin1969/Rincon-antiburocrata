@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import PageHeader from '../../components/PageHeader'
+import { downloadBlob } from '../../utils/downloadBlob'
 import styles from './QrHome.module.css'
 
 function clientNormalizeUrl(raw) {
@@ -137,9 +138,8 @@ export default function QrHome() {
       const blob = await res.blob()
       const cd   = res.headers.get('Content-Disposition') || ''
       const fn   = (cd.match(/filename="?([^";\n]+)"?/) || [])[1] || `qr.${format === 'jpeg' ? 'jpg' : format}`
-      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fn; a.click()
-      URL.revokeObjectURL(a.href)
-    } catch (e) { showStatus('err', e.message) }
+      await downloadBlob(blob, fn)
+    } catch (e) { if (e.name !== 'AbortError') showStatus('err', e.message) }
     setBusy(b => ({ ...b, download: false }))
   }
 
