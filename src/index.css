@@ -188,3 +188,13 @@ button {
   border-color: rgba(22, 101, 52, 0.25);
   color: #16a34a;
 }
+
+/* ── Mobile globals (≤ 640px) ─────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  /* iOS Safari centers date/time input text by default — force left */
+  .form-group input[type="date"],
+  .form-group input[type="time"],
+  .form-group input[type="datetime-local"] {
+    text-align: left;
+  }
+}

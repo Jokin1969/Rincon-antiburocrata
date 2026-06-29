@@ -26,6 +26,18 @@
   gap: 1rem;
 }
 
+/* ── Mobile tweaks ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .intro {
+    margin-bottom: 1.75rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .grid {
+    gap: 0.75rem;
+  }
+}
+
 .cardWrapper {
   position: relative;
 }

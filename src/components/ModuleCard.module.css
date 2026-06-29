@@ -83,3 +83,10 @@
 .card:hover .arrow {
   transform: translateX(5px);
 }
+
+@media (max-width: 640px) {
+  .card {
+    padding: 1.25rem;
+    min-height: 130px;
+  }
+}
