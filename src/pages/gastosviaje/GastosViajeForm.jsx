@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import PageHeader from '../../components/PageHeader'
+import { downloadBlob } from '../../utils/downloadBlob'
 import styles from './GastosViajeForm.module.css'
 
 const TODAY = new Date().toISOString().split('T')[0]
@@ -1348,13 +1349,8 @@ export default function GastosViajeForm() {
         throw new Error(d.error || `Error ${res.status}`)
       }
       const blob = await res.blob()
-      const url  = URL.createObjectURL(blob)
-      const a    = document.createElement('a')
-      a.href = url
       const safe = (viaje.nombre || 'GastosViaje').replace(/[^a-zA-Z0-9_\-]/g, '_').slice(0, 40)
-      a.download = `GastosViaje_${safe}_${viaje.fechaInicio || TODAY}.${format}`
-      a.click()
-      URL.revokeObjectURL(url)
+      await downloadBlob(blob, `GastosViaje_${safe}_${viaje.fechaInicio || TODAY}.${format}`)
     } catch (err) {
       setError(err.message)
     } finally {
