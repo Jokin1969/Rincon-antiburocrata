@@ -64,6 +64,7 @@ function ItemAdjuntoRow({ item, viajeId, onEdit }) {
   const [uploading, setUploading] = useState(false)
   const [error, setError]         = useState(null)
   const fileRef                   = useRef()
+  const cameraRef                 = useRef()
 
   async function handleFile(file) {
     if (!file) return
@@ -106,6 +107,14 @@ function ItemAdjuntoRow({ item, viajeId, onEdit }) {
         style={{ display: 'none' }}
         onChange={e => handleFile(e.target.files[0])}
       />
+      <input
+        ref={cameraRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        style={{ display: 'none' }}
+        onChange={e => handleFile(e.target.files[0])}
+      />
       {adj ? (
         <>
           <a
@@ -120,13 +129,24 @@ function ItemAdjuntoRow({ item, viajeId, onEdit }) {
           <button className={styles.adjuntoItemRemove} onClick={handleRemove} title="Eliminar adjunto">✕</button>
         </>
       ) : (
-        <button
-          className={styles.adjuntoItemBtn}
-          disabled={uploading}
-          onClick={() => fileRef.current?.click()}
-        >
-          {uploading ? 'Subiendo…' : '📎 Adjuntar ticket / factura'}
-        </button>
+        <>
+          <button
+            className={styles.adjuntoItemBtn}
+            disabled={uploading}
+            onClick={() => fileRef.current?.click()}
+          >
+            {uploading ? 'Subiendo…' : '📎 Adjuntar ticket / factura'}
+          </button>
+          <button
+            type="button"
+            className={`${styles.adjuntoItemBtn} ${styles.adjuntoCameraBtn}`}
+            disabled={uploading}
+            onClick={() => cameraRef.current?.click()}
+            title="Tomar foto con la cámara"
+          >
+            📷
+          </button>
+        </>
       )}
       {error && <span className={styles.adjuntoItemError}>{error}</span>}
     </div>
@@ -136,10 +156,11 @@ function ItemAdjuntoRow({ item, viajeId, onEdit }) {
 // ── Sub-component: TicketUploader ─────────────────────────────────────────────
 
 function TicketUploader({ tipo, onExtracted }) {
-  const [file, setFile]     = useState(null)
+  const [file, setFile]       = useState(null)
   const [loading, setLoading] = useState(false)
-  const [error, setError]   = useState(null)
-  const fileRef = useRef()
+  const [error, setError]     = useState(null)
+  const fileRef   = useRef()
+  const cameraRef = useRef()
 
   function handleFile(f) {
     if (!f) return
@@ -169,8 +190,9 @@ function TicketUploader({ tipo, onExtracted }) {
 
   return (
     <div className={styles.uploader}>
+      {/* Desktop: drag-and-drop zone */}
       <div
-        className={styles.dropZone}
+        className={`${styles.dropZone} ${styles.dropZoneTicket}`}
         onClick={() => fileRef.current?.click()}
         onDragOver={e => e.preventDefault()}
         onDrop={e => { e.preventDefault(); handleFile(e.dataTransfer.files[0]) }}
@@ -184,20 +206,46 @@ function TicketUploader({ tipo, onExtracted }) {
             </>
         }
       </div>
+
+      {/* Mobile: prominent camera button + gallery */}
+      <div className={styles.mobileUploadBtns}>
+        {file ? (
+          <div className={styles.mobileFileSelected}>
+            <span className={styles.mobileFileSelectedName}>📄 {file.name}</span>
+            <button type="button" className={styles.mobileFileClearBtn} onClick={() => setFile(null)} title="Quitar">✕</button>
+          </div>
+        ) : (
+          <>
+            <button type="button" className={styles.cameraBtn} onClick={() => cameraRef.current?.click()}>
+              📷 Tomar foto del ticket
+            </button>
+            <button type="button" className={styles.galleryBtn} onClick={() => fileRef.current?.click()}>
+              🖼️ Galería / PDF
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Camera input (direct camera, images only) */}
       <input
-        ref={fileRef}
+        ref={cameraRef}
         type="file"
-        accept="application/pdf,image/*"
+        accept="image/*"
         capture="environment"
         className={styles.hiddenInput}
         onChange={e => handleFile(e.target.files[0])}
       />
+      {/* Gallery/file input (no camera forced, allows PDFs too) */}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="application/pdf,image/*"
+        className={styles.hiddenInput}
+        onChange={e => handleFile(e.target.files[0])}
+      />
+
       {file && (
-        <button
-          className="btn btn-primary"
-          onClick={handleExtract}
-          disabled={loading}
-        >
+        <button className="btn btn-primary" onClick={handleExtract} disabled={loading}>
           {loading ? 'Extrayendo con IA…' : '✨ Extraer datos con IA'}
         </button>
       )}
