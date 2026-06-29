@@ -191,10 +191,20 @@ button {
 
 /* ── Mobile globals (≤ 640px) ─────────────────────────────────────────────── */
 @media (max-width: 640px) {
-  /* iOS Safari centers date/time input text by default — force left */
+  /* font-size ≥ 1rem previene el auto-zoom de iOS Safari al enfocar un input */
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    font-size: 1rem;
+  }
+
+  /* iOS Safari aplica estilos nativos a type="date" (texto centrado, altura propia).
+     -webkit-appearance: none elimina ese look nativo manteniendo el selector de fecha. */
   .form-group input[type="date"],
   .form-group input[type="time"],
   .form-group input[type="datetime-local"] {
+    -webkit-appearance: none;
+    appearance: none;
     text-align: left;
   }
 }
