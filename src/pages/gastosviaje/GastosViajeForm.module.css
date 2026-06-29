@@ -832,7 +832,7 @@
   /* Stack field rows vertically */
   .fieldRow {
     flex-direction: column;
-    gap: 0;
+    gap: 0.75rem;
   }
 
   .fieldRow > .form-group,
