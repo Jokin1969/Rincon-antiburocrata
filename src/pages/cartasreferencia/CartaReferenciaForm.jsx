@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import PageHeader from '../../components/PageHeader'
+import PrinterSelect from '../../components/PrinterSelect'
 import styles from './CartaReferenciaForm.module.css'
 
 const TIPOS = [
@@ -128,7 +129,12 @@ export default function CartaReferenciaForm() {
     setPrinting(true)
     setPrintOk(false)
     try {
-      const res = await fetch(`/api/cartas-referencia/${id}/imprimir`, { method: 'POST' })
+      const printer = localStorage.getItem('printHub_printer') || undefined
+      const res = await fetch(`/api/cartas-referencia/${id}/imprimir`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ printer }),
+      })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
       setPrintOk(true)
@@ -520,6 +526,7 @@ export default function CartaReferenciaForm() {
           >
             {genPdf ? 'Generando…' : '⬇ Descargar .pdf'}
           </button>
+          <PrinterSelect />
           <button
             className="btn btn-ghost"
             onClick={handlePrint}

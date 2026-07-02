@@ -11,7 +11,7 @@
  * @returns {Promise<{ok:boolean, id:number, status:string, printer:string}>}
  * @throws {Error} con err.status = código HTTP del hub (503 si faltan env vars)
  */
-export async function submitToPrintHub(pdfBuffer, filename) {
+export async function submitToPrintHub(pdfBuffer, filename, printer) {
   const hubUrl = process.env.PRINT_HUB_URL
   const hubKey = process.env.PRINT_HUB_KEY
 
@@ -25,6 +25,7 @@ export async function submitToPrintHub(pdfBuffer, filename) {
   form.append('file', new Blob([pdfBuffer], { type: 'application/pdf' }), filename)
   form.append('filename', filename)
   form.append('source', 'anti-burocrata')
+  if (printer) form.append('printer', printer)
 
   const res = await fetch(`${hubUrl}/imprimir/api/submit`, {
     method:  'POST',

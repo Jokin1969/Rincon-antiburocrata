@@ -191,7 +191,7 @@ router.post('/:id/imprimir', async (req, res) => {
     const docxBuffer = await generateCartaReferencia(carta)
     const pdfBuffer  = docxToPdf(docxBuffer)
     const safeName   = (carta.titulo || carta.id).replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\-]/g, '').trim().replace(/\s+/g, '_')
-    const data = await submitToPrintHub(pdfBuffer, `CartaRef_${safeName}.pdf`)
+    const data = await submitToPrintHub(pdfBuffer, `CartaRef_${safeName}.pdf`, req.body?.printer)
     res.json({ ok: true, id: data.id })
   } catch (err) {
     const status = err.status || 500

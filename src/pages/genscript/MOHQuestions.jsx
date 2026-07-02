@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import PageHeader from '../../components/PageHeader'
+import PrinterSelect from '../../components/PrinterSelect'
 import { MOH_QUESTIONS } from '../../data/mohQuestionsData.js'
 import { useMOHStore } from '../../hooks/useGenScriptStore'
 import styles from './MOHQuestions.module.css'
@@ -156,10 +157,11 @@ export default function MOHQuestions() {
     setPrintOk(false)
     setError(null)
     try {
+      const printer = localStorage.getItem('printHub_printer') || undefined
       const res = await fetch('/api/imprimir', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ tipo: 'moh-questions', ...form }),
+        body:    JSON.stringify({ tipo: 'moh-questions', ...form, printer }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
@@ -331,6 +333,7 @@ export default function MOHQuestions() {
           >
             {loadingFmt === 'pdf' ? 'Generando…' : '⬇ PDF'}
           </button>
+          <PrinterSelect />
           <button
             type="button"
             className="btn btn-ghost"

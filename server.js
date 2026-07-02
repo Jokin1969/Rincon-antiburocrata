@@ -518,8 +518,24 @@ app.post('/api/aduanas/cert-no-peligrosidad/enviar-email', async (req, res) => {
 
 // ── Hub de impresión física ──────────────────────────────────────────────────
 
+app.get('/api/impresoras', async (_req, res) => {
+  const hubUrl = process.env.PRINT_HUB_URL
+  const hubKey = process.env.PRINT_HUB_KEY
+  if (!hubUrl || !hubKey) return res.json({ default: null, known: [] })
+  try {
+    const r = await fetch(`${hubUrl}/imprimir/api/printers`, {
+      headers: { 'X-Api-Key': hubKey },
+      signal:  AbortSignal.timeout(8_000),
+    })
+    const data = await r.json()
+    res.json({ default: data.default ?? null, known: data.known ?? [] })
+  } catch {
+    res.json({ default: null, known: [] })
+  }
+})
+
 app.post('/api/imprimir', async (req, res) => {
-  const { tipo, ...body } = req.body
+  const { tipo, printer, ...body } = req.body
 
   function saf(s, max = 40) { return (s || '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, max) }
 
@@ -545,7 +561,7 @@ app.post('/api/imprimir', async (req, res) => {
     const [gen, base] = handler()
     const docxBuffer  = await gen(body)
     const pdfBuffer   = docxToPdf(docxBuffer)
-    const data        = await submitToPrintHub(pdfBuffer, `${base}.pdf`)
+    const data        = await submitToPrintHub(pdfBuffer, `${base}.pdf`, printer)
     res.json({ ok: true, id: data.id })
   } catch (err) {
     const status = err.status || 500
@@ -1284,7 +1300,7 @@ app.post('/api/gastos-viaje/:id/imprimir', async (req, res) => {
       pdfBuffer = await mergePdfs(parts)
     }
 
-    const data = await submitToPrintHub(pdfBuffer, `${base}.pdf`)
+    const data = await submitToPrintHub(pdfBuffer, `${base}.pdf`, req.body?.printer)
     res.json({ ok: true, id: data.id })
   } catch (err) {
     const status = err.status || 500

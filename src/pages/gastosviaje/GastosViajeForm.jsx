@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import PageHeader from '../../components/PageHeader'
+import PrinterSelect from '../../components/PrinterSelect'
 import { downloadBlob } from '../../utils/downloadBlob'
 import styles from './GastosViajeForm.module.css'
 
@@ -1370,7 +1371,12 @@ export default function GastosViajeForm() {
     setPrintOk(false)
     setError(null)
     try {
-      const res = await fetch(`/api/gastos-viaje/${viajeId}/imprimir`, { method: 'POST' })
+      const printer = localStorage.getItem('printHub_printer') || undefined
+      const res = await fetch(`/api/gastos-viaje/${viajeId}/imprimir`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ printer }),
+      })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
       setPrintOk(true)
@@ -1680,6 +1686,7 @@ export default function GastosViajeForm() {
           disabled={!!generating || !viajeId || printing}>
           {generating === 'pdf' ? 'Generando…' : '⬇ Informe PDF'}
         </button>
+        <PrinterSelect />
         <button className="btn btn-ghost" onClick={handlePrint}
           disabled={!!generating || !viajeId || printing}>
           {printing ? 'Enviando…' : '🖨️ Imprimir'}

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import PageHeader from '../../components/PageHeader'
+import PrinterSelect from '../../components/PrinterSelect'
 import { useEUSStore } from '../../hooks/useGenScriptStore'
 import styles from './EndUserStatement.module.css'
 
@@ -97,10 +98,11 @@ export default function EndUserStatement() {
     setPrintOk(false)
     setError(null)
     try {
+      const printer = localStorage.getItem('printHub_printer') || undefined
       const res = await fetch('/api/imprimir', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ tipo: 'end-user-statement', ...form }),
+        body:    JSON.stringify({ tipo: 'end-user-statement', ...form, printer }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
@@ -358,6 +360,7 @@ export default function EndUserStatement() {
           >
             {loadingFmt === 'pdf' ? 'Generando…' : '⬇ PDF'}
           </button>
+          <PrinterSelect />
           <button
             type="button"
             className="btn btn-ghost"
