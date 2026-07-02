@@ -24,6 +24,8 @@ export default function AdaptarCarta() {
   const [step, setStep]             = useState(1)
   const [form, setForm]             = useState(DEFAULTS)
   const [loadingFmt, setLoadingFmt] = useState(null)
+  const [printing, setPrinting]     = useState(false)
+  const [printOk, setPrintOk]       = useState(false)
   const [error, setError]           = useState(null)
 
   function handleChange(e) {
@@ -62,6 +64,26 @@ export default function AdaptarCarta() {
       setError(err.message)
     } finally {
       setLoadingFmt(null)
+    }
+  }
+
+  async function handlePrint() {
+    setPrinting(true)
+    setPrintOk(false)
+    setError(null)
+    try {
+      const res = await fetch('/api/imprimir', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ tipo: 'adaptar-carta', ...form }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
+      setPrintOk(true)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setPrinting(false)
     }
   }
 
@@ -314,11 +336,20 @@ export default function AdaptarCarta() {
           <button
             type="button"
             className="btn btn-ghost"
-            disabled={!isValid || busy}
+            disabled={!isValid || busy || printing}
             onClick={() => handleDownload('pdf')}
           >
             {loadingFmt === 'pdf' ? 'Generando…' : '⬇ Descargar .pdf'}
           </button>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            disabled={!isValid || busy || printing}
+            onClick={handlePrint}
+          >
+            {printing ? 'Enviando…' : '🖨️ Imprimir'}
+          </button>
+          {printOk && <span className={styles.hint}>✅ Enviado a imprimir</span>}
           <span className={styles.hint}>
             Si el texto ocupa más de una página, se paginará automáticamente.
           </span>

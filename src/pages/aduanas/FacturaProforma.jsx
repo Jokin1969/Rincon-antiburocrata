@@ -48,6 +48,8 @@ const PERSONA_FIELDS = [
 export default function FacturaProforma() {
   const [form, setForm] = useState(DEFAULTS)
   const [loadingFmt, setLoadingFmt] = useState(null)
+  const [printing, setPrinting]     = useState(false)
+  const [printOk, setPrintOk]       = useState(false)
   const [error, setError] = useState(null)
   const [showRepo, setShowRepo] = useState(false)
   const [repoSearch, setRepoSearch] = useState('')
@@ -321,6 +323,33 @@ export default function FacturaProforma() {
       setError(err.message)
     } finally {
       setLoadingFmt(null)
+    }
+  }
+
+  async function handlePrint() {
+    setPrinting(true)
+    setPrintOk(false)
+    setError(null)
+    try {
+      const payload = {
+        ...form,
+        shipperEsCIC,
+        logoBase64: form.incluirLogo && logoData ? logoData.base64 : null,
+        logoWidth:  logoData?.width,
+        logoHeight: logoData?.height,
+      }
+      const res = await fetch('/api/imprimir', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ tipo: 'factura-proforma', ...payload }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
+      setPrintOk(true)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setPrinting(false)
     }
   }
 
@@ -716,11 +745,15 @@ export default function FacturaProforma() {
           <button type="button" className="btn btn-ghost" disabled={!form.numero.trim()} onClick={handleSave}>
             Guardar factura
           </button>
-          <button type="button" className={styles.emailBtn} disabled={!isValid || busy || sendingEmail} onClick={handleSendEmail}>
+          <button type="button" className={styles.emailBtn} disabled={!isValid || busy || sendingEmail || printing} onClick={handleSendEmail}>
             {sendingEmail ? 'Enviando…' : '✉ Enviar PDF por email'}
+          </button>
+          <button type="button" className="btn btn-ghost" disabled={!isValid || busy || printing} onClick={handlePrint}>
+            {printing ? 'Enviando…' : '🖨️ Imprimir'}
           </button>
           {savedMsg && <span className={styles.savedMsg}>✓ Guardado</span>}
           {emailMsg && <span className={emailMsg.ok ? styles.emailOk : styles.emailErr}>{emailMsg.text}</span>}
+          {printOk && <span className={styles.savedMsg}>✅ Enviado a imprimir</span>}
           <span className={styles.meta}>Fecha: {new Date().toLocaleDateString('es-ES')} · incluida automáticamente</span>
         </div>
       </form>

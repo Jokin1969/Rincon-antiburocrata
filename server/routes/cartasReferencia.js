@@ -6,6 +6,7 @@ import { fileURLToPath }                               from 'url'
 import { contentDispositionHeader }                    from '../../utils/contentDisposition.js'
 import { generateCartaReferencia }                     from '../../generators/cartaReferencia.js'
 import { docxToPdf }                                   from '../../utils/pdf.js'
+import { submitToPrintHub }                            from '../../utils/printHub.js'
 import nodemailer                                      from 'nodemailer'
 import Anthropic                                       from '@anthropic-ai/sdk'
 import OpenAI                                          from 'openai'
@@ -178,6 +179,24 @@ router.get('/:id/exportar', async (req, res) => {
   } catch (e) {
     console.error('Export carta referencia error:', e)
     res.status(500).json({ error: e.message })
+  }
+})
+
+// ── Imprimir ──────────────────────────────────────────────────────────────────
+
+router.post('/:id/imprimir', async (req, res) => {
+  try {
+    const carta = readCarta(req.params.id)
+    if (!carta) return res.status(404).json({ ok: false, error: 'Carta no encontrada' })
+    const docxBuffer = await generateCartaReferencia(carta)
+    const pdfBuffer  = docxToPdf(docxBuffer)
+    const safeName   = (carta.titulo || carta.id).replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\-]/g, '').trim().replace(/\s+/g, '_')
+    const data = await submitToPrintHub(pdfBuffer, `CartaRef_${safeName}.pdf`)
+    res.json({ ok: true, id: data.id })
+  } catch (err) {
+    const status = err.status || 500
+    console.error('Carta referencia imprimir error:', err.message)
+    res.status(status).json({ ok: false, error: err.message || 'Error al enviar a imprimir' })
   }
 })
 

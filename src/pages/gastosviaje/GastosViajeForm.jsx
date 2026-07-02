@@ -1172,6 +1172,8 @@ export default function GastosViajeForm() {
   const [saved, setSaved]       = useState(false)
   const [error, setError]       = useState(null)
   const [generating, setGenerating] = useState(null)
+  const [printing, setPrinting]     = useState(false)
+  const [printOk, setPrintOk]       = useState(false)
   const [sending, setSending]       = useState(false)
   const [cecoManual, setCecoManual] = useState(false)
   const logoRef = useRef()
@@ -1355,6 +1357,27 @@ export default function GastosViajeForm() {
       setError(err.message)
     } finally {
       setGenerating(null)
+    }
+  }
+
+  // ── Enviar a impresora física ───────────────────────────────────────────────
+  async function handlePrint() {
+    if (!viajeId) {
+      alert('Guarda el viaje primero antes de imprimir.')
+      return
+    }
+    setPrinting(true)
+    setPrintOk(false)
+    setError(null)
+    try {
+      const res = await fetch(`/api/gastos-viaje/${viajeId}/imprimir`, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
+      setPrintOk(true)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setPrinting(false)
     }
   }
 
@@ -1654,9 +1677,14 @@ export default function GastosViajeForm() {
           {generating === 'docx' ? 'Generando…' : '⬇ Informe .docx'}
         </button>
         <button className="btn btn-ghost" onClick={() => handleGenerate('pdf')}
-          disabled={!!generating || !viajeId}>
+          disabled={!!generating || !viajeId || printing}>
           {generating === 'pdf' ? 'Generando…' : '⬇ Informe PDF'}
         </button>
+        <button className="btn btn-ghost" onClick={handlePrint}
+          disabled={!!generating || !viajeId || printing}>
+          {printing ? 'Enviando…' : '🖨️ Imprimir'}
+        </button>
+        {printOk && <span className={styles.saveHint}>✅ Enviado a imprimir</span>}
         <button className={styles.btnEmail} onClick={handleSendEmail}
           disabled={sending || !viajeId}>
           {sending ? 'Enviando…' : '📧 Enviar por email'}
