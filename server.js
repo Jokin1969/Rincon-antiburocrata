@@ -33,6 +33,7 @@ import nodemailer                          from 'nodemailer'
 import { contentDispositionHeader }        from './utils/contentDisposition.js'
 import { initUsers }                       from './server/auth/users.js'
 import { getSession }                      from './server/auth/session.js'
+import { submitToPrintHub }               from './utils/printHub.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -512,6 +513,44 @@ app.post('/api/aduanas/cert-no-peligrosidad/enviar-email', async (req, res) => {
   } catch (err) {
     console.error('CertNoPeligrosidad enviar-email error:', err)
     res.status(500).json({ error: err.message || 'Error al enviar el email.' })
+  }
+})
+
+// ── Hub de impresión física ──────────────────────────────────────────────────
+
+app.post('/api/imprimir', async (req, res) => {
+  const { tipo, ...body } = req.body
+
+  function saf(s, max = 40) { return (s || '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, max) }
+
+  const LABEL = { cicbiogune: 'CIC_bioGUNE', atlas: 'ATLAS', feep: 'FEEP' }
+
+  const DISPATCH = {
+    'end-user-statement':       () => [generateEndUserStatement,       `EndUserStatement_${saf(body.projectCode || body.model)}_${body.date || ''}`],
+    'moh-questions':            () => [generateMohQuestions,           `MOH_questions_${saf(body.projectCode)}`],
+    'adaptar-carta':            () => [generateAdaptarCarta,           `Carta_${LABEL[body.template] || body.template || 'carta'}_${(body.date || '').replace(/[^0-9-]/g, '') || 'sin_fecha'}`],
+    'certificado-exclusividad': () => [generateCertificadoExclusividad,`CertExclusividad_${saf(body.expediente || body.descripcion)}_${body.date || ''}`],
+    'contrato-menor':           () => [generateContratoMenor,          `Contrato_Menor_#${saf(body.codigo)}`],
+    'documento-1403':           () => [generateDocumento1403,          `Doc1403_${saf(body.empresaOrigen, 20)}`],
+    'declaracion-exenta':       () => [generateDeclaracionExenta,      `DeclaracionExenta_${saf(body.firmante, 30)}`],
+    'pqp-import':               () => [generatePqpImport,              `PQP_${saf(body.proveedor, 30)}`],
+    'cert-no-peligrosidad':     () => [generateCertNoPeligrosidad,     saf(body.numero || 'CertNoPeligrosidad', 30)],
+    'factura-proforma':         () => [generateFacturaProforma,        `Proforma_${saf(body.numero, 20)}_${saf(body.shipper?.organizacion || body.shipper?.nombre, 20)}`],
+  }
+
+  const handler = DISPATCH[tipo]
+  if (!handler) return res.status(400).json({ ok: false, error: `Tipo desconocido: ${tipo}` })
+
+  try {
+    const [gen, base] = handler()
+    const docxBuffer  = await gen(body)
+    const pdfBuffer   = docxToPdf(docxBuffer)
+    const data        = await submitToPrintHub(pdfBuffer, `${base}.pdf`)
+    res.json({ ok: true, id: data.id })
+  } catch (err) {
+    const status = err.status || 500
+    console.error('[/api/imprimir]', tipo, err.message)
+    res.status(status).json({ ok: false, error: err.message || 'Error al enviar a imprimir' })
   }
 })
 
@@ -1198,6 +1237,59 @@ app.post('/api/gastos-viaje/:id/enviar-email', async (req, res) => {
   } catch (err) {
     console.error('Gastos viaje enviar-email error:', err)
     res.status(500).json({ error: err.message || 'Error al enviar el email.' })
+  }
+})
+
+// ── Gastos viaje: enviar informe PDF a la impresora física vía hub ────────────
+app.post('/api/gastos-viaje/:id/imprimir', async (req, res) => {
+  const DATA_DIR_GV   = process.env.DATA_DIR ?? join(__dirname, 'data')
+  const viajesDir     = join(DATA_DIR_GV, 'gastosviaje')
+  const viajeJsonPath = join(viajesDir, `viaje_${req.params.id}.json`)
+  if (!existsSync(viajeJsonPath)) return res.status(404).json({ ok: false, error: 'Viaje no encontrado.' })
+
+  const viaje = JSON.parse(readFileSync(viajeJsonPath, 'utf-8'))
+  const safe  = (viaje.nombre || 'GastosViaje').replace(/[^a-zA-Z0-9_\-áéíóúÁÉÍÓÚüÜñÑ]/g, '_').slice(0, 50)
+  const base  = `GastosViaje_${safe}_${viaje.fechaInicio || 'sin_fecha'}`
+
+  try {
+    const docxBuffer = await generateGastosViaje(viaje)
+    const globalAdj  = viaje.adjuntos || []
+    const tr         = viaje.transporte || {}
+    const itemAdj    = [
+      ...(tr.autopista || []), ...(tr.coche || []), ...(tr.avion || []),
+      ...(tr.tren || []),      ...(tr.autobus || []), ...(tr.parking || []),
+      ...(tr.taxi || []),      ...(tr.otros || []),
+      ...(viaje.manutencion || []), ...(viaje.hotel || []), ...(viaje.otros || []),
+    ].filter(it => it.adjunto?.filename).map(it => it.adjunto)
+
+    const allAdj = [...itemAdj, ...globalAdj]
+    let pdfBuffer
+
+    if (allAdj.length === 0) {
+      pdfBuffer = docxToPdf(docxBuffer)
+    } else {
+      const adjuntosDir = join(viajesDir, 'adjuntos', req.params.id)
+      const parts       = [docxToPdf(docxBuffer)]
+      for (const meta of allAdj) {
+        const filePath = join(adjuntosDir, meta.filename)
+        if (!existsSync(filePath)) continue
+        try {
+          const buf    = readFileSync(filePath)
+          const pdfBuf = await attachmentToPdf(buf, meta.mime)
+          parts.push(pdfBuf)
+        } catch (e) {
+          console.error(`Adjunto omitido en impresión (${meta.originalName}):`, e.message)
+        }
+      }
+      pdfBuffer = await mergePdfs(parts)
+    }
+
+    const data = await submitToPrintHub(pdfBuffer, `${base}.pdf`)
+    res.json({ ok: true, id: data.id })
+  } catch (err) {
+    const status = err.status || 500
+    console.error('Gastos viaje imprimir error:', err.message)
+    res.status(status).json({ ok: false, error: err.message || 'Error al enviar a imprimir' })
   }
 })
 

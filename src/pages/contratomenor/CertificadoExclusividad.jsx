@@ -36,6 +36,8 @@ const DEFAULTS = {
 export default function CertificadoExclusividad() {
   const [form, setForm]             = useState(DEFAULTS)
   const [loadingFmt, setLoadingFmt] = useState(null)
+  const [printing, setPrinting]     = useState(false)
+  const [printOk, setPrintOk]       = useState(false)
   const [error, setError]           = useState(null)
   // 'checking' | 'found' | 'missing'
   const [pdfStatus, setPdfStatus]   = useState('checking')
@@ -80,6 +82,26 @@ export default function CertificadoExclusividad() {
       setError(err.message)
     } finally {
       setLoadingFmt(null)
+    }
+  }
+
+  async function handlePrint() {
+    setPrinting(true)
+    setPrintOk(false)
+    setError(null)
+    try {
+      const res = await fetch('/api/imprimir', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ tipo: 'certificado-exclusividad', ...form }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
+      setPrintOk(true)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setPrinting(false)
     }
   }
 
@@ -270,11 +292,20 @@ export default function CertificadoExclusividad() {
             <button
               type="button"
               className="btn btn-ghost"
-              disabled={!isValid || busy}
+              disabled={!isValid || busy || printing}
               onClick={() => handleDownload('pdf')}
             >
               {loadingFmt === 'pdf' ? 'Generando…' : '⬇ PDF'}
             </button>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              disabled={!isValid || busy || printing}
+              onClick={handlePrint}
+            >
+              {printing ? 'Enviando…' : '🖨️ Imprimir'}
+            </button>
+            {printOk && <span className={styles.meta}>✅ Enviado a imprimir</span>}
             <span className={styles.meta}>
               Logo · Firma · Texto legal LCSP — todo incluido
             </span>

@@ -44,6 +44,8 @@ export default function CartaReferenciaForm() {
 
   const [genPdf, setGenPdf]       = useState(false)
   const [genDocx, setGenDocx]     = useState(false)
+  const [printing, setPrinting]   = useState(false)
+  const [printOk, setPrintOk]     = useState(false)
   const [sendingEmail, setSendingEmail] = useState(false)
   const [emailMsg, setEmailMsg]   = useState(null)
 
@@ -118,6 +120,22 @@ export default function CartaReferenciaForm() {
     } finally {
       setGenPdf(false)
       setGenDocx(false)
+    }
+  }
+
+  async function handlePrint() {
+    if (!id) { alert('Guarda la carta primero.'); return }
+    setPrinting(true)
+    setPrintOk(false)
+    try {
+      const res = await fetch(`/api/cartas-referencia/${id}/imprimir`, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
+      setPrintOk(true)
+    } catch (err) {
+      alert('Error al imprimir: ' + err.message)
+    } finally {
+      setPrinting(false)
     }
   }
 
@@ -491,17 +509,25 @@ export default function CartaReferenciaForm() {
           <button
             className="btn btn-primary"
             onClick={() => handleDescargar('docx')}
-            disabled={genDocx || !id}
+            disabled={genDocx || genPdf || printing || !id}
           >
             {genDocx ? 'Generando…' : '⬇ Descargar .docx'}
           </button>
           <button
             className="btn"
             onClick={() => handleDescargar('pdf')}
-            disabled={genPdf || !id}
+            disabled={genPdf || genDocx || printing || !id}
           >
             {genPdf ? 'Generando…' : '⬇ Descargar .pdf'}
           </button>
+          <button
+            className="btn btn-ghost"
+            onClick={handlePrint}
+            disabled={printing || genPdf || genDocx || !id}
+          >
+            {printing ? 'Enviando…' : '🖨️ Imprimir'}
+          </button>
+          {printOk && <span className={styles.savedMsg}>✅ Enviado a imprimir</span>}
         </div>
         {!id && <p className={styles.hint}>Guarda la carta primero para poder descargarla.</p>}
       </section>

@@ -39,6 +39,8 @@ const PERSONA_FIELDS = [
 export default function PqpImport() {
   const [form, setForm] = useState(DEFAULTS)
   const [loadingFmt, setLoadingFmt] = useState(null)
+  const [printing, setPrinting]     = useState(false)
+  const [printOk, setPrintOk]       = useState(false)
   const [error, setError] = useState(null)
   const [showRepo, setShowRepo] = useState(false)
   const [repoSearch, setRepoSearch] = useState('')
@@ -198,6 +200,26 @@ export default function PqpImport() {
       setError(err.message)
     } finally {
       setLoadingFmt(null)
+    }
+  }
+
+  async function handlePrint() {
+    setPrinting(true)
+    setPrintOk(false)
+    setError(null)
+    try {
+      const res = await fetch('/api/imprimir', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ tipo: 'pqp-import', ...form }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
+      setPrintOk(true)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setPrinting(false)
     }
   }
 
@@ -413,13 +435,17 @@ export default function PqpImport() {
           <button type="button" className="btn btn-primary" disabled={!isValid || busy} onClick={() => handleDownload('docx')}>
             {loadingFmt === 'docx' ? 'Generando…' : '⬇ .docx'}
           </button>
-          <button type="button" className="btn btn-ghost" disabled={!isValid || busy} onClick={() => handleDownload('pdf')}>
+          <button type="button" className="btn btn-ghost" disabled={!isValid || busy || printing} onClick={() => handleDownload('pdf')}>
             {loadingFmt === 'pdf' ? 'Generando…' : '⬇ PDF'}
+          </button>
+          <button type="button" className="btn btn-ghost" disabled={!isValid || busy || printing} onClick={handlePrint}>
+            {printing ? 'Enviando…' : '🖨️ Imprimir'}
           </button>
           <button type="button" className="btn btn-ghost" onClick={handleSave}>
             Guardar certificado
           </button>
           {savedMsg && <span className={styles.savedMsg}>✓ Guardado</span>}
+          {printOk && <span className={styles.savedMsg}>✅ Enviado a imprimir</span>}
           <span className={styles.meta}>Fecha: {new Date().toLocaleDateString('es-ES')} · incluida automáticamente</span>
         </div>
       </form>

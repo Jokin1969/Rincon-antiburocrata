@@ -28,6 +28,8 @@ const DEFAULTS = {
 export default function DeclaracionExenta() {
   const [form,          setForm]          = useState(DEFAULTS)
   const [loadingFmt,    setLoadingFmt]    = useState(null)
+  const [printing,      setPrinting]      = useState(false)
+  const [printOk,       setPrintOk]       = useState(false)
   const [error,         setError]         = useState(null)
 
   // AI naturaleza
@@ -176,6 +178,27 @@ export default function DeclaracionExenta() {
       setError(err.message)
     } finally {
       setLoadingFmt(null)
+    }
+  }
+
+  async function handlePrint() {
+    if (!form.firmante?.trim()) { setError('El campo "Firmante" es obligatorio.'); return }
+    setPrinting(true)
+    setPrintOk(false)
+    setError(null)
+    try {
+      const res = await fetch('/api/imprimir', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ tipo: 'declaracion-exenta', ...form }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
+      setPrintOk(true)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setPrinting(false)
     }
   }
 
@@ -500,14 +523,20 @@ export default function DeclaracionExenta() {
         <div className={styles.actions}>
           <button type="button" className="btn btn-primary"
             onClick={() => handleDownload('docx')}
-            disabled={!!loadingFmt}>
+            disabled={!!loadingFmt || printing}>
             {loadingFmt === 'docx' ? 'Generando…' : '⬇ Descargar .docx'}
           </button>
           <button type="button" className="btn btn-ghost"
             onClick={() => handleDownload('pdf')}
-            disabled={!!loadingFmt}>
+            disabled={!!loadingFmt || printing}>
             {loadingFmt === 'pdf' ? 'Generando…' : '⬇ Descargar PDF'}
           </button>
+          <button type="button" className="btn btn-ghost"
+            onClick={handlePrint}
+            disabled={!!loadingFmt || printing}>
+            {printing ? 'Enviando…' : '🖨️ Imprimir'}
+          </button>
+          {printOk && <span className={dec.saveOk}>✅ Enviado a imprimir</span>}
         </div>
       </form>
     </div>

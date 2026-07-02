@@ -84,6 +84,8 @@ function buildQ4(selected) {
 export default function MOHQuestions() {
   const [form, setForm] = useState(buildDefaults)
   const [loadingFmt, setLoadingFmt] = useState(null)
+  const [printing, setPrinting]     = useState(false)
+  const [printOk, setPrintOk]       = useState(false)
   const [error, setError] = useState(null)
   const [showRepo, setShowRepo] = useState(false)
   const [repoSearch, setRepoSearch] = useState('')
@@ -146,6 +148,26 @@ export default function MOHQuestions() {
       setError(err.message)
     } finally {
       setLoadingFmt(null)
+    }
+  }
+
+  async function handlePrint() {
+    setPrinting(true)
+    setPrintOk(false)
+    setError(null)
+    try {
+      const res = await fetch('/api/imprimir', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ tipo: 'moh-questions', ...form }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
+      setPrintOk(true)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setPrinting(false)
     }
   }
 
@@ -304,10 +326,18 @@ export default function MOHQuestions() {
           <button
             type="button"
             className="btn btn-ghost"
-            disabled={!isValid || busy}
+            disabled={!isValid || busy || printing}
             onClick={() => handleDownload('pdf')}
           >
             {loadingFmt === 'pdf' ? 'Generando…' : '⬇ PDF'}
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            disabled={!isValid || busy || printing}
+            onClick={handlePrint}
+          >
+            {printing ? 'Enviando…' : '🖨️ Imprimir'}
           </button>
           <button
             type="button"
@@ -318,6 +348,7 @@ export default function MOHQuestions() {
             Guardar cuestionario
           </button>
           {savedMsg && <span className={styles.savedMsg}>✓ Guardado</span>}
+          {printOk && <span className={styles.savedMsg}>✅ Enviado a imprimir</span>}
         </div>
 
       </form>
