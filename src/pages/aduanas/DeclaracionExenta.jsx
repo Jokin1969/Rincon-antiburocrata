@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import PageHeader from '../../components/PageHeader'
+import PrinterSelect from '../../components/PrinterSelect'
 import styles from './FacturaProforma.module.css'
 import dec from './DeclaracionExenta.module.css'
 import { useDeclaracionExentaStore } from '../../hooks/useAduanasStore'
@@ -187,10 +188,11 @@ export default function DeclaracionExenta() {
     setPrintOk(false)
     setError(null)
     try {
+      const printer = localStorage.getItem('printHub_printer') || undefined
       const res = await fetch('/api/imprimir', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ tipo: 'declaracion-exenta', ...form }),
+        body:    JSON.stringify({ tipo: 'declaracion-exenta', ...form, printer }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
@@ -531,6 +533,7 @@ export default function DeclaracionExenta() {
             disabled={!!loadingFmt || printing}>
             {loadingFmt === 'pdf' ? 'Generando…' : '⬇ Descargar PDF'}
           </button>
+          <PrinterSelect />
           <button type="button" className="btn btn-ghost"
             onClick={handlePrint}
             disabled={!!loadingFmt || printing}>

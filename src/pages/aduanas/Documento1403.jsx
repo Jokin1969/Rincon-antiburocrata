@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import PageHeader from '../../components/PageHeader'
+import PrinterSelect from '../../components/PrinterSelect'
 import { useDocumento1403Store } from '../../hooks/useAduanasStore'
 import { svgUrlToPng } from '../../utils/imageUtils'
 import styles from './FacturaProforma.module.css'
@@ -252,10 +253,11 @@ export default function Documento1403() {
     setError(null)
     try {
       const payload = { ...form, shipperEsCIC, logoBase64: form.incluirLogo && logoData ? logoData.base64 : null, logoWidth: logoData?.width, logoHeight: logoData?.height }
+      const printer = localStorage.getItem('printHub_printer') || undefined
       const res = await fetch('/api/imprimir', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ tipo: 'documento-1403', ...payload }),
+        body:    JSON.stringify({ tipo: 'documento-1403', ...payload, printer }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
@@ -629,6 +631,7 @@ export default function Documento1403() {
           <button type="button" className="btn btn-ghost" disabled={!isValid || busy || printing} onClick={() => handleDownload('pdf')}>
             {loadingFmt === 'pdf' ? 'Generando…' : '⬇ PDF'}
           </button>
+          <PrinterSelect />
           <button type="button" className="btn btn-ghost" disabled={!isValid || busy || printing} onClick={handlePrint}>
             {printing ? 'Enviando…' : '🖨️ Imprimir'}
           </button>

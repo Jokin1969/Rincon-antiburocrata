@@ -142,9 +142,27 @@ export async function generateEndUserStatement(data) {
 
   const inst = INSTITUTIONS[institution] ?? INSTITUTIONS.cicbiogune
 
-  const modelCount = model.split(',').filter(s => s.trim()).length
-  const unit = modelCount > 1 ? 'vials' : 'vial'
-  const quantityDisplay = /vials?$/i.test(quantity.trim()) ? quantity : `${quantity} ${unit}`
+  // Split comma-separated fields into arrays, falling back to single-item array
+  function splitCSV(str) {
+    return (str || '').split(',').map(s => s.trim()).filter(Boolean)
+  }
+
+  const models     = splitCSV(model)
+  const hsCodes    = splitCSV(hsCode)
+  const quantities = splitCSV(quantity)
+
+  const itemCount  = Math.max(models.length, hsCodes.length, 1)
+  const multiItem  = itemCount > 1
+
+  // Per-item value getters: if fewer values than items, repeat the last one
+  function item(arr, i, fallback = '') {
+    return arr[i] ?? arr[arr.length - 1] ?? fallback
+  }
+
+  function fmtQty(raw) {
+    const s = raw.trim()
+    return /vials?$/i.test(s) ? s : `${s} ${multiItem ? 'vials' : 'vial'}`
+  }
 
   // Format date: "25 March 2026"
   const formattedDate = new Date(date + 'T12:00:00').toLocaleDateString('en-GB', {
@@ -248,10 +266,13 @@ export async function generateEndUserStatement(data) {
         sectionHeaderRow('Product details'),
         dataRow('Product Description:', productDescription),
         dataRow('Strategic Goods Product Code:', strategicCode),
-        dataRow('HS Code:', hsCode),
-        dataRow('Brand:', 'GenScript'),
-        dataRow('Model:', model),
-        dataRow('Quantity:', quantityDisplay),
+        // Repeat HS Code / Brand / Model / Quantity once per comma-separated item
+        ...Array.from({ length: itemCount }, (_, i) => [
+          dataRow('HS Code:', item(hsCodes, i, hsCode)),
+          dataRow('Brand:', 'GenScript'),
+          dataRow('Model:', item(models, i, model)),
+          dataRow('Quantity:', fmtQty(item(quantities, i, quantity))),
+        ]).flat(),
       ],
     }),
 

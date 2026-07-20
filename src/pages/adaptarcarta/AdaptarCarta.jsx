@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import PageHeader from '../../components/PageHeader'
+import PrinterSelect from '../../components/PrinterSelect'
 import styles from './AdaptarCarta.module.css'
 
 const TODAY = new Date().toISOString().split('T')[0]
@@ -72,10 +73,11 @@ export default function AdaptarCarta() {
     setPrintOk(false)
     setError(null)
     try {
+      const printer = localStorage.getItem('printHub_printer') || undefined
       const res = await fetch('/api/imprimir', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ tipo: 'adaptar-carta', ...form }),
+        body:    JSON.stringify({ tipo: 'adaptar-carta', ...form, printer }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
@@ -341,6 +343,7 @@ export default function AdaptarCarta() {
           >
             {loadingFmt === 'pdf' ? 'Generando…' : '⬇ Descargar .pdf'}
           </button>
+          <PrinterSelect />
           <button
             type="button"
             className="btn btn-ghost"
