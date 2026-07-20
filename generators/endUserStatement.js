@@ -259,22 +259,22 @@ export async function generateEndUserStatement(data) {
     p('to export'),
     emptyLine(),
 
-    // ── Product details ───────────────────────────────────────────────────
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      rows: [
-        sectionHeaderRow('Product details'),
-        dataRow('Product Description:', productDescription),
-        dataRow('Strategic Goods Product Code:', strategicCode),
-        // Repeat HS Code / Brand / Model / Quantity once per comma-separated item
-        ...Array.from({ length: itemCount }, (_, i) => [
+    // ── Product details — one full table per comma-separated item ────────────
+    ...Array.from({ length: itemCount }, (_, i) => [
+      i > 0 ? emptyLine() : null,
+      new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: [
+          sectionHeaderRow('Product details'),
+          dataRow('Product Description:', productDescription),
+          dataRow('Strategic Goods Product Code:', strategicCode),
           dataRow('HS Code:', item(hsCodes, i, hsCode)),
           dataRow('Brand:', 'GenScript'),
           dataRow('Model:', item(models, i, model)),
           dataRow('Quantity:', fmtQty(item(quantities, i, quantity))),
-        ]).flat(),
-      ],
-    }),
+        ],
+      }),
+    ]).flat().filter(Boolean),
 
     emptyLine(),
     p('which is intended for'),
