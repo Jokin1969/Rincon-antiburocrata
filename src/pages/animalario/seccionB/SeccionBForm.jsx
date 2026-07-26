@@ -68,11 +68,13 @@ const EMPTY_FORM = {
   analgesia_anestesia: {
     analgesia: [],
     anestesia: [],
-    observaciones: '',
+    observaciones_analgesia: '',
+    observaciones_anestesia: '',
   },
   otras_sustancias: {
     hay_riesgo: false,
     sustancias: [],
+    observaciones: '',
   },
   parametros: [],
   muestras_antemortem: [],
@@ -789,9 +791,19 @@ export default function SeccionBForm() {
               <div className="form-group" style={{ marginTop: '0.75rem' }}>
                 <label>Observaciones</label>
                 <AutoExpandTextarea
-                  value={form.analgesia_anestesia?.observaciones ?? ''}
-                  onChange={e => update('analgesia_anestesia.observaciones', e.target.value)}
+                  value={form.analgesia_anestesia?.observaciones_analgesia ?? ''}
+                  onChange={e => update('analgesia_anestesia.observaciones_analgesia', e.target.value)}
                   placeholder="Observaciones sobre la analgesia…"
+                />
+              </div>
+            )}
+            {label === 'Anestesia' && (
+              <div className="form-group" style={{ marginTop: '0.75rem' }}>
+                <label>Observaciones</label>
+                <AutoExpandTextarea
+                  value={form.analgesia_anestesia?.observaciones_anestesia ?? ''}
+                  onChange={e => update('analgesia_anestesia.observaciones_anestesia', e.target.value)}
+                  placeholder="Observaciones sobre la anestesia…"
                 />
               </div>
             )}
@@ -821,6 +833,14 @@ export default function SeccionBForm() {
             onAdd={addSustancia}
             addLabel="＋ Añadir sustancia"
           />
+          <div className="form-group" style={{ marginTop: '0.75rem' }}>
+            <label>Observaciones</label>
+            <AutoExpandTextarea
+              value={form.otras_sustancias?.observaciones ?? ''}
+              onChange={e => update('otras_sustancias.observaciones', e.target.value)}
+              placeholder="Observaciones sobre la administración de otras sustancias…"
+            />
+          </div>
         </div>
         <div className="form-group">
           <label>¿Alguno de los productos supone un riesgo para la salud o el medio ambiente (citotóxico, biológico, etc.)?</label>
