@@ -878,11 +878,20 @@ async function genSeccionB(procId, numeroOverride) {
         ? (ana.anestesia).map(r => tr(...[r.frecuencia, r.grupo_animales, r.producto_concentracion, r.dosis_mg_kg, r.volumen_ml_kg, r.via].map((v, i) => tct([par(dash(v))], { w: w(ANA_COLS_W[i]) }))))
         : [tr(...ANA_COLS_W.map(cw => tct([par('')], { w: w(cw) })))]),
     ], ANA_COLS_W),
+    ...(ana.observaciones_analgesia?.trim()
+      ? [tbl([kvRowB('Observaciones (analgesia):', ana.observaciones_analgesia)], [30, 70])]
+      : []),
+    ...(ana.observaciones_anestesia?.trim()
+      ? [tbl([kvRowB('Observaciones (anestesia):', ana.observaciones_anestesia)], [30, 70])]
+      : []),
     emptyLine(),
 
     // ── B.7 ADMINISTRACIÓN DE OTRAS SUSTANCIAS ────────────────────────────────
     secHead('B.7 ADMINISTRACIÓN DE OTRAS SUSTANCIAS'),
     anaTable(os.sustancias),
+    ...(os.observaciones?.trim()
+      ? [tbl([kvRowB('Observaciones:', os.observaciones)], [30, 70])]
+      : []),
     emptyLine(),
     par([txB('¿Alguno de los productos supone un riesgo para la salud o el medio ambiente (citotóxico, biológico, etc.)?')]),
     tbl([tr(
@@ -904,6 +913,9 @@ async function genSeccionB(procId, numeroOverride) {
         ...dataRows.map(r => tr(...B8_W.map((cw, i) => tct([par(dash(r[i]))], { w: w(cw) })))),
       ], B8_W)
     })(),
+    ...(proc.parametros_observaciones?.trim()
+      ? [tbl([kvRowB('Observaciones:', proc.parametros_observaciones)], [30, 70])]
+      : []),
     emptyLine(),
 
     // ── B.9 MUESTRAS ANTEMORTEM ───────────────────────────────────────────────
@@ -935,6 +947,9 @@ async function genSeccionB(procId, numeroOverride) {
         kvRowB('Justificar', dash(fin.justificacion_eutanasia)),
       ] : []),
     ]),
+    ...(fin.observaciones?.trim()
+      ? [tbl([kvRowB('Observaciones:', fin.observaciones)], [30, 70])]
+      : []),
     emptyLine(),
 
     // ── B.11 REUTILIZACIÓN DE ANIMALES ────────────────────────────────────────

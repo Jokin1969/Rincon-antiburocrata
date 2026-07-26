@@ -68,17 +68,22 @@ const EMPTY_FORM = {
   analgesia_anestesia: {
     analgesia: [],
     anestesia: [],
+    observaciones_analgesia: '',
+    observaciones_anestesia: '',
   },
   otras_sustancias: {
     hay_riesgo: false,
     sustancias: [],
+    observaciones: '',
   },
   parametros: [],
+  parametros_observaciones: '',
   muestras_antemortem: [],
   finalizacion: {
     criterios_humanos: '',
     metodos_eutanasia: [],
     justificacion_eutanasia: '',
+    observaciones: '',
   },
   reutilizacion: {
     destino: '',
@@ -784,6 +789,26 @@ export default function SeccionBForm() {
               onAdd={add}
               addLabel={`＋ Añadir ${label.toLowerCase()}`}
             />
+            {label === 'Analgesia' && (
+              <div className="form-group" style={{ marginTop: '0.75rem' }}>
+                <label>Observaciones</label>
+                <AutoExpandTextarea
+                  value={form.analgesia_anestesia?.observaciones_analgesia ?? ''}
+                  onChange={e => update('analgesia_anestesia.observaciones_analgesia', e.target.value)}
+                  placeholder="Observaciones sobre la analgesia…"
+                />
+              </div>
+            )}
+            {label === 'Anestesia' && (
+              <div className="form-group" style={{ marginTop: '0.75rem' }}>
+                <label>Observaciones</label>
+                <AutoExpandTextarea
+                  value={form.analgesia_anestesia?.observaciones_anestesia ?? ''}
+                  onChange={e => update('analgesia_anestesia.observaciones_anestesia', e.target.value)}
+                  placeholder="Observaciones sobre la anestesia…"
+                />
+              </div>
+            )}
           </div>
         ))}
       </CollapsibleBlock>
@@ -810,6 +835,14 @@ export default function SeccionBForm() {
             onAdd={addSustancia}
             addLabel="＋ Añadir sustancia"
           />
+          <div className="form-group" style={{ marginTop: '0.75rem' }}>
+            <label>Observaciones</label>
+            <AutoExpandTextarea
+              value={form.otras_sustancias?.observaciones ?? ''}
+              onChange={e => update('otras_sustancias.observaciones', e.target.value)}
+              placeholder="Observaciones sobre la administración de otras sustancias…"
+            />
+          </div>
         </div>
         <div className="form-group">
           <label>¿Alguno de los productos supone un riesgo para la salud o el medio ambiente (citotóxico, biológico, etc.)?</label>
@@ -860,6 +893,14 @@ export default function SeccionBForm() {
         <p className={s.helpText}>
           Ejemplo: peso corporal · balanza · semanal · g · 10/grupo
         </p>
+        <div className="form-group" style={{ marginTop: '0.75rem' }}>
+          <label>Observaciones</label>
+          <AutoExpandTextarea
+            value={form.parametros_observaciones ?? ''}
+            onChange={e => update('parametros_observaciones', e.target.value)}
+            placeholder="Observaciones sobre los parámetros medidos…"
+          />
+        </div>
       </CollapsibleBlock>
 
       {/* ── 9. Muestras ante mortem ────────────────────────────── */}
@@ -917,6 +958,14 @@ export default function SeccionBForm() {
             />
           </div>
         )}
+        <div className="form-group">
+          <label>Observaciones</label>
+          <AutoExpandTextarea
+            value={form.finalizacion?.observaciones ?? ''}
+            onChange={e => update('finalizacion.observaciones', e.target.value)}
+            placeholder="Observaciones sobre la finalización y eutanasia…"
+          />
+        </div>
       </CollapsibleBlock>
 
       {/* ── 11. Reutilización ──────────────────────────────────── */}
