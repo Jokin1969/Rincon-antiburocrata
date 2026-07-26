@@ -77,6 +77,7 @@ const EMPTY_FORM = {
     observaciones: '',
   },
   parametros: [],
+  parametros_observaciones: '',
   muestras_antemortem: [],
   finalizacion: {
     criterios_humanos: '',
@@ -891,6 +892,14 @@ export default function SeccionBForm() {
         <p className={s.helpText}>
           Ejemplo: peso corporal · balanza · semanal · g · 10/grupo
         </p>
+        <div className="form-group" style={{ marginTop: '0.75rem' }}>
+          <label>Observaciones</label>
+          <AutoExpandTextarea
+            value={form.parametros_observaciones ?? ''}
+            onChange={e => update('parametros_observaciones', e.target.value)}
+            placeholder="Observaciones sobre los parámetros medidos…"
+          />
+        </div>
       </CollapsibleBlock>
 
       {/* ── 9. Muestras ante mortem ────────────────────────────── */}

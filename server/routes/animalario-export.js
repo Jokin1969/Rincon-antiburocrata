@@ -913,6 +913,9 @@ async function genSeccionB(procId, numeroOverride) {
         ...dataRows.map(r => tr(...B8_W.map((cw, i) => tct([par(dash(r[i]))], { w: w(cw) })))),
       ], B8_W)
     })(),
+    ...(proc.parametros_observaciones?.trim()
+      ? [tbl([kvRowB('Observaciones:', proc.parametros_observaciones)], [30, 70])]
+      : []),
     emptyLine(),
 
     // ── B.9 MUESTRAS ANTEMORTEM ───────────────────────────────────────────────
