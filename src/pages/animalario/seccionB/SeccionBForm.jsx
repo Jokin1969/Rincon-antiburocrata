@@ -83,6 +83,7 @@ const EMPTY_FORM = {
     criterios_humanos: '',
     metodos_eutanasia: [],
     justificacion_eutanasia: '',
+    observaciones: '',
   },
   reutilizacion: {
     destino: '',
@@ -957,6 +958,14 @@ export default function SeccionBForm() {
             />
           </div>
         )}
+        <div className="form-group">
+          <label>Observaciones</label>
+          <AutoExpandTextarea
+            value={form.finalizacion?.observaciones ?? ''}
+            onChange={e => update('finalizacion.observaciones', e.target.value)}
+            placeholder="Observaciones sobre la finalización y eutanasia…"
+          />
+        </div>
       </CollapsibleBlock>
 
       {/* ── 11. Reutilización ──────────────────────────────────── */}

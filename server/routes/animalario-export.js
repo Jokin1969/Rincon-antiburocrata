@@ -947,6 +947,9 @@ async function genSeccionB(procId, numeroOverride) {
         kvRowB('Justificar', dash(fin.justificacion_eutanasia)),
       ] : []),
     ]),
+    ...(fin.observaciones?.trim()
+      ? [tbl([kvRowB('Observaciones:', fin.observaciones)], [30, 70])]
+      : []),
     emptyLine(),
 
     // ── B.11 REUTILIZACIÓN DE ANIMALES ────────────────────────────────────────
