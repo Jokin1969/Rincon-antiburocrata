@@ -68,6 +68,7 @@ const EMPTY_FORM = {
   analgesia_anestesia: {
     analgesia: [],
     anestesia: [],
+    observaciones: '',
   },
   otras_sustancias: {
     hay_riesgo: false,
@@ -784,6 +785,16 @@ export default function SeccionBForm() {
               onAdd={add}
               addLabel={`＋ Añadir ${label.toLowerCase()}`}
             />
+            {label === 'Analgesia' && (
+              <div className="form-group" style={{ marginTop: '0.75rem' }}>
+                <label>Observaciones</label>
+                <AutoExpandTextarea
+                  value={form.analgesia_anestesia?.observaciones ?? ''}
+                  onChange={e => update('analgesia_anestesia.observaciones', e.target.value)}
+                  placeholder="Observaciones sobre la analgesia…"
+                />
+              </div>
+            )}
           </div>
         ))}
       </CollapsibleBlock>
