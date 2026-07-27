@@ -21,7 +21,13 @@ const EMPTY_QUIMICO = {
   nombre:                    '',
   identificacion_riesgo:     '',
   condiciones_manipulacion:  '',
-  numero_procedimiento:      '',
+  numero_procedimiento:      [],
+}
+
+function normProcs(v) {
+  if (Array.isArray(v)) return v
+  if (v && typeof v === 'string') return [v]
+  return []
 }
 
 const EMPTY_D = { agentes_biologicos: [], agentes_quimicos: [], observaciones_biologicos: '', firmante: '' }
@@ -341,16 +347,31 @@ export default function SeccionDForm() {
                   />
                 </div>
                 <div className={s.dynCell} style={{ flex: 2 }}>
-                  <select
-                    value={aq.numero_procedimiento}
-                    onChange={e => quimOps.upd(i, 'numero_procedimiento', e.target.value)}
-                    style={{ width: '100%' }}
-                  >
-                    <option value="">— Procedimiento</option>
-                    {procOpciones.map(o => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
+                  {procOpciones.length === 0
+                    ? <span style={{ fontSize: '0.75rem', color: 'var(--muted-light)' }}>—</span>
+                    : (
+                      <div className={s.procPills}>
+                        {procOpciones.map((o, idx) => {
+                          const sel = normProcs(aq.numero_procedimiento).includes(o.value)
+                          return (
+                            <button
+                              key={o.value}
+                              type="button"
+                              className={`${s.procPill}${sel ? ' ' + s.procPillActive : ''}`}
+                              title={o.label}
+                              onClick={() => {
+                                const cur = normProcs(aq.numero_procedimiento)
+                                quimOps.upd(i, 'numero_procedimiento',
+                                  sel ? cur.filter(x => x !== o.value) : [...cur, o.value])
+                              }}
+                            >
+                              {idx + 1}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )
+                  }
                 </div>
                 <button type="button" className={s.removeBtn} onClick={() => quimOps.remove(i)}>×</button>
               </div>

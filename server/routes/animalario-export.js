@@ -1348,6 +1348,12 @@ async function genSeccionD(proyectoId) {
     }
     return '—'
   }
+  const fmtProcsArr = v => {
+    if (!v) return ''
+    if (typeof v === 'string') return fmtProc(v)
+    if (Array.isArray(v)) return v.map(fmtProc).filter(Boolean).join(', ')
+    return ''
+  }
 
   const ctr = { align: AlignmentType.CENTER }
 
@@ -1384,7 +1390,7 @@ async function genSeccionD(proyectoId) {
         tct([par(aq.nombre ?? '')],                    { w: w(22) }),
         tct([par(aq.identificacion_riesgo ?? '')],     { w: w(26) }),
         tct([par(aq.condiciones_manipulacion ?? '')],  { w: w(30) }),
-        tct([par(fmtProc(aq.numero_procedimiento))],   { w: w(22) }),
+        tct([par(fmtProcsArr(aq.numero_procedimiento))],   { w: w(22) }),
       )),
     ], [22, 26, 30, 22])
   }
