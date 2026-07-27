@@ -1395,10 +1395,10 @@ async function genSeccionD(proyectoId) {
     const data = rows.length ? rows : [{ nombre: '', identificacion_riesgo: '', condiciones_manipulacion: '', numero_procedimiento: '' }]
     return tbl([
       tr(
-        lbc([par([txBsm('Nombre')],                              ctr)], { w: w(22) }),
-        lbc([par([txBsm('Identificación del riesgo')],           ctr)], { w: w(26) }),
-        lbc([par([txBsm('Condiciones especiales de manipulación')], ctr)], { w: w(30) }),
-        lbc([par([txBsm('Nº de procedimiento'), sup(3)],         ctr)], { w: w(22) }),
+        lbc([par([txBsm('Nombre')],                                        ctr)], { w: w(22) }),
+        lbc([par([txBsm('Identificación del riesgo'), sup(3)],             ctr)], { w: w(26) }),
+        lbc([par([txBsm('Condiciones especiales de manipulación')],        ctr)], { w: w(30) }),
+        lbc([par([txBsm('Nº de procedimiento'), sup(4)],                   ctr)], { w: w(22) }),
       ),
       ...data.map(aq => tr(
         tct([par(aq.nombre ?? '')],                    { w: w(22) }),
@@ -1441,7 +1441,8 @@ async function genSeccionD(proyectoId) {
   return addDocxFootnotes(rawBuf, [
     { id: 1, text: 'Especifique la zona del Animalario de CIC bioGUNE donde se va a llevar a cabo la manipulación' },
     { id: 2, text: 'Indique el número del procedimiento en el cual va a emplear el agente biológico' },
-    { id: 3, text: 'Indique el número del procedimiento en el cual se va a emplear el agente químico' },
+    { id: 3, text: 'Indique los riesgos de acuerdo con la ficha de datos de seguridad' },
+    { id: 4, text: 'Indique el número del procedimiento en el cual se va a emplear el agente químico' },
   ])
 }
 
