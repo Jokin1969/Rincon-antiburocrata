@@ -24,7 +24,7 @@ const EMPTY_QUIMICO = {
   numero_procedimiento:      '',
 }
 
-const EMPTY_D = { agentes_biologicos: [], agentes_quimicos: [], firmante: '' }
+const EMPTY_D = { agentes_biologicos: [], agentes_quimicos: [], observaciones_biologicos: '', firmante: '' }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -288,6 +288,15 @@ export default function SeccionDForm() {
         <p className={s.helpText} style={{ marginTop: '0.5rem' }}>
           Especifique la zona del animalario del CIC bioGUNE donde se llevará a cabo la manipulación
         </p>
+        <div className="form-group" style={{ marginTop: '0.75rem' }}>
+          <label>Observaciones</label>
+          <textarea
+            rows={3}
+            value={form.observaciones_biologicos ?? ''}
+            onChange={e => setForm(p => ({ ...p, observaciones_biologicos: e.target.value }))}
+            placeholder="Observaciones sobre los agentes biológicos…"
+          />
+        </div>
       </CollapsibleBlock>
 
       {/* ── D.2 Agentes químicos ────────────────────────────────── */}

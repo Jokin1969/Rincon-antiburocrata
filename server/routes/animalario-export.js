@@ -1405,6 +1405,9 @@ async function genSeccionD(proyectoId) {
     // ── D.1 ───────────────────────────────────────────────────────────────────
     secHead('D.1 USO DE AGENTES BIOLÓGICOS EN ANIMALES DE EXPERIMENTACIÓN'),
     agBioTable(d.agentes_biologicos ?? []),
+    ...(d.observaciones_biologicos?.trim()
+      ? [tbl([kvRowB('Observaciones:', d.observaciones_biologicos)], [30, 70])]
+      : []),
     emptyLine(),
 
     // ── D.2 ───────────────────────────────────────────────────────────────────
