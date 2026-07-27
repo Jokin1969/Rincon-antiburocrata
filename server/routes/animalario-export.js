@@ -199,7 +199,7 @@ function makeFooter(label) {
         new TextRun({ children: [PageNumber.CURRENT], font: FONT, size: SZ_SM }),
         txS(' de '),
         new TextRun({ children: [PageNumber.TOTAL_PAGES], font: FONT, size: SZ_SM }),
-        txS('          Revisión 2 (agosto 2024)'),
+        txS('          Revisión 3 (julio 2026)'),
       ],
     })],
   })
