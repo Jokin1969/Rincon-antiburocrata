@@ -1355,6 +1355,11 @@ async function genSeccionD(proyectoId) {
     return ''
   }
 
+  const kvRowB = (label, value, lw = 30) => tr(
+    lbc([par([txB(label)])], { w: w(lw) }),
+    tct([par(String(value ?? '—'))], { w: w(100 - lw) })
+  )
+
   const ctr = { align: AlignmentType.CENTER }
 
   function agBioTable(rows) {
