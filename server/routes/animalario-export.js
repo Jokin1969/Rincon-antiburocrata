@@ -956,10 +956,8 @@ async function genSeccionB(procId, numeroOverride) {
         par([tx(chk((fin.metodos_eutanasia ?? []).includes('Inhalación de dióxido de carbono'))), tx(' Inhalación de dióxido de carbono')]),
         par([tx(chk((fin.metodos_eutanasia ?? []).includes('Otra técnica'))), tx(' Otra técnica. '), txB('Justificar: '), tx(dash(fin.justificacion_eutanasia))]),
       ]),
+      kvRowB('Observaciones:', dash(fin.observaciones)),
     ]),
-    ...(fin.observaciones?.trim()
-      ? [tbl([kvRowB('Observaciones:', fin.observaciones)], [30, 70])]
-      : []),
     emptyLine(),
 
     // ── B.13 REUTILIZACIÓN DE ANIMALES ────────────────────────────────────────
