@@ -950,12 +950,12 @@ async function genSeccionB(procId, numeroOverride) {
     // ── B.12 FINALIZACIÓN DEL PROCEDIMIENTO ──────────────────────────────────
     secHead('B.12 FINALIZACIÓN DEL PROCEDIMIENTO'),
     tbl([
-      secRowBlue('Métodos de eutanasia. La eutanasia de los animales que tengan que ser sacrificados al finalizar el procedimiento o que se descarten del procedimiento debido a su estado de salud, se realizará por:'),
+      secRowBlue('Métodos de eutanasia. La eutanasia de los animales que tengan que ser sacrificados al finalizar el procedimiento o que se descarten del procedimiento debido a su estado de salud, se realizará por:', 2),
       fullTcThin([
         par([tx(chk((fin.metodos_eutanasia ?? []).includes('Dislocación cervical'))), tx(' Dislocación cervical')]),
         par([tx(chk((fin.metodos_eutanasia ?? []).includes('Inhalación de dióxido de carbono'))), tx(' Inhalación de dióxido de carbono')]),
         par([tx(chk((fin.metodos_eutanasia ?? []).includes('Otra técnica'))), tx(' Otra técnica. '), txB('Justificar: '), tx(dash(fin.justificacion_eutanasia))]),
-      ]),
+      ], 2),
       kvRowB('Observaciones:', dash(fin.observaciones)),
     ]),
     emptyLine(),
