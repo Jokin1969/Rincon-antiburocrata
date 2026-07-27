@@ -513,7 +513,7 @@ async function genSeccionA(proyectoId) {
       ),
       tr(lbc([par([
         txB('Función en experimentación animal según ECC/566/2015'),
-        new TextRun({ text: '1', font: FONT, size: 14, superScript: true }),
+        sup(1),
       ])], { w: w(100), span: 2 })),
       tr(tct([par(
         res.funcion_ecc566
