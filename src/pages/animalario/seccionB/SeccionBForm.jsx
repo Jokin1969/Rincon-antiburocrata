@@ -79,6 +79,10 @@ const EMPTY_FORM = {
   parametros: [],
   parametros_observaciones: '',
   muestras_antemortem: [],
+  finalizacion_anticipada: {
+    criterios:         [],
+    justificacion_otros: '',
+  },
   finalizacion: {
     criterios_humanos: '',
     metodos_eutanasia: [],
@@ -89,6 +93,10 @@ const EMPTY_FORM = {
     destino: '',
     tejidos: '',
     num_procedimiento: '',
+    num_proyecto:               '',
+    num_procedimiento_proyecto:  '',
+    severidad_procedimiento:     '',
+    asesoramiento_veterinario:   '',
     justificacion_vivos: '',
   },
   clasificacion_severidad: [],
@@ -371,6 +379,12 @@ export default function SeccionBForm() {
     const cur  = form.finalizacion.metodos_eutanasia ?? []
     const next = cur.includes(metodo) ? cur.filter(m => m !== metodo) : [...cur, metodo]
     update('finalizacion.metodos_eutanasia', next)
+  }
+
+  function toggleCriterioAnticipado(criterio) {
+    const cur  = form.finalizacion_anticipada?.criterios ?? []
+    const next = cur.includes(criterio) ? cur.filter(c => c !== criterio) : [...cur, criterio]
+    update('finalizacion_anticipada.criterios', next)
   }
 
   // Save to repositorio helper
@@ -762,61 +776,76 @@ export default function SeccionBForm() {
         />
       </CollapsibleBlock>
 
-      {/* ── 6. Analgesia / anestesia ───────────────────────────── */}
+      {/* ── B.6 Analgesia ─────────────────────────────────────── */}
       <CollapsibleBlock
-        title="6. Analgesia y anestesia"
+        title="B.6 · Analgesia"
         storageKey="secB:B6"
         defaultOpen={false}
       >
-        {[
-          { label: 'Analgesia', rows: form.analgesia_anestesia?.analgesia ?? [], add: addAna, remove: removeAna, upd: updAna },
-          { label: 'Anestesia', rows: form.analgesia_anestesia?.anestesia ?? [], add: addAnes, remove: removeAnes, upd: updAnes },
-        ].map(({ label, rows, add, remove, upd }) => (
-          <div key={label} className="form-group">
-            <label>{label}</label>
-            <DynTable
-              columns={[
-                { key: 'frecuencia',           label: 'Frecuencia',           flex: 1, ph: 'Ej. 1 vez' },
-                { key: 'grupo_animales',        label: 'Grupo / Nº animales',  flex: 2, ph: 'Ej. Todos (180)' },
-                { key: 'producto_concentracion', label: 'Producto / Concentración', flex: 2, ph: 'Ej. Isoflurano 4%' },
-                { key: 'dosis_mg_kg',           label: 'Dosis (mg/kg)',        flex: 1, ph: '' },
-                { key: 'volumen_ml_kg',         label: 'Volumen (ml/kg)',      flex: 1, ph: '' },
-                { key: 'via',                   label: 'Vía',                  flex: 1, tipo: 'autocomplete', campo: 'via_administracion', ph: 'Vía', initialSuggestions: vias },
-              ]}
-              rows={rows}
-              onUpdate={upd}
-              onRemove={remove}
-              onAdd={add}
-              addLabel={`＋ Añadir ${label.toLowerCase()}`}
+        <div className="form-group">
+          <DynTable
+            columns={[
+              { key: 'frecuencia',            label: 'Frecuencia',               flex: 1, ph: 'Ej. 1 vez' },
+              { key: 'grupo_animales',         label: 'Grupo / Nº animales',      flex: 2, ph: 'Ej. Todos (180)' },
+              { key: 'producto_concentracion', label: 'Producto / Concentración', flex: 2, ph: 'Ej. Buprenorfina 0.1%' },
+              { key: 'dosis_mg_kg',            label: 'Dosis (mg/kg)',            flex: 1, ph: '' },
+              { key: 'volumen_ml_kg',          label: 'Volumen (ml/kg)',          flex: 1, ph: '' },
+              { key: 'via',                    label: 'Vía',                      flex: 1, tipo: 'autocomplete', campo: 'via_administracion', ph: 'Vía', initialSuggestions: vias },
+            ]}
+            rows={form.analgesia_anestesia?.analgesia ?? []}
+            onUpdate={updAna}
+            onRemove={removeAna}
+            onAdd={addAna}
+            addLabel="＋ Añadir analgesia"
+          />
+          <div className="form-group" style={{ marginTop: '0.75rem' }}>
+            <label>Observaciones</label>
+            <AutoExpandTextarea
+              value={form.analgesia_anestesia?.observaciones_analgesia ?? ''}
+              onChange={e => update('analgesia_anestesia.observaciones_analgesia', e.target.value)}
+              placeholder="Observaciones sobre la analgesia…"
             />
-            {label === 'Analgesia' && (
-              <div className="form-group" style={{ marginTop: '0.75rem' }}>
-                <label>Observaciones</label>
-                <AutoExpandTextarea
-                  value={form.analgesia_anestesia?.observaciones_analgesia ?? ''}
-                  onChange={e => update('analgesia_anestesia.observaciones_analgesia', e.target.value)}
-                  placeholder="Observaciones sobre la analgesia…"
-                />
-              </div>
-            )}
-            {label === 'Anestesia' && (
-              <div className="form-group" style={{ marginTop: '0.75rem' }}>
-                <label>Observaciones</label>
-                <AutoExpandTextarea
-                  value={form.analgesia_anestesia?.observaciones_anestesia ?? ''}
-                  onChange={e => update('analgesia_anestesia.observaciones_anestesia', e.target.value)}
-                  placeholder="Observaciones sobre la anestesia…"
-                />
-              </div>
-            )}
           </div>
-        ))}
+        </div>
       </CollapsibleBlock>
 
-      {/* ── 7. Administración de otras sustancias ──────────────── */}
+      {/* ── B.7 Anestesia ─────────────────────────────────────── */}
       <CollapsibleBlock
-        title="7. Administración de otras sustancias"
+        title="B.7 · Anestesia"
         storageKey="secB:B7"
+        defaultOpen={false}
+      >
+        <div className="form-group">
+          <DynTable
+            columns={[
+              { key: 'frecuencia',            label: 'Frecuencia',               flex: 1, ph: 'Ej. 1 vez' },
+              { key: 'grupo_animales',         label: 'Grupo / Nº animales',      flex: 2, ph: 'Ej. Todos (180)' },
+              { key: 'producto_concentracion', label: 'Producto / Concentración', flex: 2, ph: 'Ej. Isoflurano 4%' },
+              { key: 'dosis_mg_kg',            label: 'Dosis (mg/kg)',            flex: 1, ph: '' },
+              { key: 'volumen_ml_kg',          label: 'Volumen (ml/kg)',          flex: 1, ph: '' },
+              { key: 'via',                    label: 'Vía',                      flex: 1, tipo: 'autocomplete', campo: 'via_administracion', ph: 'Vía', initialSuggestions: vias },
+            ]}
+            rows={form.analgesia_anestesia?.anestesia ?? []}
+            onUpdate={updAnes}
+            onRemove={removeAnes}
+            onAdd={addAnes}
+            addLabel="＋ Añadir anestesia"
+          />
+          <div className="form-group" style={{ marginTop: '0.75rem' }}>
+            <label>Observaciones</label>
+            <AutoExpandTextarea
+              value={form.analgesia_anestesia?.observaciones_anestesia ?? ''}
+              onChange={e => update('analgesia_anestesia.observaciones_anestesia', e.target.value)}
+              placeholder="Observaciones sobre la anestesia…"
+            />
+          </div>
+        </div>
+      </CollapsibleBlock>
+
+      {/* ── B.8 Administración de otras sustancias ─────────────── */}
+      <CollapsibleBlock
+        title="B.8 · Administración de otras sustancias"
+        storageKey="secB:B8"
         defaultOpen={false}
       >
         <div className="form-group">
@@ -870,10 +899,10 @@ export default function SeccionBForm() {
         </div>
       </CollapsibleBlock>
 
-      {/* ── 8. Parámetros medidos ──────────────────────────────── */}
+      {/* ── B.9 Parámetros medidos ─────────────────────────────── */}
       <CollapsibleBlock
-        title="8. Parámetros medidos"
-        storageKey="secB:B8"
+        title="B.9 · Parámetros medidos"
+        storageKey="secB:B9p"
         defaultOpen={false}
       >
         <DynTable
@@ -903,10 +932,10 @@ export default function SeccionBForm() {
         </div>
       </CollapsibleBlock>
 
-      {/* ── 9. Muestras ante mortem ────────────────────────────── */}
+      {/* ── B.10 Muestras ante mortem ──────────────────────────── */}
       <CollapsibleBlock
-        title="9. Muestras ante mortem"
-        storageKey="secB:B9"
+        title="B.10 · Muestras ante mortem"
+        storageKey="secB:B10m"
         defaultOpen={false}
       >
         <DynTable
@@ -924,17 +953,56 @@ export default function SeccionBForm() {
         />
       </CollapsibleBlock>
 
-      {/* ── 10. Finalización ───────────────────────────────────── */}
+      {/* ── B.11 Finalización anticipada ───────────────────────── */}
       <CollapsibleBlock
-        title="10. Finalización y eutanasia"
-        storageKey="secB:B10"
+        title="B.11 · Finalización anticipada de la experimentación"
+        storageKey="secB:B11fa"
+        defaultOpen={false}
+      >
+        <p className={s.helpText} style={{ marginBottom: '0.6rem' }}>
+          Criterios de punto final. Si el animal alcanza el criterio de punto final deberá ser retirado del estudio y/o sacrificado.
+        </p>
+        <div className={s.checkboxGroupCol}>
+          <label className={s.checkboxLabel}>
+            <input
+              type="checkbox"
+              checked={(form.finalizacion_anticipada?.criterios ?? []).includes('estandar')}
+              onChange={() => toggleCriterioAnticipado('estandar')}
+            />
+            Los estándar del CIC bioGUNE
+          </label>
+          <label className={s.checkboxLabel}>
+            <input
+              type="checkbox"
+              checked={(form.finalizacion_anticipada?.criterios ?? []).includes('otros')}
+              onChange={() => toggleCriterioAnticipado('otros')}
+            />
+            Otros. Justificar:
+          </label>
+        </div>
+        {(form.finalizacion_anticipada?.criterios ?? []).includes('otros') && (
+          <div className="form-group" style={{ marginTop: '0.5rem' }}>
+            <AutoExpandTextarea
+              storageKey="finalizacion_anticipada.justificacion_otros"
+              rows={3}
+              value={form.finalizacion_anticipada?.justificacion_otros ?? ''}
+              onChange={e => update('finalizacion_anticipada.justificacion_otros', e.target.value)}
+              placeholder="Describe los criterios de punto final específicos…"
+            />
+          </div>
+        )}
+      </CollapsibleBlock>
+
+      {/* ── B.12 Finalización y eutanasia ──────────────────────── */}
+      <CollapsibleBlock
+        title="B.12 · Finalización del procedimiento"
+        storageKey="secB:B12"
         requiredFields={[form.finalizacion.metodos_eutanasia]}
       >
         <div className="form-group">
           <label>Método(s) de eutanasia</label>
-          <p className={s.helpText}>Pueden combinarse varios métodos (p.ej. sobredosis anestésica + dislocación cervical).</p>
           <div className={s.checkboxGroupCol}>
-            {['Sobredosis anestésica', 'Dislocación cervical', 'CO₂', 'Decapitación', 'Perfusión transcardíaca', 'Otro'].map(m => (
+            {['Dislocación cervical', 'Inhalación de dióxido de carbono', 'Otra técnica'].map(m => (
               <label key={m} className={s.checkboxLabel}>
                 <input
                   type="checkbox"
@@ -946,15 +1014,15 @@ export default function SeccionBForm() {
             ))}
           </div>
         </div>
-        {(form.finalizacion.metodos_eutanasia ?? []).includes('Otro') && (
+        {(form.finalizacion.metodos_eutanasia ?? []).includes('Otra técnica') && (
           <div className="form-group">
-            <label>Justificación del método de eutanasia</label>
+            <label>Justificar</label>
             <AutoExpandTextarea
               storageKey="finalizacion.justificacion_eutanasia"
               rows={2}
               value={form.finalizacion.justificacion_eutanasia}
               onChange={e => update('finalizacion.justificacion_eutanasia', e.target.value)}
-              placeholder="Justificación según las 3Rs (Refinamiento)"
+              placeholder="Justificación de la técnica de eutanasia"
             />
           </div>
         )}
@@ -968,18 +1036,19 @@ export default function SeccionBForm() {
         </div>
       </CollapsibleBlock>
 
-      {/* ── 11. Reutilización ──────────────────────────────────── */}
+      {/* ── B.13 Reutilización ─────────────────────────────────── */}
       <CollapsibleBlock
-        title="11. Reutilización de animales"
-        storageKey="secB:B11"
+        title="B.13 · Reutilización de animales"
+        storageKey="secB:B13"
         defaultOpen={false}
         requiredFields={[form.reutilizacion.destino]}
       >
         <div className="form-group">
-          <div className={s.radioGroup}>
+          <div className={s.radioGroup} style={{ flexDirection: 'column', gap: '0.5rem' }}>
             {[
               'Sacrifica los animales por requerimientos del procedimiento',
               'Mantener los animales vivos para utilizarlos en otro procedimiento',
+              'Mantener los animales vivos para utilizarlos en otro proyecto',
               'Mantener los animales vivos por otros procedimientos',
             ].map(opt => (
               <label key={opt} className={s.radioLabel}>
@@ -1016,6 +1085,62 @@ export default function SeccionBForm() {
               onChange={e => update('reutilizacion.num_procedimiento', e.target.value)}
               placeholder="Código del procedimiento"
             />
+          </div>
+        )}
+        {form.reutilizacion.destino === 'Mantener los animales vivos para utilizarlos en otro proyecto' && (
+          <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label>Número de proyecto</label>
+              <input
+                value={form.reutilizacion.num_proyecto ?? ''}
+                onChange={e => update('reutilizacion.num_proyecto', e.target.value)}
+                placeholder="Código del proyecto"
+                style={{ maxWidth: 280 }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
+                <label>Número de procedimiento en el proyecto</label>
+                <input
+                  value={form.reutilizacion.num_procedimiento_proyecto ?? ''}
+                  onChange={e => update('reutilizacion.num_procedimiento_proyecto', e.target.value)}
+                  placeholder="Nº procedimiento"
+                />
+              </div>
+              <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
+                <label>Severidad del procedimiento</label>
+                <input
+                  value={form.reutilizacion.severidad_procedimiento ?? ''}
+                  onChange={e => update('reutilizacion.severidad_procedimiento', e.target.value)}
+                  placeholder="Ej. Leve"
+                />
+              </div>
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label>¿Cuenta con el asesoramiento veterinario favorable (RD 53/2013 art. 28)?</label>
+              <div className={s.radioGroup}>
+                <label className={s.radioLabel}>
+                  <input
+                    type="radio"
+                    name="asesoramiento_veterinario"
+                    value="no"
+                    checked={form.reutilizacion.asesoramiento_veterinario === 'no'}
+                    onChange={() => update('reutilizacion.asesoramiento_veterinario', 'no')}
+                  />
+                  NO
+                </label>
+                <label className={s.radioLabel}>
+                  <input
+                    type="radio"
+                    name="asesoramiento_veterinario"
+                    value="si"
+                    checked={form.reutilizacion.asesoramiento_veterinario === 'si'}
+                    onChange={() => update('reutilizacion.asesoramiento_veterinario', 'si')}
+                  />
+                  SÍ
+                </label>
+              </div>
+            </div>
           </div>
         )}
         {form.reutilizacion.destino === 'Mantener los animales vivos por otros procedimientos' && (

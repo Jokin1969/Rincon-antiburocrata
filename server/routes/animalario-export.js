@@ -730,15 +730,16 @@ async function genSeccionB(procId, numeroOverride) {
   }
   const numeroLabel = numeroProcedimiento != null ? String(numeroProcedimiento) : '—'
 
-  const dg  = proc.datos_generales     ?? {}
-  const met = proc.metodologia         ?? {}
-  const tm  = proc.tamano_muestral     ?? {}
-  const aa  = proc.aislamiento_ayuno   ?? {}
-  const ana = proc.analgesia_anestesia ?? {}
-  const os  = proc.otras_sustancias    ?? {}
-  const fin = proc.finalizacion        ?? {}
-  const reu = proc.reutilizacion       ?? {}
-  const frm = proc.firma               ?? {}
+  const dg  = proc.datos_generales        ?? {}
+  const met = proc.metodologia            ?? {}
+  const tm  = proc.tamano_muestral        ?? {}
+  const aa  = proc.aislamiento_ayuno      ?? {}
+  const ana = proc.analgesia_anestesia    ?? {}
+  const os  = proc.otras_sustancias       ?? {}
+  const fa  = proc.finalizacion_anticipada ?? {}
+  const fin = proc.finalizacion           ?? {}
+  const reu = proc.reutilizacion          ?? {}
+  const frm = proc.firma                  ?? {}
 
   const sevLabel = (Array.isArray(proc.clasificacion_severidad)
     ? proc.clasificacion_severidad
@@ -811,7 +812,7 @@ async function genSeccionB(procId, numeroOverride) {
       kvRowB('Nº total de animales',    dash(noteDisplay(dg.num_animales, dg.num_animales_nota)), 25),
       kvRowB('Severidad',               dash(dg.severidad),                                  25),
       tr(
-        lbc([par([txB('Duración')])], { w: w(25) }),
+        lbc([par([txB('Duración'), sup(1)])], { w: w(25) }),
         tct([par(dash(dg.duracion))], { w: w(75) }),
       ),
     ], [25, 75]),
@@ -820,7 +821,7 @@ async function genSeccionB(procId, numeroOverride) {
     // ── B.2 METODOLOGÍA Y FASES ───────────────────────────────────────────────
     secHead('B.2 METODOLOGÍA Y FASES DEL PROCEDIMIENTO'),
     tbl([
-      secRowBlue([txB('Fases del procedimiento')]),
+      secRowBlue([txB('Fases del procedimiento'), sup(2)]),
       fullTcThin([par(dash(met.descripcion))]),
       secRowBlue('Describa en qué fases del procedimiento se prevé que el animal pueda experimentar sufrimiento, dolor, angustia o malestar'),
       fullTcThin([par(dash(met.justificacion_procedimiento))]),
@@ -873,30 +874,24 @@ async function genSeccionB(procId, numeroOverride) {
     ),
     emptyLine(),
 
-    // ── B.6 ANALGESIA Y ANESTESIA ─────────────────────────────────────────────
-    secHead('B.6 USO DE ANALGESIA Y ANESTESIA'),
-    tbl([
-      tr(lbc([par([txBsm('Analgesia')])], { w: w(100), span: 6 })),
-      tr(...ANA_HDRS.map((h, i) => lbc([par([txBsm(h)])], { w: w(ANA_COLS_W[i]) }))),
-      ...((ana.analgesia ?? []).length
-        ? (ana.analgesia).map(r => tr(...[r.frecuencia, r.grupo_animales, r.producto_concentracion, r.dosis_mg_kg, r.volumen_ml_kg, r.via].map((v, i) => tct([par(dash(v))], { w: w(ANA_COLS_W[i]) }))))
-        : [tr(...ANA_COLS_W.map(cw => tct([par('')], { w: w(cw) })))]),
-      tr(lbc([par([txBsm('Anestesia')])], { w: w(100), span: 6 })),
-      tr(...ANA_HDRS.map((h, i) => lbc([par([txBsm(h)])], { w: w(ANA_COLS_W[i]) }))),
-      ...((ana.anestesia ?? []).length
-        ? (ana.anestesia).map(r => tr(...[r.frecuencia, r.grupo_animales, r.producto_concentracion, r.dosis_mg_kg, r.volumen_ml_kg, r.via].map((v, i) => tct([par(dash(v))], { w: w(ANA_COLS_W[i]) }))))
-        : [tr(...ANA_COLS_W.map(cw => tct([par('')], { w: w(cw) })))]),
-    ], ANA_COLS_W),
+    // ── B.6 USO DE ANALGESIA ──────────────────────────────────────────────────
+    secHead('B.6 USO DE ANALGESIA'),
+    anaTable(ana.analgesia ?? []),
     ...(ana.observaciones_analgesia?.trim()
-      ? [tbl([kvRowB('Observaciones (analgesia):', ana.observaciones_analgesia)], [30, 70])]
-      : []),
-    ...(ana.observaciones_anestesia?.trim()
-      ? [tbl([kvRowB('Observaciones (anestesia):', ana.observaciones_anestesia)], [30, 70])]
+      ? [tbl([kvRowB('Observaciones:', ana.observaciones_analgesia)], [30, 70])]
       : []),
     emptyLine(),
 
-    // ── B.7 ADMINISTRACIÓN DE OTRAS SUSTANCIAS ────────────────────────────────
-    secHead('B.7 ADMINISTRACIÓN DE OTRAS SUSTANCIAS'),
+    // ── B.7 USO DE ANESTESIA ──────────────────────────────────────────────────
+    secHead('B.7 USO DE ANESTESIA'),
+    anaTable(ana.anestesia ?? []),
+    ...(ana.observaciones_anestesia?.trim()
+      ? [tbl([kvRowB('Observaciones:', ana.observaciones_anestesia)], [30, 70])]
+      : []),
+    emptyLine(),
+
+    // ── B.8 ADMINISTRACIÓN DE OTRAS SUSTANCIAS ────────────────────────────────
+    secHead('B.8 ADMINISTRACIÓN DE OTRAS SUSTANCIAS'),
     anaTable(os.sustancias),
     ...(os.observaciones?.trim()
       ? [tbl([kvRowB('Observaciones:', os.observaciones)], [30, 70])]
@@ -910,59 +905,65 @@ async function genSeccionB(procId, numeroOverride) {
     ...(os.hay_riesgo === true ? [par([tx('Si ha contestado que sí, necesita rellenar un formulario D.')])] : []),
     emptyLine(),
 
-    // ── B.8 PARÁMETROS A MEDIR ────────────────────────────────────────────────
-    secHead('B.8 PARÁMETROS A MEDIR'),
+    // ── B.9 PARÁMETROS A MEDIR ────────────────────────────────────────────────
+    secHead('B.9 PARÁMETROS A MEDIR'),
     (() => {
-      const B8_HDRS = ['Frecuencia', 'Grupo / Nº animales', 'Parámetro/Muestra', 'Metodología/Técnica', 'Procedimiento terminal (si/no)']
-      const B8_W    = [14, 18, 24, 24, 20]
-      const rows8   = (proc.parametros ?? []).map(p => [p.frecuencia, p.grupo_animales ?? '', p.parametro, p.metodo_medida, p.terminal ?? ''])
-      const dataRows = rows8.length ? rows8 : [[]]
+      const B9P_HDRS = ['Frecuencia', 'Grupo / Nº animales', 'Parámetro/Muestra', 'Metodología/Técnica', 'Procedimiento terminal (si/no)']
+      const B9P_W    = [14, 18, 24, 24, 20]
+      const rows9p   = (proc.parametros ?? []).map(p => [p.frecuencia, p.grupo_animales ?? '', p.parametro, p.metodo_medida, p.terminal ?? ''])
+      const dataRows = rows9p.length ? rows9p : [[]]
       return tbl([
-        tr(...B8_HDRS.map((h, i) => lbc([par([txBsm(h)])], { w: w(B8_W[i]) }))),
-        ...dataRows.map(r => tr(...B8_W.map((cw, i) => tct([par(dash(r[i]))], { w: w(cw) })))),
-      ], B8_W)
+        tr(...B9P_HDRS.map((h, i) => lbc([par([txBsm(h)])], { w: w(B9P_W[i]) }))),
+        ...dataRows.map(r => tr(...B9P_W.map((cw, i) => tct([par(dash(r[i]))], { w: w(cw) })))),
+      ], B9P_W)
     })(),
     ...(proc.parametros_observaciones?.trim()
       ? [tbl([kvRowB('Observaciones:', proc.parametros_observaciones)], [30, 70])]
       : []),
     emptyLine(),
 
-    // ── B.9 MUESTRAS ANTEMORTEM ───────────────────────────────────────────────
-    secHead('B.9 MUESTRAS ANTEMORTEM'),
+    // ── B.10 MUESTRAS ANTEMORTEM ──────────────────────────────────────────────
+    secHead('B.10 MUESTRAS ANTEMORTEM'),
     (() => {
-      const B9_HDRS = ['Frecuencia', 'Grupo / Nº animales', 'Muestra', 'Cantidad (g) / Volumen (mg/kg peso animal)', 'Método/Vía']
-      const B9_W    = [14, 18, 20, 30, 18]
-      const rows9   = (proc.muestras_antemortem ?? []).map(m => [m.frecuencia, m.grupo_animales ?? '', m.tipo, m.volumen_cantidad, m.metodo_via ?? m.procedimiento ?? ''])
-      const dataRows = rows9.length ? rows9 : [[]]
+      const B10_HDRS = ['Frecuencia', 'Grupo / Nº animales', 'Muestra', 'Cantidad (g) / Volumen (mg/kg peso animal)', 'Método/Vía']
+      const B10_W    = [14, 18, 20, 30, 18]
+      const rows10   = (proc.muestras_antemortem ?? []).map(m => [m.frecuencia, m.grupo_animales ?? '', m.tipo, m.volumen_cantidad, m.metodo_via ?? m.procedimiento ?? ''])
+      const dataRows = rows10.length ? rows10 : [[]]
       return tbl([
-        tr(...B9_HDRS.map((h, i) => lbc([par([txBsm(h)])], { w: w(B9_W[i]) }))),
-        ...dataRows.map(r => tr(...B9_W.map((cw, i) => tct([par(dash(r[i]))], { w: w(cw) })))),
-      ], B9_W)
+        tr(...B10_HDRS.map((h, i) => lbc([par([txBsm(h)])], { w: w(B10_W[i]) }))),
+        ...dataRows.map(r => tr(...B10_W.map((cw, i) => tct([par(dash(r[i]))], { w: w(cw) })))),
+      ], B10_W)
     })(),
     emptyLine(),
 
-    // ── B.10 FINALIZACIÓN DEL PROCEDIMIENTO ──────────────────────────────────
-    secHead('B.10 FINALIZACIÓN DEL PROCEDIMIENTO'),
+    // ── B.11 FINALIZACIÓN ANTICIPADA DE LA EXPERIMENTACIÓN ───────────────────
+    secHead('B.11 FINALIZACIÓN ANTICIPADA DE LA EXPERIMENTACIÓN'),
     tbl([
-      tr(lbc([par([
-        txB('Métodos de eutanasia'), tx('. La eutanasia de los animales que tengan que ser sacrificados al finalizar el procedimiento o que se descarten del procedimiento debido a su estado de salud, se realizará por:'),
-      ])], { w: w(100), span: 2 })),
-      tr(tct([
-        ...['Sobredosis anestésica', 'Dislocación cervical', 'CO₂', 'Decapitación', 'Perfusión transcardíaca', 'Otro'].map(m =>
-          par([tx(chk((fin.metodos_eutanasia ?? []).includes(m))), tx(` ${m}`)])
-        ),
-      ], { w: w(100), span: 2 })),
-      ...((fin.metodos_eutanasia ?? []).includes('Otro') ? [
-        kvRowB('Justificar', dash(fin.justificacion_eutanasia)),
-      ] : []),
+      secRowBlue('Criterios de punto final. Si el animal alcanza el criterio de punto final deberá ser retirado del estudio y/o sacrificado.'),
+      fullTcThin([
+        par([tx(chk((fa.criterios ?? []).includes('estandar'))), tx(' Los estándar del CIC bioGUNE'), sup(3)]),
+        par([tx(chk((fa.criterios ?? []).includes('otros'))), tx(' Otros. '), txB('Justificar: '), tx(dash(fa.justificacion_otros))]),
+      ]),
+    ]),
+    emptyLine(),
+
+    // ── B.12 FINALIZACIÓN DEL PROCEDIMIENTO ──────────────────────────────────
+    secHead('B.12 FINALIZACIÓN DEL PROCEDIMIENTO'),
+    tbl([
+      secRowBlue('Métodos de eutanasia. La eutanasia de los animales que tengan que ser sacrificados al finalizar el procedimiento o que se descarten del procedimiento debido a su estado de salud, se realizará por:'),
+      fullTcThin([
+        par([tx(chk((fin.metodos_eutanasia ?? []).includes('Dislocación cervical'))), tx(' Dislocación cervical')]),
+        par([tx(chk((fin.metodos_eutanasia ?? []).includes('Inhalación de dióxido de carbono'))), tx(' Inhalación de dióxido de carbono')]),
+        par([tx(chk((fin.metodos_eutanasia ?? []).includes('Otra técnica'))), tx(' Otra técnica. '), txB('Justificar: '), tx(dash(fin.justificacion_eutanasia))]),
+      ]),
     ]),
     ...(fin.observaciones?.trim()
       ? [tbl([kvRowB('Observaciones:', fin.observaciones)], [30, 70])]
       : []),
     emptyLine(),
 
-    // ── B.11 REUTILIZACIÓN DE ANIMALES ────────────────────────────────────────
-    secHead('B.11 REUTILIZACIÓN DE ANIMALES'),
+    // ── B.13 REUTILIZACIÓN DE ANIMALES ────────────────────────────────────────
+    secHead('B.13 REUTILIZACIÓN DE ANIMALES'),
     tbl([
       tr(lbc([par([txB('Al finalizar el procedimiento está previsto:')])], { w: w(100), span: 2 })),
       tr(tct([
@@ -982,6 +983,18 @@ async function genSeccionB(procId, numeroOverride) {
         ], { w: w(100), span: 2 })),
       ] : []),
       tr(tct([
+        par([tx(chk(reu.destino === 'Mantener los animales vivos para utilizarlos en otro proyecto')), tx(' Mantener los animales vivos para utilizarlos en otro proyecto')]),
+      ], { w: w(100), span: 2 })),
+      ...(reu.destino === 'Mantener los animales vivos para utilizarlos en otro proyecto' ? [
+        tr(tct([
+          par([txB('Número de proyecto: '), tx(dash(reu.num_proyecto))]),
+          par([txB('Número de procedimiento en el proyecto: '), tx(dash(reu.num_procedimiento_proyecto)), tx('     '), txB('Severidad del procedimiento: '), tx(dash(reu.severidad_procedimiento))]),
+          par([tx('¿Cuenta con el asesoramiento veterinario favorable tal y como indica el RD 53/2013 art. 28?  '),
+               tx(chk(reu.asesoramiento_veterinario === 'no')), tx(' NO  '),
+               tx(chk(reu.asesoramiento_veterinario === 'si')), tx(' SÍ')]),
+        ], { w: w(100), span: 2 })),
+      ] : []),
+      tr(tct([
         par([tx(chk(reu.destino === 'Mantener los animales vivos por otros procedimientos')), tx(' Mantener los animales vivos por otros motivos')]),
       ], { w: w(100), span: 2 })),
       ...(reu.destino === 'Mantener los animales vivos por otros procedimientos' ? [
@@ -994,7 +1007,12 @@ async function genSeccionB(procId, numeroOverride) {
 
   ]
 
-  return Packer.toBuffer(buildDoc(children, 'Sección B — Procedimiento'))
+  const rawBuf = await Packer.toBuffer(buildDoc(children, 'Sección B — Procedimiento'))
+  return addDocxFootnotes(rawBuf, [
+    { id: 1, text: 'Debe indicarse el tiempo entre la primera y la última utilización (sacrificio) de cada animal. No confundir con la duración total del estudio.' },
+    { id: 2, text: 'Adjuntar un esquema de las distintas fases del procedimiento siempre que sea posible.' },
+    { id: 3, text: 'Los criterios de punto final estándar en CIC bioGUNE son: Problemas continuados en la ingesta de agua y/o alimento (anorexia persistente). Diarrea severa. Pérdida de peso 20%. Hipotermia (≥ 2ºC Tª corporal). Ulceraciones/infección de heridas/masas tumorales externas. Dolor y/o angustia prolongados. Automutilación y/o trauma autoinfligido persistentemente. Masa tumoral con diámetro medio > 1500 mm3 (en ratón) o > 3000 mm3 (en rata). Convulsiones persistentes/reacción violenta a estímulos/ausencia de respuesta a estímulos. Pérdida general de condición (vocalización excesiva, piloerección notable, marcado encorvamiento dorsal, palidez ocular, reducción notable frecuencia cardio-respiratoria, inmovilidad, postración). Cualquier otra situación que interfiera significativamente con las funciones corporales normales o indicativa de deterioro irreversible del animal.' },
+  ])
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
