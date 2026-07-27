@@ -678,6 +678,14 @@ async function genSeccionA(proyectoId) {
     tbl([
       secRowBlue('Marcar con una X'),
       fullTcThin(condRows()),
+      secRowBlue([txB('Alojamiento individual de los animales'), sup(9)]),
+      fullTcThin([
+        par([tx(chk(!ca.alojamiento_individual)), tx(' No')]),
+        par([tx(chk(!!ca.alojamiento_individual)), tx(' Sí. '), txB('Nº de procedimiento '), tx(dash(ca.alojamiento_individual_proc ?? ''))]),
+        ...(ca.alojamiento_individual && ca.alojamiento_individual_justificacion
+          ? [par([tx('    '), txB('Justificar: '), tx(ca.alojamiento_individual_justificacion)])]
+          : [par([txB('    Justificar: ')])]),
+      ]),
     ]),
     emptyLine(),
 
@@ -696,6 +704,7 @@ async function genSeccionA(proyectoId) {
       { id: 7, text: 'Nombre con el que se referirá a la cepa/línea a lo largo del Proyecto y en el animalario de CIC bioGUNE.' },
     ] : []),
     { id: 8, text: 'Las condiciones estándar del CIC bioGUNE consisten en el alojamiento de los animales en jaulas de policarbonato con lecho de viruta de madera. La densidad animal en cada jaula no excede en ningún momento la densidad máxima descrita en el Anexo II del RD 53/2013. Las salas de estabulación se mantienen dentro de los rangos de temperatura y humedad relativa apropiados para roedores (20-24ºC y 50-65%, respectivamente). La iluminación de las salas consiste en un ciclo de luz-oscuridad de 12:12 horas (luz de 08:00h a 20:00h). Los animales se alimentan con dieta de mantenimiento o cría específica para roedores y se les suministra agua de bebida ad libitum, mediante el empleo de biberón o de un sistema de bebida automática, según proceda.' },
+    { id: 9, text: 'El alojamiento en grupo será considerado por el CBBA/IACUC como el método de alojamiento por defecto, salvo que se justifique lo contrario por causas como incompatibilidad social derivada de comportamientos inapropiados, motivos veterinarios relacionados con el bienestar animal o razones científicas. Cuando sea necesario, el alojamiento individual de animales sociales debe limitarse al período mínimo imprescindible y, cuando sea posible, se debe proporcionar contacto visual, auditivo y olfativo con congéneres compatibles. En ausencia de otros animales, se deben ofrecer enriquecimiento adicional, interacción segura y positiva con el personal de cuidado animal, liberación periódica en recintos amplios, elementos de enriquecimiento suplementarios y/o la incorporación de un animal de compañía en la sala o área de alojamiento.' },
   ]
 
   const rawBuf = await Packer.toBuffer(buildDoc(children, 'Sección A'))

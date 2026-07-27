@@ -88,6 +88,9 @@ const EMPTY_FORM = {
     estandar:    true,
     variaciones: true,
     descripcion: 'Una vez los animales se hayan administrado con AAV se mantendrán en la zona limpia (rack ventilado) durante 10 días. Pasado este tiempo, los animales se trasladarán a la zona sucia del SDA para su perfusión o su traslado a Neiker, CReSA o UNIZAR para la inoculación de priones.',
+    alojamiento_individual:              false,
+    alojamiento_individual_proc:         '',
+    alojamiento_individual_justificacion: '',
   },
   codigo_aprobacion: '',
   firmante: 'Joaquín Castilla',
@@ -289,6 +292,12 @@ export default function SeccionAForm() {
               variaciones: true,
               descripcion: secA.condiciones_alojamiento.descripcion ?? EMPTY_FORM.condiciones_alojamiento.descripcion,
             }
+          }
+          // Migrate: add alojamiento_individual fields if missing
+          if (secA.condiciones_alojamiento && !('alojamiento_individual' in secA.condiciones_alojamiento)) {
+            secA.condiciones_alojamiento.alojamiento_individual              = false
+            secA.condiciones_alojamiento.alojamiento_individual_proc         = ''
+            secA.condiciones_alojamiento.alojamiento_individual_justificacion = ''
           }
           setForm({ ...clone(EMPTY_FORM), ...secA })
         }
@@ -990,6 +999,55 @@ export default function SeccionAForm() {
                   onChange={e => update('condiciones_alojamiento.descripcion', e.target.value)}
                   placeholder="Describe las variaciones sobre las condiciones estándar…"
                 />
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Alojamiento individual de los animales ─────────────────────── */}
+        <div style={{
+          borderTop: '1px solid var(--border)',
+          paddingTop: '0.9rem',
+          marginTop: '0.25rem',
+        }}>
+          <p style={{ fontWeight: 700, fontSize: '0.82rem', marginBottom: '0.6rem', color: 'var(--text)' }}>
+            Alojamiento individual de los animales<sup style={{ fontSize: '0.65rem' }}>9</sup>
+          </p>
+          <div className={styles.radioGroup} style={{ flexDirection: 'column', gap: '0.5rem' }}>
+            <label className={styles.radioLabel}>
+              <input type="radio"
+                checked={!form.condiciones_alojamiento.alojamiento_individual}
+                onChange={() => update('condiciones_alojamiento.alojamiento_individual', false)} />
+              No
+            </label>
+            <div>
+              <label className={styles.radioLabel}>
+                <input type="radio"
+                  checked={!!form.condiciones_alojamiento.alojamiento_individual}
+                  onChange={() => update('condiciones_alojamiento.alojamiento_individual', true)} />
+                Sí. Nº de procedimiento
+              </label>
+              {form.condiciones_alojamiento.alojamiento_individual && (
+                <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingLeft: '1.5rem' }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <input
+                      value={form.condiciones_alojamiento.alojamiento_individual_proc}
+                      onChange={e => update('condiciones_alojamiento.alojamiento_individual_proc', e.target.value)}
+                      placeholder="Nº de procedimiento"
+                      style={{ maxWidth: 220 }}
+                    />
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>Justificar</label>
+                    <AutoExpandTextarea
+                      storageKey="secA:condiciones_alojamiento.justificacion_individual"
+                      rows={3}
+                      value={form.condiciones_alojamiento.alojamiento_individual_justificacion}
+                      onChange={e => update('condiciones_alojamiento.alojamiento_individual_justificacion', e.target.value)}
+                      placeholder="Justificación del alojamiento individual…"
+                    />
+                  </div>
+                </div>
               )}
             </div>
           </div>
