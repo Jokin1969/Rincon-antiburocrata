@@ -97,6 +97,17 @@
   flex-shrink: 0;
 }
 
+.duplicateBtn {
+  color: #4a6580 !important;
+  border-color: #4a6580 !important;
+}
+
+.duplicateBtn:hover:not(:disabled) {
+  background: rgba(74, 101, 128, 0.1) !important;
+  color: #2d4a63 !important;
+  border-color: #2d4a63 !important;
+}
+
 .deleteBtn {
   color: var(--danger, #e53e3e) !important;
 }

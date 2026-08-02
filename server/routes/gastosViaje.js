@@ -137,6 +137,28 @@ router.delete('/:id', (req, res) => {
   }
 })
 
+// ── Duplicar viaje ────────────────────────────────────────────────────────────
+
+router.post('/:id/duplicate', (req, res) => {
+  try {
+    const original = readViaje(req.params.id)
+    if (!original) return res.status(404).json({ error: 'Viaje no encontrado.' })
+    const now = new Date().toISOString()
+    const copia = {
+      ...original,
+      id:        randomUUID(),
+      nombre:    `Copia de ${original.nombre || 'viaje sin título'}`,
+      createdAt: now,
+      updatedAt: now,
+    }
+    writeViaje(copia)
+    res.status(201).json({ id: copia.id, nombre: copia.nombre, fechaInicio: copia.fechaInicio, fechaFin: copia.fechaFin, updatedAt: copia.updatedAt })
+  } catch (err) {
+    console.error('POST duplicate error:', err)
+    res.status(500).json({ error: 'Error al duplicar el viaje.' })
+  }
+})
+
 // ── IA: extracción de ticket ──────────────────────────────────────────────────
 
 const IA_TICKET_SYSTEM =

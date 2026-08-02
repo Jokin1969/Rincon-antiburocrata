@@ -18,7 +18,8 @@ export default function GastosViajeList() {
   const [viajes, setViajes]     = useState([])
   const [loading, setLoading]   = useState(true)
   const [error, setError]       = useState(null)
-  const [deleting, setDeleting] = useState(null)
+  const [deleting,    setDeleting]    = useState(null)
+  const [duplicating, setDuplicating] = useState(null)
 
   async function loadViajes() {
     setLoading(true)
@@ -35,6 +36,19 @@ export default function GastosViajeList() {
   }
 
   useEffect(() => { loadViajes() }, [])
+
+  async function handleDuplicate(id) {
+    setDuplicating(id)
+    try {
+      const res  = await fetch(`/api/gastos-viaje/${id}/duplicate`, { method: 'POST' })
+      const copia = await res.json()
+      setViajes(prev => [copia, ...prev])
+    } catch {
+      alert('Error al duplicar el viaje.')
+    } finally {
+      setDuplicating(null)
+    }
+  }
 
   async function handleDelete(id, nombre) {
     if (!window.confirm(`¿Eliminar "${nombre || 'este viaje'}"? Esta acción no se puede deshacer.`)) return
@@ -104,6 +118,14 @@ export default function GastosViajeList() {
                   </div>
                 </div>
                 <div className={styles.cardActions}>
+                  <button
+                    className={`btn btn-ghost ${styles.duplicateBtn}`}
+                    onClick={() => handleDuplicate(v.id)}
+                    disabled={duplicating === v.id}
+                    title="Duplicar viaje"
+                  >
+                    {duplicating === v.id ? '…' : 'Duplicar'}
+                  </button>
                   <button
                     className="btn btn-primary"
                     onClick={() => navigate(`/gastos-viaje/${v.id}`)}
