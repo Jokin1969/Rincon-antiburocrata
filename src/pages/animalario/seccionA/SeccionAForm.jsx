@@ -54,7 +54,7 @@ const EMPTY_FORM = {
   participantes: [
     { nombre_apellidos: 'Jorge Moreno Charco',              nif_pasaporte: '74520022E', funciones: 'B,C,D' },
     { nombre_apellidos: 'Hasier Eraña Lasagabaster',        nif_pasaporte: '72726214F', funciones: 'B,C'   },
-    { nombre_apellidos: 'Patricia Piñeiro Busto',           nif_pasaporte: '76047003X', funciones: 'B,C'   },
+    { nombre_apellidos: 'Patricia Piñeiro Busto',           nif_pasaporte: '30656534H', funciones: 'B,C'   },
     { nombre_apellidos: 'Nuno Filipe Coutinho Gonçalvez Anjo', nif_pasaporte: 'C896204',   funciones: 'B,C'   },
     { nombre_apellidos: 'Cristina Sampedro Torres-Quevedo', nif_pasaporte: '06028318H', funciones: 'B,C'   },
     { nombre_apellidos: 'Maitena San Juan Ansoleaga',       nif_pasaporte: '78997060H', funciones: 'B,C'   },
