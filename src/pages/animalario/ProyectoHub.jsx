@@ -503,6 +503,25 @@ export default function ProyectoHub() {
           />
         )}
 
+        {/* Info: cómo desbloquear secciones C y D */}
+        {(!hasCria || !hasProductos) && (
+          <div className={styles.infoNote}>
+            {!hasCria && (
+              <div>
+                ℹ️ <strong>Sección C – Cría de animales:</strong> aparecerá cuando actives la opción
+                «¿Hay cría de animales?» en <strong>Sección A</strong>.
+              </div>
+            )}
+            {!hasProductos && (
+              <div style={!hasCria ? { marginTop: '0.4rem' } : undefined}>
+                ℹ️ <strong>Sección D – Productos con riesgo:</strong> aparecerá cuando algún
+                procedimiento de <strong>Sección B</strong> declare sustancias con riesgo biológico,
+                químico u otro.
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Modificaciones — expanded list */}
         <ModificacionesSection
           proyectoId={proyectoId}

@@ -292,6 +292,22 @@
   margin-bottom: 1rem;
 }
 
+/* ── Hub info note (sections C / D unlock hint) ───────────────────────────── */
+
+.infoNote {
+  padding: 0.75rem 1rem;
+  background: rgba(37, 99, 235, 0.05);
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  color: #1e40af;
+  line-height: 1.6;
+}
+
+.infoNote strong {
+  font-weight: 700;
+}
+
 /* ── Severity badges ──────────────────────────────────────────────────────── */
 
 .severityBadge {
