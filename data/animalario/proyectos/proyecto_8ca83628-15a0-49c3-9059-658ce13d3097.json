@@ -12,14 +12,35 @@
   "crias": [
     {
       "id": "0bcf00b7-1389-480e-989d-c29eb74809b3",
-      "cepa_idx": 0,
+      "cepa_idx": 1,
       "acronimo": "TgVol",
       "nomenclatura_internacional": "FVB/N-Tg(Prnp-BVole109I)C594PRC/J",
+      "es_omg": true
+    },
+    {
+      "id": "3b28753f-86b5-4a46-9684-ef72ee676ec7",
+      "cepa_idx": 2,
+      "acronimo": "TgMol",
+      "nomenclatura_internacional": "B6&CBA-Tg(Mo108I)1Sala/J",
+      "es_omg": true
+    },
+    {
+      "id": "36f0fd3a-f508-4481-971b-24c59ce1cd9a",
+      "cepa_idx": 3,
+      "acronimo": "Tg650",
+      "nomenclatura_internacional": "C57BL6-Tg(650)1INRA/J",
+      "es_omg": true
+    },
+    {
+      "id": "53008e5e-4369-4908-8d80-dc62df9a3120",
+      "cepa_idx": 6,
+      "acronimo": "TgVur",
+      "nomenclatura_internacional": "B6&CBA-Tg(Mo108IUROS248)1Sala/J",
       "es_omg": true
     }
   ],
   "modificaciones": [],
-  "seccionD_id": null,
+  "seccionD_id": "8ca83628-15a0-49c3-9059-658ce13d3097",
   "hay_productos_riesgo": true,
   "seccionA": {
     "titulo": "USO DE VIRUS ADENO ASOCIADOS QUE EXPRESAN PROTEÍNAS PRIÓNICAS DOMINANTES NEGATIVAS PARA LA OBTENCIÓN DE ENCÉFALOS ÚTILES EN PMCA Y PARA SU EVALUACIÓN TERAPÉUTICA IN VIVO UTILIZANDO DIFERENTES CEPAS DE PRIONES",
