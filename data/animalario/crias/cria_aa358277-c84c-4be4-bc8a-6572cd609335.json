@@ -1,0 +1,79 @@
+{
+  "id": "aa358277-c84c-4be4-bc8a-6572cd609335",
+  "proyecto_id": "8ca83628-15a0-49c3-9059-658ce13d3097",
+  "fecha_creacion": "2026-09-08T10:00:00.000Z",
+  "fecha_actualizacion": "2026-09-08T10:00:00.000Z",
+  "seccionC": {
+    "identificacion": {
+      "nomenclatura_internacional": "B6.CBA-PrnpMuleDeer1Sala/J",
+      "acronimo": "TgKIDeer"
+    },
+    "es_omg": true,
+    "fenotipo_anormal": {
+      "estado": "si",
+      "descripcion": "Presentan mayor susceptibilidad a la infección por determinados priones de cérvidos debido a la PrP de cérvido que expresan."
+    },
+    "condiciones_especiales": {
+      "requiere": "no",
+      "descripcion": ""
+    },
+    "sistema_cria": "HOxHO (esta línea se encuentra ya en homocigosis en el SDA)",
+    "genotipaje": {
+      "procedimiento": "PCR",
+      "puesto_a_punto": true,
+      "tipo_muestra": "Biopsia de cola"
+    },
+    "identificacion_animales": ["Crotal (oreja)"],
+    "identificacion_animales_otro": "",
+    "animales_a_generar": {
+      "numero_total": 36,
+      "justificacion": "Se van a administrar 12 animales por cada grupo de AAV, de forma que podamos formar 2 subgrupos de 6 animales. Un subgrupo se inoculará con una cepa priónica adecuada, mientras que el otro subgrupo no se inoculará con priones y actuará de grupo control. Este segundo subgrupo es muy importante para determinar si existe un efecto neurotóxico de los AAV a largo plazo o cuantificar la cantidad de PrPC dominante negativa que persiste en el SNC pasadas varias semanas desde la administración del AAV. En esta línea se van a testar 3 AAV diferentes, por lo que el total de animales será de 36."
+    },
+    "procedimiento_cria": {
+      "tipo": "estandar_cicbiogune",
+      "descripcion": ""
+    },
+    "omg": {
+      "usado_anteriormente": true,
+      "numero_procedimiento_previo": "P-CBG-CBBA-1122",
+      "clasificacion_actividad": "",
+      "descripcion_operaciones": "",
+      "lugar_manipulacion": {
+        "tipo": ["animalario_cicbiogune"],
+        "descripcion": ""
+      },
+      "donde_manipulacion_genetica": "",
+      "es_cruce_omgs": false,
+      "cruces": [],
+      "modificacion_genetica": {
+        "tipo_modificacion": "",
+        "metodo_descripcion": "",
+        "caracteristicas_vector": "",
+        "tipo_identidad_vector": "",
+        "inserto": {
+          "organismo_origen": "",
+          "dimensiones_mapa_secuencias": "",
+          "funcion_especifica": "",
+          "genes_estructurales": "",
+          "elementos_reguladores": "",
+          "secuenciado_completamente": false
+        }
+      },
+      "omg_resultante": {
+        "denominacion": "B6.CBA-PrnpMuleDeer1Sala/J",
+        "medidas_seguridad_especiales": {
+          "requiere": false,
+          "detalle": ""
+        },
+        "descripcion_breve": "",
+        "estado_expresion_material_genetico": "",
+        "insercion": {
+          "conoce_numero_localizacion": false,
+          "num_copias": "",
+          "localizacion_cromosomica": "",
+          "secuencias_laterales": ""
+        }
+      }
+    }
+  }
+}

@@ -11,6 +11,13 @@
   ],
   "crias": [
     {
+      "id": "724cb9ce-1f50-4a47-b468-fb9aceb6af9f",
+      "cepa_idx": 0,
+      "acronimo": "KO-PrP",
+      "nomenclatura_internacional": "129-Prnptm2Edin/J",
+      "es_omg": true
+    },
+    {
       "id": "0bcf00b7-1389-480e-989d-c29eb74809b3",
       "cepa_idx": 1,
       "acronimo": "TgVol",
@@ -32,10 +39,31 @@
       "es_omg": true
     },
     {
+      "id": "23272149-a34c-46cc-930a-7299c2e1553b",
+      "cepa_idx": 4,
+      "acronimo": "Tg338",
+      "nomenclatura_internacional": "C57BL6-Tg(338)1INRA/J",
+      "es_omg": true
+    },
+    {
+      "id": "aa358277-c84c-4be4-bc8a-6572cd609335",
+      "cepa_idx": 5,
+      "acronimo": "TgKIDeer",
+      "nomenclatura_internacional": "B6.CBA-PrnpMuleDeer1Sala/J",
+      "es_omg": true
+    },
+    {
       "id": "53008e5e-4369-4908-8d80-dc62df9a3120",
       "cepa_idx": 6,
       "acronimo": "TgVur",
       "nomenclatura_internacional": "B6&CBA-Tg(Mo108IUROS248)1Sala/J",
+      "es_omg": true
+    },
+    {
+      "id": "18f99013-bab0-4f9d-aa47-78d8f4350d96",
+      "cepa_idx": 7,
+      "acronimo": "TgMol-CRISPR",
+      "nomenclatura_internacional": "B6.CBA-PrnpMo108I1Sala/J",
       "es_omg": true
     }
   ],
