@@ -1,0 +1,118 @@
+{
+  "id": "2d35e499-f1ea-4279-a3cc-79c63c577865",
+  "proyecto_id": "8ca83628-15a0-49c3-9059-658ce13d3097",
+  "fecha_creacion": "2026-09-08T10:00:00.000Z",
+  "fecha_actualizacion": "2026-09-08T10:00:00.000Z",
+  "datos_generales": {
+    "titulo_procedimiento": "Administración intravenosa de virus adeno asociados (AAV)",
+    "especies": ["Mus musculus"],
+    "cepa_linea": "KO-PrP; TgVol (FVB/N-Tg(Prnp-BVole109I)C594PRC/J); TgMol; Tg650; Tg338; TgKIDeer; TgVur; TgMol-CRISPR; C57BL/6 (WT)",
+    "sexo": "Ambos",
+    "edad_peso": "≥ 6 semanas",
+    "num_animales": 450,
+    "origen": "CIC bioGUNE – SDA",
+    "aclimatacion": "Según procedimiento estándar del SDA de CIC bioGUNE",
+    "identificacion": "Crotal auricular",
+    "condiciones_especiales": "",
+    "severidad": "Moderado",
+    "duracion": "28-35 días"
+  },
+  "metodologia": {
+    "descripcion": "Se administrará una dosis única de virus adeno asociados (AAV) por vía intravenosa (vena caudal) a los animales de los diferentes grupos experimentales. Los AAV portan genes que codifican diferentes proteínas priónicas dominantes negativas (PrP DN). Previamente a la administración, los animales se someterán a calentamiento local de la cola para facilitar la vasodilatación y la inyección. El volumen administrado será de 100 µl con una concentración de 2×10¹² genomas virales (gv)/ml. Tras la administración, los animales se mantienen en el animalario estándar (zona sucia) durante 28-35 días hasta su perfusión/extracción de encéfalo o su traslado al animalario BSL-3 de Neiker o CReSA para la inoculación de priones.",
+    "justificacion_procedimiento": "La administración intravenosa de AAV es la vía de elección para conseguir una transducción eficiente en el sistema nervioso central, aprovechando la capacidad de ciertos serotipos de AAV de cruzar la barrera hematoencefálica tras administración sistémica. Esta estrategia permite reducir el número de animales necesarios frente a alternativas quirúrgicas (inyección intracraneal), que requerirían procedimientos más invasivos y personal adicional."
+  },
+  "tamano_muestral": {
+    "numero_total": 450,
+    "metodo": "Basado en experiencia previa del grupo y análisis de potencia estadística",
+    "justificacion": "Se utilizan grupos de 6 animales por cepa y condición experimental (control + diferentes AAV-DN), lo que permite obtener resultados estadísticamente significativos minimizando el número de animales. Para los análisis de PMCA (Procedimiento 2) se utilizan exclusivamente animales de la cepa KO-PrP (150 animales).",
+    "grupos": [
+      { "nombre": "KO-PrP + control (PBS)",          "n": 30 },
+      { "nombre": "KO-PrP + AAV-DN (distintas DN)",   "n": 120 },
+      { "nombre": "TgVol + control (PBS)",             "n": 6  },
+      { "nombre": "TgVol + AAV-DN seleccionada",       "n": 30 },
+      { "nombre": "TgMol + control (PBS)",             "n": 6  },
+      { "nombre": "TgMol + AAV-DN seleccionada",       "n": 30 },
+      { "nombre": "Tg650 + control (PBS)",             "n": 6  },
+      { "nombre": "Tg650 + AAV-DN seleccionada",       "n": 30 },
+      { "nombre": "Tg338 + control (PBS)",             "n": 6  },
+      { "nombre": "Tg338 + AAV-DN seleccionada",       "n": 30 },
+      { "nombre": "TgKIDeer + control (PBS)",          "n": 6  },
+      { "nombre": "TgKIDeer + AAV-DN seleccionada",    "n": 30 },
+      { "nombre": "TgVur + control (PBS)",             "n": 6  },
+      { "nombre": "TgVur + AAV-DN seleccionada",       "n": 30 },
+      { "nombre": "TgMol-CRISPR + control (PBS)",      "n": 6  },
+      { "nombre": "TgMol-CRISPR + AAV-DN seleccionada","n": 30 }
+    ]
+  },
+  "aislamiento_ayuno": {
+    "hay_aislamiento": "No",
+    "duracion_aislamiento": "",
+    "hay_ayuno": "No",
+    "duracion_ayuno": "",
+    "justificacion": ""
+  },
+  "tecnicas": [
+    {
+      "id": "t1",
+      "nombre": "Inyección intravenosa (vena caudal)",
+      "n_veces": 1,
+      "num_animales": 450,
+      "descripcion": "Administración en vena caudal de 100 µl de AAV (2×10¹² gv/ml). Previa vasodilatación por calentamiento local de la cola.",
+      "personal": "Investigador con formación B,C,D",
+      "anestesia_local": false
+    }
+  ],
+  "analgesia_anestesia": {
+    "analgesia": [],
+    "anestesia": [],
+    "observaciones_analgesia": "",
+    "observaciones_anestesia": "No se requiere anestesia para la inyección intravenosa en vena caudal."
+  },
+  "otras_sustancias": {
+    "hay_riesgo": true,
+    "sustancias": [
+      {
+        "nombre": "Virus adeno asociados (AAV) recombinantes que expresan proteínas priónicas dominantes negativas",
+        "tipo_riesgo": "Biológico",
+        "concentracion": "2×10¹² genomas virales (gv)/ml",
+        "volumen": "100 µl por animal, vía intravenosa",
+        "clasificacion": "OGM de Clase 1. Los AAV recombinantes son vectores de terapia génica con serotipos no replicativos. Riesgo biológico contenido.",
+        "gestion_residuos": "Los residuos biológicos generados (jeringas, material en contacto con animales) se gestionarán como residuo biológico de clase 1 según los protocolos del SDA de CIC bioGUNE.",
+        "epi": "Guantes, bata, gafas de protección. Las manipulaciones se realizarán en cabina de seguridad biológica."
+      }
+    ],
+    "observaciones": "Los AAV recombinantes han sido producidos y titulados según los protocolos establecidos por el grupo. El riesgo biológico se clasifica como Clase 1 (riesgo mínimo para investigadores y medio ambiente). Las inoculaciones de priones (Procedimiento 1, segunda fase, y Procedimiento 2) se realizan en los animalarios BSL-3 de Neiker (ES489010006099) y CReSA (ES082660037069)."
+  },
+  "parametros": [
+    "Peso corporal semanal",
+    "Signos clínicos generales (aspecto, actividad, comportamiento)",
+    "Signos neurológicos (en las fases avanzadas de EET): ataxia, temblor, rigidez"
+  ],
+  "parametros_observaciones": "Los parámetros se registrarán semanalmente. Los criterios de punto final humanitario se aplicarán según el protocolo aprobado.",
+  "muestras_antemortem": [],
+  "finalizacion_anticipada": {
+    "criterios": [
+      "Pérdida de peso ≥ 20% en 48 h",
+      "Incapacidad para acceder al agua o alimento durante > 24 h",
+      "Deterioro neurológico grave que comprometa el bienestar del animal",
+      "Autolesiones"
+    ],
+    "justificacion_otros": ""
+  },
+  "finalizacion": {
+    "criterios_humanos": "Punto final humanitario definido por el desarrollo de signos neurológicos terminales compatibles con EET (estadio terminal), pérdida de peso grave o deterioro severo del estado general.",
+    "metodos_eutanasia": ["Inhalación de dióxido de carbono"],
+    "justificacion_eutanasia": "",
+    "observaciones": "Tras la eutanasia se procede a la perfusión y extracción del encéfalo. Para los animales del grupo KO-PrP destinados al Procedimiento 2 (obtención de sustrato PMCA), la eutanasia se realiza a los 28-35 días post-administración de AAV, independientemente del estado clínico."
+  },
+  "reutilizacion": {
+    "destino": "sacrificar_tejidos",
+    "tejidos": "Encéfalo (para análisis de PMCA en el caso de KO-PrP) y otros tejidos según protocolo (hígado, músculo) para análisis de expresión. Los animales de las cepas transgénicas se trasladan al animalario BSL-3 de Neiker o CReSA para la administración de priones (segundo procedimiento no incluido en este proyecto).",
+    "num_procedimiento": "2",
+    "num_proyecto": "P-CBG-CBBA-0",
+    "num_procedimiento_proyecto": "",
+    "severidad_procedimiento": "Sin recuperación",
+    "asesoramiento_veterinario": "",
+    "justificacion_vivos": "Los animales de la cepa KO-PrP que han recibido AAV y que se van a utilizar como sustrato PMCA son sacrificados a los 28-35 días. Los animales de las cepas transgénicas destinados a evaluación in vivo de la terapia génica se trasladan vivos al animalario BSL-3 correspondiente."
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "id": "8ca83628-15a0-49c3-9059-658ce13d3097",
+  "titulo": "USO DE VIRUS ADENO ASOCIADOS QUE EXPRESAN PROTEÍNAS PRIÓNICAS DOMINANTES NEGATIVAS PARA LA OBTENCIÓN DE ENCÉFALOS ÚTILES EN PMCA Y PARA SU EVALUACIÓN TERAPÉUTICA IN VIVO UTILIZANDO DIFERENTES CEPAS DE PRIONES",
+  "referencia_cbba": "P-CBG-CBBA-0",
+  "acronimo": "",
+  "fecha_creacion": "2026-09-08T10:00:00.000Z",
+  "fecha_actualizacion": "2026-09-08T10:00:00.000Z",
+  "procedimientos": [
+    "2d35e499-f1ea-4279-a3cc-79c63c577865",
+    "137d69e6-6fa8-4f00-9192-754f9da98599"
+  ],
+  "crias": [
+    {
+      "id": "0bcf00b7-1389-480e-989d-c29eb74809b3",
+      "cepa_idx": 0,
+      "acronimo": "TgVol",
+      "nomenclatura_internacional": "FVB/N-Tg(Prnp-BVole109I)C594PRC/J",
+      "es_omg": true
+    }
+  ],
+  "modificaciones": [],
+  "seccionD_id": null,
+  "hay_productos_riesgo": true,
+  "seccionA": {
+    "titulo": "USO DE VIRUS ADENO ASOCIADOS QUE EXPRESAN PROTEÍNAS PRIÓNICAS DOMINANTES NEGATIVAS PARA LA OBTENCIÓN DE ENCÉFALOS ÚTILES EN PMCA Y PARA SU EVALUACIÓN TERAPÉUTICA IN VIVO UTILIZANDO DIFERENTES CEPAS DE PRIONES",
+    "referencia_cbba": "P-CBG-CBBA-0",
+    "acronimo": "",
+    "responsable": {
+      "nif_pasaporte": "16287336R",
+      "nombre_apellidos": "Joaquín Castilla Castrillón",
+      "telefono": "ext. 4431",
+      "email": "jcastilla@cicbiogune.es",
+      "funcion_ecc566": "B,C,D",
+      "autoridad_competente": "Convalidado por el Ministerio de Agricultura, Pesca y Alimentación (RD 1201/2005)",
+      "fecha_acreditacion": "2023-12-27"
+    },
+    "participantes": [
+      { "nombre_apellidos": "Jorge Moreno Charco",                   "nif_pasaporte": "74520022E", "funciones": "B,C,D" },
+      { "nombre_apellidos": "Hasier Eraña Lasagabaster",             "nif_pasaporte": "72726214F", "funciones": "B,C"  },
+      { "nombre_apellidos": "Patricia Piñeiro Busto",                "nif_pasaporte": "30656534H", "funciones": "B,C"  },
+      { "nombre_apellidos": "Nuno Filipe Coutinho Gonçalvez Anjo",   "nif_pasaporte": "C896204",   "funciones": "B,C"  },
+      { "nombre_apellidos": "Cristina Sampedro Torres-Quevedo",      "nif_pasaporte": "06028318H", "funciones": "B,C"  },
+      { "nombre_apellidos": "Maitena San Juan Ansoleaga",            "nif_pasaporte": "78997060H", "funciones": "B,C"  },
+      { "nombre_apellidos": "Eva Fernández Muñoz",                   "nif_pasaporte": "79068133K", "funciones": "B,C"  }
+    ],
+    "duracion": {
+      "fecha_inicio": "2024-05-20",
+      "fecha_fin": "2027-05-20"
+    },
+    "financiacion": {
+      "entidad_programa": "CJD Foundation",
+      "estado": "aprobada",
+      "numero_proyecto": "CJD-2024",
+      "ip_es_responsable": true,
+      "ip_responsable_otro": ""
+    },
+    "lugar_realizacion": {
+      "animalario_cicbiogune": true,
+      "otro": true,
+      "descripcion": "Inoculaciones de diferentes cepas de priones en el animalario BSL3 de NEIKER - Instituto Vasco de Investigación y Desarrollo Agrario. Código REGA: ES489010006099 y en el animalario BSL-3 del Centre de Recerca en Sanitat Animal (CReSA). Código REGA: ES082660037069."
+    },
+    "objetivos": {
+      "objetivo_principal": "1. Evaluación de la capacidad inhibidora de las diferentes proteínas dominantes negativas utilizadas en el estudio mediante PMCA. Este experimento se realizará exclusivamente en un modelo murino knock out para la PrP. Así, estaríamos \"fabricando modelos transgénicos exprés\" que nos permitirían testar la capacidad de estas DN para inhibir la propagación de una forma rápida y reduciendo el número de animales, puesto que con un solo cerebro podemos realizar diferentes pruebas.\n\n2. Evaluación in vivo de la eficacia de la terapia génica utilizando diferentes modelos murinos de EET:\n  2.1. Estudio de la prolongación de los tiempos de incubación en diferentes modelos de enfermedad tras la administración de los AAV.\n  2.2. Estudio de toxicidad y expresión de las proteínas dominantes negativas a largo plazo.",
+      "resumen": "El objetivo principal del estudio es testar diferentes virus adeno asociados (AAV) que portan proteínas priónicas (PrP) dominantes negativas (DN). Una proteína dominante negativa, en el contexto de las enfermedades priónicas, es aquella que ralentiza o detiene el proceso de propagación asociado al desarrollo de una Encefalopatía Espongiforme Transmisible (EET). Así, provocando la producción de una PrP DN en el SNC a través de la administración de AAV, se evitaría la propagación de priones que, en última instancia, desencadena el proceso neuropatológico y la muerte del individuo.\n\nPara poder determinar la capacidad de los AAV retrasando o evitando el desarrollo de una EET, nos hemos propuesto los siguientes objetivos específicos:\n\n1. Determinar la capacidad de inhibición de diferentes DN mediante PMCA. Para ello, vamos a administrar los AAV a un modelo murino KO para la PrP que ya tenemos en el SDA de CIC bioGUNE y, pasados 28-35 días para asegurar una buena transducción y expresión de la DN en el SNC, vamos a perfundir esos animales y extraer el encéfalo.\n\n2. Una vez hayamos seleccionado mediante PMCA las proteínas DN más eficaces, estas se testarán directamente en el modelo in vivo. Para ello, administraremos los animales con AAV que expresen aquellas proteínas DN que han sido seleccionadas y, pasados 28-35 días, se trasladarán al animalario BSL3 de Neiker o CReSA para la administración de priones.",
+      "dano_beneficio": "Las EET son un grupo de enfermedades neurodegenerativas incurables hoy en día y que tienen una tasa de mortalidad del 100%. Gracias a la experimentación que vamos a realizar podremos obtener información muy valiosa sobre los siguientes puntos, todos ellos primordiales para poder trasladar la terapia génica con proteínas DN a humanos en un futuro:\n\n1. La generación de nuevos vectores adeno asociados (AAV) seleccionados para que atraviesen la barrera hematoencefálica y modificados genéticamente para contener el gen que codifica la proteína del prion dominante negativa.\n2. Se conocerá la eficacia de estos AAV infectando neuronas tras su inoculación intravenosa.\n3. Se conocerán los niveles de expresión de diferentes PrP DN utilizando anticuerpos específicos dado que las proteínas han sido diseñadas con tag ad hoc.\n4. Se determinará la capacidad inhibidora de las PrP DN mediante PMCA frente a diferentes cepas de priones.\n5. Se conocerá la eficacia de la terapia génica in vivo utilizando diferentes modelos murinos de EET.\n6. Se podrá saber durante cuánto tiempo se expresa la proteína DN en el SNC del animal, su toxicidad y hasta qué punto esta sigue protegiendo de la propagación de priones."
+    },
+    "tipo_proyecto": "II",
+    "finalidad": ["a", "b"],
+    "tres_rs": {
+      "reemplazo": "El uso de animales en esta fase del testado de los virus es esencial para describir cómo la proteína DN se expresa en el organismo: durante cuánto tiempo, qué cantidad, si se produce en el compartimento celular adecuado, etc. Además, los modelos transgénicos in vivo de EET son los únicos modelos de que disponemos para testar terapias hoy en día, siendo este el último paso previo a la aplicación de la potencial terapia en humanos. Diferentes experimentos in vitro con proteína recombinante nos han permitido demostrar que la proteína DN inhibe la propagación de priones de forma dominante, por lo que el siguiente paso insalvable es demostrar este efecto in vivo o, al menos, con PrP procedente del SNC de un animal (modificaciones postraduccionales no presentes en la proteína recombinante).",
+      "reduccion": "Nuestro grupo lleva más de dos décadas trabajando en EET y colaboramos con varios grupos a nivel internacional que también lo hacen. En todo momento conocemos el tipo de investigación y estamos al día de los resultados y objetivos que se proponen en relación a las prionopatías con el objetivo de no duplicar resultados previamente validados por otros. Además, se han diseñado los diferentes procedimientos de forma que cada grupo experimental esté formado por el menor número de animales que permita la obtención de resultados significativos.",
+      "refinamiento": "Los modelos murinos elegidos son lo más adaptados e idóneos a nuestros objetivos. Como hemos podido observar gracias a diferentes proyectos previos en CIC bioGUNE, en Neiker y en CReSA, se tratan de modelos rápidos y con resultados muy homogéneos tanto in vivo como en PMCA, lo que nos permite testar los AAV de una forma rápida y fiable. Además, tanto el personal de nuestro laboratorio como el personal de animalario de Neiker y CReSA tiene amplia experiencia en el manejo de estos animales."
+    },
+    "hay_cria": true,
+    "cepas_cria": [
+      { "nomenclatura_internacional": "", "acronimo": "KO-PrP",       "num_animales": 150 },
+      { "nomenclatura_internacional": "FVB/N-Tg(Prnp-BVole109I)C594PRC/J", "acronimo": "TgVol",       "num_animales": 36  },
+      { "nomenclatura_internacional": "", "acronimo": "TgMol",       "num_animales": 36  },
+      { "nomenclatura_internacional": "", "acronimo": "Tg650",       "num_animales": 36  },
+      { "nomenclatura_internacional": "", "acronimo": "Tg338",       "num_animales": 36  },
+      { "nomenclatura_internacional": "", "acronimo": "TgKIDeer",    "num_animales": 36  },
+      { "nomenclatura_internacional": "", "acronimo": "TgVur",       "num_animales": 36  },
+      { "nomenclatura_internacional": "", "acronimo": "TgMol-CRISPR","num_animales": 36  }
+    ],
+    "condiciones_alojamiento": {
+      "estandar": true,
+      "variaciones": true,
+      "descripcion": "Una vez los animales se hayan administrado con AAV se mantendrán en la zona sucia del SDA hasta su perfusión o su traslado a Neiker o CReSA para la inoculación de priones.",
+      "alojamiento_individual": false,
+      "alojamiento_individual_proc": "",
+      "alojamiento_individual_justificacion": ""
+    },
+    "codigo_aprobacion": ""
+  }
+}

@@ -1,0 +1,115 @@
+{
+  "id": "137d69e6-6fa8-4f00-9192-754f9da98599",
+  "proyecto_id": "8ca83628-15a0-49c3-9059-658ce13d3097",
+  "fecha_creacion": "2026-09-08T10:00:00.000Z",
+  "fecha_actualizacion": "2026-09-08T10:00:00.000Z",
+  "datos_generales": {
+    "titulo_procedimiento": "Obtención de encéfalos de ratones KO-PrP para su uso como sustrato en PMCA",
+    "especies": ["Mus musculus"],
+    "cepa_linea": "KO-PrP (ratones knockout para la proteína priónica PrP)",
+    "sexo": "Ambos",
+    "edad_peso": "≥ 6 semanas",
+    "num_animales": 150,
+    "origen": "CIC bioGUNE – SDA (procedentes del Procedimiento 1)",
+    "aclimatacion": "Los animales ya están aclimatados al SDA desde el inicio del Procedimiento 1",
+    "identificacion": "Crotal auricular",
+    "condiciones_especiales": "",
+    "severidad": "Sin recuperación",
+    "duracion": "28-35 días (desde la administración de AAV en el Procedimiento 1)"
+  },
+  "metodologia": {
+    "descripcion": "Los animales KO-PrP que han recibido AAV en el Procedimiento 1 son sacrificados por inhalación de CO₂ a los 28-35 días post-administración para asegurar una buena transducción y expresión de la proteína dominante negativa en el sistema nervioso central. Tras la eutanasia, se realiza una perfusión intracardíaca con PBS para eliminar la sangre del encéfalo. A continuación, se extrae el encéfalo y se procesa según el protocolo de PMCA (Protein Misfolding Cyclic Amplification): se prepara un homogenado al 10% (p/v) en tampón de homogenización con proteasas inhibidoras. El encéfalo se divide en dos hemisferios: uno se conserva a -80°C para análisis bioquímicos adicionales y el otro se utiliza inmediatamente o se conserva a -80°C para los ensayos de PMCA.",
+    "justificacion_procedimiento": "Los encéfalos de ratones KO-PrP que expresan proteínas PrP dominantes negativas (gracias a los AAV administrados en el Procedimiento 1) constituyen el sustrato óptimo para los ensayos de PMCA. Estos encéfalos aportan la proteína dominante negativa en el contexto de sus modificaciones postraduccionales naturales (glicosilación, anclaje GPI), que no están presentes en la proteína recombinante. Así, la PMCA con este sustrato permite evaluar de forma más fisiológica la capacidad inhibidora de las diferentes PrP DN frente a distintas cepas de priones, reduciendo además el número de animales necesarios (un solo encéfalo permite múltiples ensayos)."
+  },
+  "tamano_muestral": {
+    "numero_total": 150,
+    "metodo": "Calculado en función del número de variantes de AAV-DN a testar, de los controles necesarios y de la réplica experimental mínima para validez estadística",
+    "justificacion": "Se utilizarán 6 animales por grupo experimental (diferentes AAV-DN + controles PBS), lo que permite análisis estadísticos con potencia suficiente y está en línea con la experiencia previa del grupo con modelos PMCA.",
+    "grupos": [
+      { "nombre": "KO-PrP + PBS (control)",             "n": 30 },
+      { "nombre": "KO-PrP + AAV-DN variante 1",         "n": 24 },
+      { "nombre": "KO-PrP + AAV-DN variante 2",         "n": 24 },
+      { "nombre": "KO-PrP + AAV-DN variante 3",         "n": 24 },
+      { "nombre": "KO-PrP + AAV-DN variante 4",         "n": 24 },
+      { "nombre": "KO-PrP + AAV-DN variante 5 (TBD)",   "n": 24 }
+    ]
+  },
+  "aislamiento_ayuno": {
+    "hay_aislamiento": "No",
+    "duracion_aislamiento": "",
+    "hay_ayuno": "No",
+    "duracion_ayuno": "",
+    "justificacion": ""
+  },
+  "tecnicas": [
+    {
+      "id": "t1",
+      "nombre": "Eutanasia por inhalación de CO₂",
+      "n_veces": 1,
+      "num_animales": 150,
+      "descripcion": "Eutanasia en cámara de CO₂ según protocolo estándar del SDA.",
+      "personal": "Investigador con formación B,C,D",
+      "anestesia_local": false
+    },
+    {
+      "id": "t2",
+      "nombre": "Perfusión intracardíaca con PBS",
+      "n_veces": 1,
+      "num_animales": 150,
+      "descripcion": "Tras la eutanasia, perfusión transcardíaca con PBS 1× (aprox. 20-30 ml) mediante bomba peristáltica o jeringa para eliminar la sangre del encéfalo.",
+      "personal": "Investigador con formación B,C,D",
+      "anestesia_local": false
+    },
+    {
+      "id": "t3",
+      "nombre": "Extracción del encéfalo y procesado para PMCA",
+      "n_veces": 1,
+      "num_animales": 150,
+      "descripcion": "Disección del encéfalo completo. Preparación del homogenado al 10% (p/v) en tampón de lisis con inhibidores de proteasas. Conservación a -80°C hasta su uso en PMCA.",
+      "personal": "Investigador con formación B,C,D",
+      "anestesia_local": false
+    }
+  ],
+  "analgesia_anestesia": {
+    "analgesia": [],
+    "anestesia": [],
+    "observaciones_analgesia": "",
+    "observaciones_anestesia": "No se requiere anestesia ni analgesia. Los animales son sacrificados directamente en el momento de la perfusión."
+  },
+  "otras_sustancias": {
+    "hay_riesgo": false,
+    "sustancias": [],
+    "observaciones": "Los encéfalos obtenidos se manipulan bajo condiciones de bioseguridad estándar (BSL-1/BSL-2) en el SDA de CIC bioGUNE, ya que los animales KO-PrP no han sido inoculados con priones. Los ensayos de PMCA con cepas de priones se realizan en laboratorios BSL-3 autorizados."
+  },
+  "parametros": [
+    "Comprobación del estado general y peso corporal en el momento del sacrificio",
+    "Valoración macroscópica del encéfalo en el momento de la extracción",
+    "Concentración de proteína total del homogenado (método BCA)"
+  ],
+  "parametros_observaciones": "Se registrará cualquier anomalía macroscópica observada en el encéfalo durante la extracción.",
+  "muestras_antemortem": [],
+  "finalizacion_anticipada": {
+    "criterios": [
+      "Pérdida de peso ≥ 20% respecto al peso inicial",
+      "Deterioro grave del estado general o signos de dolor/malestar severo no controlable",
+      "Muerte espontánea"
+    ],
+    "justificacion_otros": ""
+  },
+  "finalizacion": {
+    "criterios_humanos": "Punto final: sacrificio programado a los 28-35 días post-administración de AAV. Si se presentan signos de sufrimiento severo antes de ese momento, se aplica eutanasia anticipada.",
+    "metodos_eutanasia": ["Inhalación de dióxido de carbono"],
+    "justificacion_eutanasia": "",
+    "observaciones": "Tras la eutanasia se realiza inmediatamente la perfusión y extracción del encéfalo para garantizar la calidad del sustrato de PMCA."
+  },
+  "reutilizacion": {
+    "destino": "sacrificar_tejidos",
+    "tejidos": "Encéfalo completo (sustrato PMCA). Adicionalmente se pueden recoger: hígado, músculo esquelético, bazo para análisis de expresión de AAV-DN en tejidos periféricos.",
+    "num_procedimiento": "",
+    "num_proyecto": "",
+    "num_procedimiento_proyecto": "",
+    "severidad_procedimiento": "",
+    "asesoramiento_veterinario": "",
+    "justificacion_vivos": ""
+  }
+}
