@@ -1083,4 +1083,39 @@ router.delete('/proyectos/:id/extra-pdfs/:name', (req, res) => {
   res.json({ ok: true })
 })
 
+// ── Seed: import committed data files into DATA_DIR ──────────────────────────
+// Reads from the repo's own data/ directory (present in every Railway container)
+// and copies any missing files into DATA_DIR (the persistent volume).
+// Protected by the global auth middleware. Safe to call repeatedly (skips existing files).
+
+const REPO_DATA_DIR = join(__dirname, '..', '..', 'data')
+
+router.post('/seed', (_req, res) => {
+  try {
+    const copied = []
+    const skipped = []
+
+    const dirs = [
+      { src: join(REPO_DATA_DIR, 'animalario', 'proyectos'),       dst: PROYECTOS_DIR,  pattern: /^proyecto_.+\.json$/ },
+      { src: join(REPO_DATA_DIR, 'animalario', 'procedimientos'),  dst: PROC_DIR,       pattern: /^proc_.+\.json$/ },
+      { src: join(REPO_DATA_DIR, 'animalario', 'crias'),           dst: CRIA_DIR,       pattern: /^cria_.+\.json$/ },
+    ]
+
+    for (const { src, dst, pattern } of dirs) {
+      if (!existsSync(src)) continue
+      ensureDir(dst)
+      for (const f of readdirSync(src).filter(f => pattern.test(f))) {
+        const dstPath = join(dst, f)
+        if (existsSync(dstPath)) { skipped.push(f); continue }
+        writeFileSync(dstPath, readFileSync(join(src, f)))
+        copied.push(f)
+      }
+    }
+
+    res.json({ ok: true, copied, skipped })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 export default router
