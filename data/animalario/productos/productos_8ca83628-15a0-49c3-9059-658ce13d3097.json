@@ -1,0 +1,19 @@
+{
+  "id": "8ca83628-15a0-49c3-9059-658ce13d3097",
+  "proyecto_id": "8ca83628-15a0-49c3-9059-658ce13d3097",
+  "fecha_creacion": "2026-09-08T10:00:00.000Z",
+  "fecha_actualizacion": "2026-09-08T10:00:00.000Z",
+  "seccionD": {
+    "agentes_biologicos": [
+      {
+        "nombre_cientifico": "Virus adenoasociados (AAV) del género Dependovirus",
+        "descripcion": "25 virus adenoasociados que portan diferentes secuencias del gen PRNP",
+        "grupo_riesgo": "2",
+        "lugar_manipulacion": "Zona sucia. Cabina de Bioseguridad",
+        "num_procedimiento": "1"
+      }
+    ],
+    "agentes_quimicos": [],
+    "firmante": ""
+  }
+}
