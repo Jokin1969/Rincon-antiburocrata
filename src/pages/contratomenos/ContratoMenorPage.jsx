@@ -32,10 +32,12 @@ export default function ContratoMenorPage() {
   const [certFile, setCertFile] = useState(null)
   // { name, type, data: base64 } — persisted across save/load
   const [certFileData, setCertFileData] = useState(null)
-  const [iaFile, setIaFile] = useState(null)
-  const [iaLoading, setIaLoading] = useState(null) // 'claude' | 'openai' | 'gemini' | null
-  const [iaResult, setIaResult] = useState(null)
-  const [iaError, setIaError] = useState(null)
+  const EMPTY_SLOT = { file: null, loading: null, result: null, error: null }
+  const [iaSlots, setIaSlots] = useState([{ ...EMPTY_SLOT }])
+  const [eleccionProvIdx, setEleccionProvIdx] = useState(0)
+  const [eleccionLoading, setEleccionLoading] = useState(null)
+  const [eleccionResult, setEleccionResult] = useState(null)
+  const [eleccionError, setEleccionError] = useState(null)
 
   const { records, saveRecord, deleteRecord } = useContratoStore()
 
@@ -66,22 +68,64 @@ export default function ContratoMenorPage() {
     setTimeout(() => URL.revokeObjectURL(url), 30000)
   }
 
-  async function handleIaGenerar(provider) {
-    setIaLoading(provider)
-    setIaResult(null)
-    setIaError(null)
+  function addIaSlot() {
+    setIaSlots(prev => [...prev, { ...EMPTY_SLOT }])
+  }
+
+  function removeIaSlot(idx) {
+    setIaSlots(prev => prev.filter((_, i) => i !== idx))
+  }
+
+  async function handleIaExtract(slotIdx, provider) {
+    setIaSlots(prev => prev.map((s, i) => i === slotIdx ? { ...s, loading: provider, result: null, error: null } : s))
     try {
+      const slot = iaSlots[slotIdx]
       const body = new FormData()
       body.append('provider', provider)
-      if (iaFile) body.append('file', iaFile)
+      if (slot.file) body.append('file', slot.file)
       const res = await fetch('/api/ia/contrato', { method: 'POST', body })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
-      setIaResult(data)
+      setIaSlots(prev => prev.map((s, i) => i === slotIdx ? { ...s, result: data, loading: null } : s))
     } catch (err) {
-      setIaError(err.message)
+      setIaSlots(prev => prev.map((s, i) => i === slotIdx ? { ...s, error: err.message, loading: null } : s))
+    }
+  }
+
+  function copySlotToProveedor(slotIdx) {
+    const result = iaSlots[slotIdx]?.result
+    if (!result) return
+    setForm(prev => {
+      const proveedores = [...prev.proveedores]
+      while (proveedores.length <= slotIdx) proveedores.push({ ...EMPTY_PROVEEDOR })
+      proveedores[slotIdx] = {
+        nombre:      result.nombre      || proveedores[slotIdx].nombre,
+        cif:         result.cif         || proveedores[slotIdx].cif,
+        contacto:    result.contacto    || proveedores[slotIdx].contacto,
+        presupuesto: result.presupuesto || proveedores[slotIdx].presupuesto,
+      }
+      return { ...prev, proveedores }
+    })
+  }
+
+  async function handleIaEleccion(provider) {
+    setEleccionLoading(provider)
+    setEleccionResult(null)
+    setEleccionError(null)
+    try {
+      const elegido = form.proveedores[eleccionProvIdx]?.nombre?.trim() || `Proveedor ${eleccionProvIdx + 1}`
+      const res = await fetch('/api/ia/contrato-eleccion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider, proveedores: form.proveedores, proveedorElegido: elegido }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
+      setEleccionResult(data)
+    } catch (err) {
+      setEleccionError(err.message)
     } finally {
-      setIaLoading(null)
+      setEleccionLoading(null)
     }
   }
 
@@ -499,17 +543,120 @@ export default function ContratoMenorPage() {
         {/* ── Asistente IA ─────────────────────────────────────────────────── */}
         <div className={styles.iaRow}>
           <span className={styles.iaRowLabel}>✦ Generar textos con IA</span>
-          <div className={styles.iaRowControls}>
-            <label className={styles.iaFileLabel}>
-              <input
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.txt"
-                className={styles.iaFileInput}
-                onChange={e => { setIaFile(e.target.files[0] || null); setIaResult(null); setIaError(null) }}
-              />
-              <span className={styles.iaFileBtn}>
-                {iaFile ? `📎 ${iaFile.name}` : '📎 Documento de referencia (opcional)'}
-              </span>
+
+          {/* Documento por proveedor */}
+          <div className={styles.iaSlotList}>
+            {iaSlots.map((slot, idx) => {
+              const anyBusy = iaSlots.some(s => s.loading !== null) || eleccionLoading !== null
+              return (
+                <div key={idx} className={styles.iaSlot}>
+                  <div className={styles.iaSlotHeader}>
+                    <span className={styles.iaSlotNum}>Documento {idx + 1}</span>
+                    {iaSlots.length > 1 && (
+                      <button type="button" className={styles.iaSlotRemove} onClick={() => removeIaSlot(idx)}>×</button>
+                    )}
+                  </div>
+                  <div className={styles.iaRowControls}>
+                    <label className={styles.iaFileLabel}>
+                      <input
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.txt"
+                        className={styles.iaFileInput}
+                        onChange={e => {
+                          const file = e.target.files[0] || null
+                          setIaSlots(prev => prev.map((s, i) => i === idx ? { ...s, file, result: null, error: null } : s))
+                        }}
+                      />
+                      <span className={styles.iaFileBtn}>
+                        {slot.file ? `📎 ${slot.file.name}` : '📎 Documento (opcional)'}
+                      </span>
+                    </label>
+                    {[
+                      { value: 'claude', label: 'Claude' },
+                      { value: 'openai', label: 'GPT-4o' },
+                      { value: 'gemini', label: 'Gemini' },
+                    ].map(p => (
+                      <button
+                        key={p.value}
+                        type="button"
+                        className={styles.iaBtn}
+                        onClick={() => handleIaExtract(idx, p.value)}
+                        disabled={anyBusy}
+                      >
+                        {slot.loading === p.value ? 'Consultando…' : `✦ ${p.label}`}
+                      </button>
+                    ))}
+                  </div>
+
+                  {slot.error && <p className={styles.iaError}>{slot.error}</p>}
+
+                  {slot.result && (
+                    <div className={styles.iaResult}>
+                      {(slot.result.nombre || slot.result.cif || slot.result.contacto || slot.result.presupuesto) && (
+                        <div className={styles.iaResultField}>
+                          <span className={styles.iaResultLabel}>Datos del proveedor extraídos</span>
+                          <div className={styles.iaExtractedGrid}>
+                            {[['Nombre', 'nombre'], ['CIF', 'cif'], ['Contacto', 'contacto'], ['Presupuesto', 'presupuesto']].map(([lbl, key]) =>
+                              slot.result[key] ? (
+                                <div key={key} className={styles.iaExtractedItem}>
+                                  <span className={styles.iaExtractedKey}>{lbl}</span>
+                                  <span className={styles.iaExtractedVal}>{slot.result[key]}</span>
+                                </div>
+                              ) : null
+                            )}
+                          </div>
+                          <button type="button" className={styles.iaUseBtn} onClick={() => copySlotToProveedor(idx)}>
+                            ↑ Copiar a fila {idx + 1} de proveedores
+                          </button>
+                        </div>
+                      )}
+                      {slot.result.objeto && (
+                        <div className={styles.iaResultField}>
+                          <span className={styles.iaResultLabel}>Objeto del contrato</span>
+                          <p className={styles.iaResultText}>{slot.result.objeto}</p>
+                          <button type="button" className={styles.iaUseBtn}
+                            onClick={() => setForm(prev => ({ ...prev, objeto: slot.result.objeto }))}>
+                            ↑ Usar este texto
+                          </button>
+                        </div>
+                      )}
+                      {slot.result.justificacionNecesidad && (
+                        <div className={styles.iaResultField}>
+                          <span className={styles.iaResultLabel}>Justificación de la necesidad</span>
+                          <p className={styles.iaResultText}>{slot.result.justificacionNecesidad}</p>
+                          <button type="button" className={styles.iaUseBtn}
+                            onClick={() => setForm(prev => ({ ...prev, justificacionNecesidad: slot.result.justificacionNecesidad }))}>
+                            ↑ Usar este texto
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          <button type="button" className={styles.addSlotBtn} onClick={addIaSlot}>
+            + Añadir documento de proveedor
+          </button>
+
+          <hr className={styles.iaSeparator} />
+
+          {/* Justificación de elección */}
+          <span className={styles.iaRowLabel}>✦ Justificación de la elección del proveedor</span>
+          <div className={styles.iaEleccionControls}>
+            <label className={styles.iaEleccionLabel}>
+              Proveedor elegido:
+              <select
+                className={styles.iaEleccionSelect}
+                value={eleccionProvIdx}
+                onChange={e => { setEleccionProvIdx(Number(e.target.value)); setEleccionResult(null) }}
+              >
+                {form.proveedores.map((p, i) => (
+                  <option key={i} value={i}>{p.nombre?.trim() || `Proveedor ${i + 1}`}</option>
+                ))}
+              </select>
             </label>
             {[
               { value: 'claude', label: 'Claude' },
@@ -520,36 +667,28 @@ export default function ContratoMenorPage() {
                 key={p.value}
                 type="button"
                 className={styles.iaBtn}
-                onClick={() => handleIaGenerar(p.value)}
-                disabled={iaLoading !== null}
+                onClick={() => handleIaEleccion(p.value)}
+                disabled={iaSlots.some(s => s.loading !== null) || eleccionLoading !== null}
               >
-                {iaLoading === p.value ? 'Consultando…' : `✦ ${p.label}`}
+                {eleccionLoading === p.value ? 'Generando…' : `✦ ${p.label}`}
               </button>
             ))}
           </div>
 
-          {iaError && <p className={styles.iaError}>{iaError}</p>}
+          {eleccionError && <p className={styles.iaError}>{eleccionError}</p>}
 
-          {iaResult && (
+          {eleccionResult?.justificacionEleccion && (
             <div className={styles.iaResult}>
               <div className={styles.iaResultField}>
-                <span className={styles.iaResultLabel}>Objeto del contrato</span>
-                <p className={styles.iaResultText}>{iaResult.objeto}</p>
+                <span className={styles.iaResultLabel}>Justificación de la elección</span>
+                <p className={styles.iaResultText}>{eleccionResult.justificacionEleccion}</p>
                 <button
                   type="button"
                   className={styles.iaUseBtn}
-                  onClick={() => setForm(prev => ({ ...prev, objeto: iaResult.objeto }))}
-                >
-                  ↑ Usar este texto
-                </button>
-              </div>
-              <div className={styles.iaResultField}>
-                <span className={styles.iaResultLabel}>Justificación de la necesidad</span>
-                <p className={styles.iaResultText}>{iaResult.justificacionNecesidad}</p>
-                <button
-                  type="button"
-                  className={styles.iaUseBtn}
-                  onClick={() => setForm(prev => ({ ...prev, justificacionNecesidad: iaResult.justificacionNecesidad }))}
+                  onClick={() => {
+                    setCertExclusividad(false)
+                    setForm(prev => ({ ...prev, justificacionEleccion: eleccionResult.justificacionEleccion }))
+                  }}
                 >
                   ↑ Usar este texto
                 </button>

@@ -283,6 +283,125 @@
   background: rgba(123, 28, 46, 0.14);
 }
 
+.iaSlotList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.iaSlot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+}
+
+.iaSlotHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.iaSlotNum {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.iaSlotRemove {
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 0.2rem;
+  transition: color 0.15s;
+}
+
+.iaSlotRemove:hover {
+  color: #b91c1c;
+}
+
+.iaExtractedGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.4rem 1rem;
+  margin-bottom: 0.4rem;
+}
+
+.iaExtractedItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.iaExtractedKey {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.iaExtractedVal {
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.addSlotBtn {
+  align-self: flex-start;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: none;
+  border: 1px dashed rgba(123, 28, 46, 0.35);
+  border-radius: var(--radius-sm);
+  padding: 0.32rem 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.addSlotBtn:hover {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+}
+
+.iaSeparator {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0.25rem 0;
+}
+
+.iaEleccionControls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.iaEleccionLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.83rem;
+  color: var(--muted);
+}
+
+.iaEleccionSelect {
+  font-size: 0.83rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+}
+
 /* ── Actions ──────────────────────────────────────────────────────────────── */
 
 /* ── Certificado de exclusividad ──────────────────────────────────────────── */
