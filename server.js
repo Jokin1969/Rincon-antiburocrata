@@ -574,17 +574,21 @@ app.post('/api/imprimir', async (req, res) => {
 
 const IA_SYSTEM_PROMPT =
   'Eres un asistente experto en redacción de expedientes administrativos españoles. ' +
-  'Genera texto para un contrato menor de CIC bioGUNE (centro de investigación biomédica en Derio, Bizkaia). ' +
-  'Responde ÚNICAMENTE con un objeto JSON válido con exactamente estas dos claves: ' +
-  '"objeto" (1-2 frases concisas describiendo el objeto del contrato) y ' +
-  '"justificacionNecesidad" (2-4 frases justificando por qué es necesario el suministro o servicio). ' +
+  'Genera o extrae texto para un contrato menor de CIC bioGUNE (centro de investigación biomédica en Derio, Bizkaia). ' +
+  'Responde ÚNICAMENTE con un objeto JSON válido con exactamente estas seis claves: ' +
+  '"objeto" (1-2 frases concisas describiendo el objeto del contrato), ' +
+  '"justificacionNecesidad" (2-4 frases justificando por qué es necesario el suministro o servicio), ' +
+  '"nombre" (nombre o razón social del proveedor; cadena vacía "" si no aparece en el documento), ' +
+  '"cif" (CIF o NIF del proveedor; cadena vacía "" si no aparece), ' +
+  '"contacto" (email, teléfono o persona de contacto del proveedor; cadena vacía "" si no aparece), ' +
+  '"presupuesto" (importe total del presupuesto con moneda, ej. "1.234,56 €"; cadena vacía "" si no aparece). ' +
   'Tono formal y administrativo en español.'
 
 const IA_PROMPT_NO_FILE =
-  'Genera un objeto del contrato y una justificación de la necesidad para un contrato menor típico de material o servicio científico en CIC bioGUNE.'
+  'Genera un objeto del contrato y una justificación de la necesidad para un contrato menor típico de material o servicio científico en CIC bioGUNE. Las claves nombre, cif, contacto y presupuesto déjalas vacías.'
 
 const IA_PROMPT_WITH_FILE =
-  'Basándote en el documento anterior, genera el objeto del contrato y la justificación de la necesidad.'
+  'Basándote en el documento anterior, genera el objeto del contrato y la justificación de la necesidad, y extrae los datos del proveedor (nombre, CIF, contacto, presupuesto). Si algún dato no aparece en el documento, devuelve cadena vacía para esa clave.'
 
 function parseIaJson(text) {
   const match = (text || '{}').match(/\{[\s\S]*\}/)
@@ -592,7 +596,78 @@ function parseIaJson(text) {
   return {
     objeto:                 parsed.objeto                 || '',
     justificacionNecesidad: parsed.justificacionNecesidad || '',
+    nombre:                 parsed.nombre                 || '',
+    cif:                    parsed.cif                    || '',
+    contacto:               parsed.contacto               || '',
+    presupuesto:            parsed.presupuesto            || '',
   }
+}
+
+const IA_ELECCION_SYSTEM_PROMPT =
+  'Eres un asistente experto en redacción de expedientes administrativos españoles para CIC bioGUNE. ' +
+  'Redacta la "Justificación de la elección del proveedor" para un contrato menor. ' +
+  'IMPORTANTE: El criterio económico (precio) es el MENOS relevante y solo debe mencionarse brevemente ' +
+  'al final si los demás criterios son equivalentes. Prioriza siempre argumentos no económicos: ' +
+  'experiencia acreditada en el sector, calidad del producto o servicio, historial previo con la organización, ' +
+  'capacidad técnica, plazos de entrega, soporte técnico especializado, garantías ofrecidas, ' +
+  'adecuación a las especificaciones técnicas requeridas, o cualquier otro criterio cualitativo relevante. ' +
+  'Responde ÚNICAMENTE con un objeto JSON con la clave "justificacionEleccion" (2-4 frases en español formal y administrativo).'
+
+function buildEleccionPrompt(proveedores, proveedorElegido) {
+  const lista = proveedores
+    .filter(p => p.nombre?.trim())
+    .map((p, i) => {
+      let line = `${i + 1}. ${p.nombre}`
+      if (p.cif) line += ` (CIF: ${p.cif})`
+      if (p.presupuesto) line += `, presupuesto: ${p.presupuesto}`
+      return line
+    })
+    .join('\n')
+  return `Proveedores consultados:\n${lista || 'No se han especificado.'}` +
+    `\n\nProveedor elegido: ${proveedorElegido}` +
+    '\n\nRedacta la justificación de la elección priorizando criterios no económicos.'
+}
+
+function parseEleccionJson(text) {
+  const match = (text || '{}').match(/\{[\s\S]*\}/)
+  const parsed = JSON.parse(match ? match[0] : '{}')
+  return { justificacionEleccion: parsed.justificacionEleccion || '' }
+}
+
+async function iaEleccionWithClaude(proveedores, proveedorElegido) {
+  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  const message = await anthropic.messages.create({
+    model: 'claude-opus-4-7',
+    max_tokens: 512,
+    system: [{ type: 'text', text: IA_ELECCION_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+    messages: [{ role: 'user', content: buildEleccionPrompt(proveedores, proveedorElegido) }],
+  })
+  return parseEleccionJson(message.content.find(b => b.type === 'text')?.text)
+}
+
+async function iaEleccionWithOpenAI(proveedores, proveedorElegido) {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [
+      { role: 'system', content: IA_ELECCION_SYSTEM_PROMPT },
+      { role: 'user',   content: buildEleccionPrompt(proveedores, proveedorElegido) },
+    ],
+    response_format: { type: 'json_object' },
+    max_tokens: 400,
+  })
+  return parseEleccionJson(completion.choices[0].message.content)
+}
+
+async function iaEleccionWithGemini(proveedores, proveedorElegido) {
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-2.0-flash-lite',
+    systemInstruction: IA_ELECCION_SYSTEM_PROMPT,
+    generationConfig: { responseMimeType: 'application/json' },
+  })
+  const result = await model.generateContent(buildEleccionPrompt(proveedores, proveedorElegido))
+  return parseEleccionJson(result.response.text())
 }
 
 async function iaWithClaude(file) {
@@ -699,6 +774,25 @@ app.post('/api/ia/contrato', upload.single('file'), async (req, res) => {
     res.json(data)
   } catch (err) {
     console.error(`IA Contrato [${provider}] error:`, err)
+    res.status(500).json({ error: classifyAIError(err, provider) })
+  }
+})
+
+// ── IA: justificación de elección del proveedor ──────────────────────────────
+app.post('/api/ia/contrato-eleccion', express.json(), async (req, res) => {
+  const { provider = 'claude', proveedores = [], proveedorElegido = '' } = req.body
+  const KEY_MAP = { claude: 'ANTHROPIC_API_KEY', openai: 'OPENAI_API_KEY', gemini: 'GEMINI_API_KEY' }
+  const keyName = KEY_MAP[provider]
+  if (!keyName) return res.status(400).json({ error: `Proveedor desconocido: ${provider}` })
+  if (!process.env[keyName]) return res.status(503).json({ error: `${keyName} no configurada en el servidor.` })
+  try {
+    let data
+    if (provider === 'claude')      data = await iaEleccionWithClaude(proveedores, proveedorElegido)
+    else if (provider === 'openai') data = await iaEleccionWithOpenAI(proveedores, proveedorElegido)
+    else                            data = await iaEleccionWithGemini(proveedores, proveedorElegido)
+    res.json(data)
+  } catch (err) {
+    console.error(`IA Elección [${provider}] error:`, err)
     res.status(500).json({ error: classifyAIError(err, provider) })
   }
 })
