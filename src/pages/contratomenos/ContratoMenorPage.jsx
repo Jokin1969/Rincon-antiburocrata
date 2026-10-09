@@ -162,6 +162,14 @@ export default function ContratoMenorPage() {
     setCertExclusividad(record.form?.justificacionEleccion === 'Se adjunta certificado de exclusividad')
     setCertFile(null)
     setCertFileData(record.form?.certFileData ?? null)
+    const savedResults = record.form?.iaSlotResults
+    setIaSlots(
+      savedResults?.length
+        ? savedResults.map(result => ({ ...EMPTY_SLOT, result: result ?? null }))
+        : [{ ...EMPTY_SLOT }]
+    )
+    setEleccionResult(null)
+    setEleccionError(null)
     setShowRepo(false)
     setError(null)
   }
@@ -175,7 +183,8 @@ export default function ContratoMenorPage() {
       try { certData = await readFileAsBase64(certFile) } catch { /* keep existing */ }
     }
 
-    saveRecord(form.codigo, { ...toSave, certFileData: certData })
+    const iaSlotResults = iaSlots.map(s => s.result ?? null)
+    saveRecord(form.codigo, { ...toSave, certFileData: certData, iaSlotResults })
     setSavedMsg(true)
     setTimeout(() => setSavedMsg(false), 2500)
   }
