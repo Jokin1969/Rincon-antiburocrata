@@ -76,8 +76,10 @@
   border: 1px solid var(--border, #e0e0e0);
   border-radius: 4px; background: none; color: var(--muted, #888);
   font-size: 0.78rem; cursor: pointer; line-height: 1;
+  text-decoration: none; display: inline-flex; align-items: center;
 }
 .iconBtn:hover { border-color: #dc2626; color: #dc2626; }
+.iconBtnOpen:hover { border-color: var(--accent, #2563eb); color: var(--accent, #2563eb); }
 
 .styleGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
 .styleBtn {

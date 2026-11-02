@@ -200,12 +200,17 @@ export default function QrHome() {
     setBusy(b => ({ ...b, save: false }))
   }
 
-  function handleRestore(item) {
-    const cfg = typeof item.config === 'string' ? JSON.parse(item.config) : item.config
-    setConfig({ ...DEFAULT_CONFIG, ...cfg })
-    setName(item.name)
-    const norm = clientNormalizeUrl(cfg.url)
-    setUrlNorm(norm); setUrlValid(norm !== null)
+  async function handleRestore(item) {
+    try {
+      const res = await fetch(`/api/qr/${item.id}`)
+      const data = await res.json()
+      const cfg = data.item?.config
+      if (!cfg) return showStatus('err', 'No se pudo recuperar la configuración')
+      setConfig({ ...DEFAULT_CONFIG, ...cfg })
+      setName(item.name)
+      const norm = clientNormalizeUrl(cfg.url)
+      setUrlNorm(norm); setUrlValid(norm !== null)
+    } catch { showStatus('err', 'Error al recuperar') }
   }
 
   async function handleDeleteQr(id) {
@@ -527,6 +532,7 @@ export default function QrHome() {
                         </div>
                         <div className={styles.repoActions}>
                           <button className={styles.btn} onClick={() => handleRestore(item)}>Recuperar</button>
+                          <a className={`${styles.iconBtn} ${styles.iconBtnOpen}`} href={item.url} target="_blank" rel="noopener noreferrer" title="Abrir URL">↗</a>
                           <button className={styles.iconBtn} title="Eliminar" onClick={() => handleDeleteQr(item.id)}>✕</button>
                         </div>
                       </div>
@@ -554,6 +560,7 @@ export default function QrHome() {
                         <span className={styles.pdfUrl}>{downloadUrl}</span>
                       </div>
                       <div className={styles.pdfActions}>
+                        <a className={`${styles.btn} ${styles.iconBtnOpen}`} href={downloadUrl} target="_blank" rel="noopener noreferrer" title="Abrir PDF">↗ Abrir</a>
                         <button className={styles.btn} title="Generar QR para este PDF"
                           onClick={() => { handleUrlChange(downloadUrl); setName(pdf.name) }}>
                           ⊞ QR
