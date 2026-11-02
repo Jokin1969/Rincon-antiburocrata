@@ -1,8 +1,20 @@
 import { Router } from 'express'
 import express from 'express'
+import multer from 'multer'
 import nodemailer from 'nodemailer'
+import { writeFileSync, existsSync, mkdirSync, createReadStream, unlinkSync } from 'fs'
+import { dirname, join } from 'path'
+import { fileURLToPath } from 'url'
+import { randomUUID } from 'crypto'
 import { sanitizeConfig, buildSvg, exportConfig, stylePreviews, normalizeUrl } from '../qr-render.js'
-import { listQrs, getQr, saveQr, deleteQr, listLogos, saveLogo, renameLogo, deleteLogo } from '../qr-store.js'
+import { listQrs, getQr, saveQr, deleteQr, listLogos, saveLogo, renameLogo, deleteLogo,
+         savePdfMeta, getPdfMeta, listPdfs, deletePdfMeta } from '../qr-store.js'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const PDF_DIR = join(process.env.DATA_DIR || join(__dirname, '..', '..', 'data'), 'qr-pdfs')
+try { mkdirSync(PDF_DIR, { recursive: true }) } catch {}
+
+const pdfUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } })
 
 const router = Router()
 router.use(express.json({ limit: '1mb' }))
@@ -94,6 +106,48 @@ router.post('/save', (req, res) => {
     const item = saveQr({ userId: null, name: name ?? '', url: cfg.url, config: cfg, thumb: svg })
     res.status(201).json({ item })
   } catch (e) { res.status(e.status || 500).json({ error: e.message }) }
+})
+
+// ── PDF permanente ────────────────────────────────────────────────────────────
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+// POST /pdf-upload — sube un PDF y devuelve la ruta de descarga
+router.post('/pdf-upload', pdfUpload.single('pdf'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No se recibió ningún archivo' })
+  if (req.file.mimetype !== 'application/pdf')
+    return res.status(400).json({ error: 'Solo se admiten archivos PDF' })
+  const id   = randomUUID()
+  const name = req.body.name?.trim() || req.file.originalname
+  writeFileSync(join(PDF_DIR, `${id}.pdf`), req.file.buffer)
+  savePdfMeta(id, name, req.file.size)
+  res.json({ id, name, size: req.file.size, path: `/api/qr/pdf/${id}` })
+})
+
+// GET /pdf/:token — descarga pública del PDF (no requiere sesión, listado en PUBLIC_API)
+router.get('/pdf/:token', (req, res) => {
+  const { token } = req.params
+  if (!UUID_RE.test(token)) return res.status(400).json({ error: 'Token inválido' })
+  const meta = getPdfMeta(token)
+  if (!meta) return res.status(404).json({ error: 'PDF no encontrado' })
+  const filePath = join(PDF_DIR, `${token}.pdf`)
+  if (!existsSync(filePath)) return res.status(404).json({ error: 'Archivo no disponible' })
+  const safeName = meta.name.replace(/[^\w.\- ]/g, '_').replace(/\.pdf$/i, '') + '.pdf'
+  res.setHeader('Content-Type', 'application/pdf')
+  res.setHeader('Content-Disposition', `inline; filename="${safeName}"`)
+  createReadStream(filePath).pipe(res)
+})
+
+// GET /pdfs — lista los PDFs subidos (requiere sesión)
+router.get('/pdfs', (_req, res) => res.json({ items: listPdfs() }))
+
+// DELETE /pdf/:token — elimina el PDF y sus metadatos (requiere sesión)
+router.delete('/pdf/:token', (req, res) => {
+  const { token } = req.params
+  if (!UUID_RE.test(token)) return res.status(400).json({ error: 'Token inválido' })
+  const filePath = join(PDF_DIR, `${token}.pdf`)
+  if (existsSync(filePath)) { try { unlinkSync(filePath) } catch {} }
+  deletePdfMeta(token)
+  res.json({ ok: true })
 })
 
 // Literal routes BEFORE /:id — avoids collision

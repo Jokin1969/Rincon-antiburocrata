@@ -56,6 +56,7 @@ const PUBLIC_API = [
   /^\/api\/certificados\/eventos\/[^/]+$/,                  // GET event info for signing page
   /^\/api\/certificados\/eventos\/[^/]+\/firmas/,           // buscar-dni + submit + zip
   /^\/api\/certificados\/firmas\/[^/]+\/pdf$/,              // download signed PDF
+  /^\/api\/qr\/pdf\/[0-9a-f-]{36}$/,                       // public PDF download by QR scan
 ]
 
 app.use('/api', (req, res, next) => {

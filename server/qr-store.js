@@ -4,7 +4,8 @@ import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const DB_PATH   = process.env.DB_PATH ?? join(__dirname, '..', 'data', 'rincon.db')
+const DB_PATH   = process.env.DB_PATH ??
+  join(process.env.DATA_DIR || join(__dirname, '..', 'data'), 'rincon.db')
 
 const dbDir = dirname(DB_PATH)
 if (!existsSync(dbDir)) mkdirSync(dbDir, { recursive: true })
@@ -32,6 +33,13 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
   CREATE INDEX IF NOT EXISTS idx_qr_logos_user ON qr_logos(user_id);
+
+  CREATE TABLE IF NOT EXISTS qr_pdfs (
+    id          TEXT PRIMARY KEY,
+    name        TEXT NOT NULL,
+    size        INTEGER NOT NULL,
+    uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `)
 
 function systematicName(userId) {
@@ -96,5 +104,22 @@ export function deleteLogo(id, userId) {
   const info = userId != null
     ? db.prepare('DELETE FROM qr_logos WHERE id=? AND user_id=?').run(id, userId)
     : db.prepare('DELETE FROM qr_logos WHERE id=?').run(id)
+  return info.changes > 0
+}
+
+export function savePdfMeta(id, name, size) {
+  db.prepare('INSERT INTO qr_pdfs (id, name, size) VALUES (?, ?, ?)').run(id, name, size)
+}
+
+export function getPdfMeta(id) {
+  return db.prepare('SELECT * FROM qr_pdfs WHERE id=?').get(id)
+}
+
+export function listPdfs() {
+  return db.prepare('SELECT * FROM qr_pdfs ORDER BY uploaded_at DESC').all()
+}
+
+export function deletePdfMeta(id) {
+  const info = db.prepare('DELETE FROM qr_pdfs WHERE id=?').run(id)
   return info.changes > 0
 }
