@@ -68,6 +68,7 @@ export default function QrHome() {
   const [pdfItems,    setPdfItems]    = useState([])
   const [pdfFile,     setPdfFile]     = useState(null)
   const [pdfName,     setPdfName]     = useState('')
+  const [repoOpen,    setRepoOpen]    = useState(true)
   const [status,      setStatus]      = useState(null)
   const [busy,        setBusy]        = useState({})
   const logoFileRef = useRef(null)
@@ -506,11 +507,14 @@ export default function QrHome() {
       {(repoItems.length > 0 || pdfItems.length > 0) && (
         <section className={styles.section} style={{ marginTop: '2rem' }}>
           <div className={styles.repoHeader}>
-            <h2 className={styles.sectionTitle} style={{ margin: 0 }}>Repositorio</h2>
+            <button className={styles.repoToggle} onClick={() => setRepoOpen(o => !o)} aria-expanded={repoOpen}>
+              <span className={styles.repoToggleArrow}>{repoOpen ? '▾' : '▸'}</span>
+              <h2 className={styles.sectionTitle} style={{ margin: 0 }}>Repositorio</h2>
+            </button>
             <button className={styles.btn} onClick={() => { loadRepo(); loadPdfs() }}>↻ Actualizar</button>
           </div>
 
-          {repoItems.length > 0 && (
+          {repoOpen && repoItems.length > 0 && (
             <>
               <div className={styles.repoSearchRow}>
                 <input type="text" className={styles.input} placeholder="Buscar por nombre o URL…"
@@ -543,7 +547,7 @@ export default function QrHome() {
             </>
           )}
 
-          {pdfItems.length > 0 && (
+          {repoOpen && pdfItems.length > 0 && (
             <>
               <h3 className={styles.repoSubtitle}>PDFs subidos</h3>
               <div className={styles.pdfList}>
