@@ -54,19 +54,24 @@ const DEFAULT_CONFIG = {
 }
 
 export default function QrHome() {
-  const [styleList,  setStyleList]  = useState([])
-  const [config,     setConfig]     = useState(DEFAULT_CONFIG)
-  const [urlNorm,    setUrlNorm]    = useState(null)
-  const [urlValid,   setUrlValid]   = useState(null)
-  const [svgPreview, setSvgPreview] = useState(null)
-  const [format,     setFormat]     = useState('png')
-  const [emailTo,    setEmailTo]    = useState('')
-  const [name,       setName]       = useState('')
-  const [repoItems,  setRepoItems]  = useState([])
-  const [logos,      setLogos]      = useState([])
-  const [status,     setStatus]     = useState(null)
-  const [busy,       setBusy]       = useState({})
+  const [styleList,   setStyleList]   = useState([])
+  const [config,      setConfig]      = useState(DEFAULT_CONFIG)
+  const [urlNorm,     setUrlNorm]     = useState(null)
+  const [urlValid,    setUrlValid]    = useState(null)
+  const [svgPreview,  setSvgPreview]  = useState(null)
+  const [format,      setFormat]      = useState('png')
+  const [emailTo,     setEmailTo]     = useState('')
+  const [name,        setName]        = useState('')
+  const [repoItems,   setRepoItems]   = useState([])
+  const [repoSearch,  setRepoSearch]  = useState('')
+  const [logos,       setLogos]       = useState([])
+  const [pdfItems,    setPdfItems]    = useState([])
+  const [pdfFile,     setPdfFile]     = useState(null)
+  const [pdfName,     setPdfName]     = useState('')
+  const [status,      setStatus]      = useState(null)
+  const [busy,        setBusy]        = useState({})
   const logoFileRef = useRef(null)
+  const pdfFileRef  = useRef(null)
 
   useEffect(() => {
     fetch('/api/qr/meta').then(r => r.json()).then(d => {
@@ -75,10 +80,12 @@ export default function QrHome() {
     }).catch(() => {})
     loadRepo()
     loadLogos()
+    loadPdfs()
   }, [])
 
   function loadRepo()  { fetch('/api/qr/list').then(r => r.json()).then(d => setRepoItems(d.items || [])).catch(() => {}) }
   function loadLogos() { fetch('/api/qr/logos').then(r => r.json()).then(d => setLogos(d.items || [])).catch(() => {}) }
+  function loadPdfs()  { fetch('/api/qr/pdfs').then(r => r.json()).then(d => setPdfItems(d.items || [])).catch(() => {}) }
 
   function handleUrlChange(val) {
     setConfig(c => ({ ...c, url: val }))
@@ -220,6 +227,46 @@ export default function QrHome() {
     })
     loadLogos()
   }
+
+  async function handlePdfUpload() {
+    if (!pdfFile) return
+    setBusy(b => ({ ...b, pdf: true }))
+    try {
+      const body = new FormData()
+      body.append('pdf', pdfFile)
+      if (pdfName.trim()) body.append('name', pdfName.trim())
+      const res  = await fetch('/api/qr/pdf-upload', { method: 'POST', body })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
+      const fullUrl = `${window.location.origin}${data.path}`
+      handleUrlChange(fullUrl)
+      setName(data.name)
+      setPdfFile(null)
+      setPdfName('')
+      if (pdfFileRef.current) pdfFileRef.current.value = ''
+      loadPdfs()
+      showStatus('ok', `PDF subido: ${data.name}`)
+    } catch (e) { showStatus('err', e.message) }
+    setBusy(b => ({ ...b, pdf: false }))
+  }
+
+  async function handleDeletePdf(id) {
+    await fetch(`/api/qr/pdf/${id}`, { method: 'DELETE' })
+    loadPdfs()
+  }
+
+  function fmtSize(bytes) {
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  }
+
+  const filteredRepo = repoSearch.trim()
+    ? repoItems.filter(i =>
+        i.name?.toLowerCase().includes(repoSearch.toLowerCase()) ||
+        i.url?.toLowerCase().includes(repoSearch.toLowerCase())
+      )
+    : repoItems
 
   return (
     <div>
@@ -390,6 +437,28 @@ export default function QrHome() {
           </section>
 
           <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>Subir PDF</h2>
+            <p className={styles.pdfHint}>Sube un PDF al servidor, se almacena de forma permanente y genera automáticamente el QR apuntando a su URL de descarga.</p>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Nombre descriptivo (opcional)</label>
+              <input type="text" className={styles.input} placeholder="Ej. Protocolo_Lab_2026.pdf"
+                maxLength={120} value={pdfName} onChange={e => setPdfName(e.target.value)} />
+            </div>
+            <div className={styles.pdfRow}>
+              <button className={styles.btn} onClick={() => pdfFileRef.current?.click()}>
+                {pdfFile ? `📄 ${pdfFile.name}` : '📄 Elegir PDF…'}
+              </button>
+              <input ref={pdfFileRef} type="file" accept="application/pdf"
+                style={{ display: 'none' }}
+                onChange={e => { setPdfFile(e.target.files?.[0] || null) }} />
+              <button className={styles.btnPrimary} onClick={handlePdfUpload}
+                disabled={!pdfFile || busy.pdf}>
+                {busy.pdf ? 'Subiendo…' : '↑ Subir y generar QR'}
+              </button>
+            </div>
+          </section>
+
+          <section className={styles.section}>
             <h2 className={styles.sectionTitle}>Exportar</h2>
             <div className={styles.exportRow}>
               <select className={styles.select} value={format} onChange={e => setFormat(e.target.value)}>
@@ -429,27 +498,77 @@ export default function QrHome() {
         </div>
       </div>
 
-      {repoItems.length > 0 && (
+      {(repoItems.length > 0 || pdfItems.length > 0) && (
         <section className={styles.section} style={{ marginTop: '2rem' }}>
           <div className={styles.repoHeader}>
             <h2 className={styles.sectionTitle} style={{ margin: 0 }}>Repositorio</h2>
-            <button className={styles.btn} onClick={loadRepo}>↻ Actualizar</button>
+            <button className={styles.btn} onClick={() => { loadRepo(); loadPdfs() }}>↻ Actualizar</button>
           </div>
-          <div className={styles.repoGrid}>
-            {repoItems.map(item => (
-              <div key={item.id} className={styles.repoCard}>
-                {item.thumb && <div className={styles.repoThumb} dangerouslySetInnerHTML={{ __html: item.thumb }} />}
-                <div className={styles.repoInfo}>
-                  <span className={styles.repoName}>{item.name}</span>
-                  <span className={styles.repoUrl}>{item.url}</span>
-                </div>
-                <div className={styles.repoActions}>
-                  <button className={styles.btn} onClick={() => handleRestore(item)}>Recuperar</button>
-                  <button className={styles.iconBtn} title="Eliminar" onClick={() => handleDeleteQr(item.id)}>✕</button>
-                </div>
+
+          {repoItems.length > 0 && (
+            <>
+              <div className={styles.repoSearchRow}>
+                <input type="text" className={styles.input} placeholder="Buscar por nombre o URL…"
+                  value={repoSearch} onChange={e => setRepoSearch(e.target.value)} />
+                {repoSearch && (
+                  <button className={styles.iconBtn} title="Limpiar" onClick={() => setRepoSearch('')}>✕</button>
+                )}
               </div>
-            ))}
-          </div>
+              {filteredRepo.length === 0
+                ? <p className={styles.repoEmpty}>Sin resultados para «{repoSearch}»</p>
+                : (
+                  <div className={styles.repoGrid}>
+                    {filteredRepo.map(item => (
+                      <div key={item.id} className={styles.repoCard}>
+                        {item.thumb && <div className={styles.repoThumb} dangerouslySetInnerHTML={{ __html: item.thumb }} />}
+                        <div className={styles.repoInfo}>
+                          <span className={styles.repoName}>{item.name}</span>
+                          <span className={styles.repoUrl}>{item.url}</span>
+                        </div>
+                        <div className={styles.repoActions}>
+                          <button className={styles.btn} onClick={() => handleRestore(item)}>Recuperar</button>
+                          <button className={styles.iconBtn} title="Eliminar" onClick={() => handleDeleteQr(item.id)}>✕</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )
+              }
+            </>
+          )}
+
+          {pdfItems.length > 0 && (
+            <>
+              <h3 className={styles.repoSubtitle}>PDFs subidos</h3>
+              <div className={styles.pdfList}>
+                {pdfItems.map(pdf => {
+                  const downloadUrl = `${window.location.origin}/api/qr/pdf/${pdf.id}`
+                  return (
+                    <div key={pdf.id} className={styles.pdfCard}>
+                      <span className={styles.pdfIcon}>📄</span>
+                      <div className={styles.pdfInfo}>
+                        <span className={styles.pdfName}>{pdf.name}</span>
+                        <span className={styles.pdfMeta}>
+                          {fmtSize(pdf.size)} · {new Date(pdf.uploaded_at).toLocaleDateString('es-ES')}
+                        </span>
+                        <span className={styles.pdfUrl}>{downloadUrl}</span>
+                      </div>
+                      <div className={styles.pdfActions}>
+                        <button className={styles.btn} title="Generar QR para este PDF"
+                          onClick={() => { handleUrlChange(downloadUrl); setName(pdf.name) }}>
+                          ⊞ QR
+                        </button>
+                        <button className={styles.iconBtn} title="Eliminar PDF"
+                          onClick={() => { if (window.confirm(`¿Eliminar «${pdf.name}»? Esta acción es irreversible.`)) handleDeletePdf(pdf.id) }}>
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </>
+          )}
         </section>
       )}
     </div>

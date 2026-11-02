@@ -126,6 +126,21 @@
 .previewEmpty { color: var(--muted, #888); font-size: 0.875rem; text-align: center; padding: 2rem; }
 
 .repoHeader { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
+.repoSearchRow { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+.repoSearchRow .input { flex: 1; }
+.repoEmpty { font-size: 0.82rem; color: var(--muted, #888); padding: 0.5rem 0; }
+.repoSubtitle { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted, #888); margin: 1.25rem 0 0.5rem; }
+
+.pdfHint { font-size: 0.82rem; color: var(--muted, #888); margin: -0.25rem 0 0.75rem; }
+.pdfRow { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
+.pdfList { display: flex; flex-direction: column; gap: 0.5rem; }
+.pdfCard { display: flex; align-items: center; gap: 0.75rem; border: 1px solid var(--border, #e0e0e0); border-radius: var(--radius, 8px); background: var(--bg, #fff); padding: 0.65rem 0.85rem; }
+.pdfIcon { font-size: 1.4rem; flex-shrink: 0; }
+.pdfInfo { display: flex; flex-direction: column; gap: 0.15rem; flex: 1; min-width: 0; }
+.pdfName { font-size: 0.82rem; font-weight: 700; color: var(--text, #111); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pdfMeta { font-size: 0.7rem; color: var(--muted, #888); }
+.pdfUrl  { font-size: 0.68rem; color: var(--muted, #aaa); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pdfActions { display: flex; gap: 0.4rem; align-items: center; flex-shrink: 0; }
 .repoGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.75rem; }
 .repoCard { border: 1px solid var(--border, #e0e0e0); border-radius: var(--radius, 8px); background: var(--bg, #fff); padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; }
 .repoThumb { width: 80px; height: 80px; align-self: center; overflow: hidden; }
